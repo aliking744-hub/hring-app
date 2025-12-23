@@ -13,10 +13,11 @@ import {
   Calendar,
   FileText
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "داشبورد", active: true },
@@ -36,6 +37,14 @@ const stats = [
 ];
 
 const Dashboard = () => {
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
+
   return (
     <div className="relative min-h-screen flex" dir="rtl">
       <AuroraBackground />
@@ -70,12 +79,13 @@ const Dashboard = () => {
         </nav>
 
         {/* Logout */}
-        <Link to="/">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">خروج</span>
-          </button>
-        </Link>
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="font-medium">خروج</span>
+        </button>
       </motion.aside>
 
       {/* Main Content */}
