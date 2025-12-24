@@ -16,12 +16,6 @@ import {
   Grid3X3,
   FileDown,
   Home,
-  MessageSquare,
-  Send,
-  Building2,
-  BarChart3,
-  Target,
-  Sparkles,
   Menu,
   X
 } from "lucide-react";
@@ -50,56 +44,6 @@ const stats = [
   { label: "استخدام این ماه", value: "۳", change: "+۱", icon: TrendingUp },
 ];
 
-const modules = [
-  {
-    icon: MessageSquare,
-    title: "دستیار مصاحبه",
-    description: "تولید راهنمای جامع مصاحبه، سوالات تخصصی و کلید ارزیابی داوطلب",
-    features: ["سوالات تخصصی و رفتاری", "کلید ارزیابی برای هر سوال", "دانلود PDF"],
-    path: "/interview-assistant",
-    disabled: false,
-  },
-  {
-    icon: Send,
-    title: "آگهی‌نویس هوشمند",
-    description: "نوشتن آگهی‌های شغلی جذاب برای لینکدین و سایت‌های کاریابی",
-    features: ["متن حرفه‌ای برای هر پلتفرم", "تولید تصویر با هوش مصنوعی", "لحن‌های متنوع"],
-    path: "/smart-ad-generator",
-    disabled: false,
-  },
-  {
-    icon: FileText,
-    title: "مهندسی مشاغل",
-    description: "تولید هوشمند پروفایل شغلی با استفاده از هوش مصنوعی",
-    features: ["تولید سند هویت شغلی", "تعیین شرایط احراز", "خروجی PDF"],
-    path: "/job-description",
-    disabled: false,
-  },
-  {
-    icon: Building2,
-    title: "طراحی سازمان",
-    description: "طراحی ساختار سازمانی و چارت‌های مدیریتی",
-    features: [],
-    path: "",
-    disabled: true,
-  },
-  {
-    icon: BarChart3,
-    title: "ارزیابی عملکرد",
-    description: "سیستم ارزیابی عملکرد کارکنان",
-    features: [],
-    path: "",
-    disabled: true,
-  },
-  {
-    icon: Target,
-    title: "معمار موفقیت ۹۰ روزه",
-    description: "طراحی نقشه راه ۹۰ روزه برای موفقیت و تثبیت نیروی جدید در سازمان",
-    features: ["برنامه ۳۰-۶۰-۹۰ روزه", "تایم‌لاین بصری", "ایمیل خوش‌آمدگویی"],
-    path: "/onboarding-roadmap",
-    disabled: false,
-  },
-];
 
 const Dashboard = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -450,78 +394,6 @@ const Dashboard = () => {
             </motion.div>
           </div>
 
-          {/* Modules Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
-            className="mt-8"
-            id="modules"
-          >
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-foreground mb-2">ماژول‌های موجود</h2>
-              <p className="text-primary">ابزارهای حرفه‌ای برای تسهیل فرآیندهای منابع انسانی</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {modules.map((module, index) => (
-                <motion.div
-                  key={module.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1 + index * 0.1 }}
-                  onClick={() => !module.disabled && module.path && navigate(module.path)}
-                  className={`
-                    relative glass-card p-6 min-h-[250px]
-                    ${module.disabled 
-                      ? 'opacity-60 cursor-not-allowed' 
-                      : 'cursor-pointer hover:border-primary/30 hover:-translate-y-1 transition-all duration-300'
-                    }
-                  `}
-                >
-                  {/* Icon */}
-                  <div className={`
-                    w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto
-                    ${module.disabled 
-                      ? 'bg-muted text-muted-foreground' 
-                      : 'bg-primary/10 text-primary'
-                    }
-                  `}>
-                    <module.icon className="w-6 h-6" />
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="text-lg font-semibold text-foreground mb-2 text-center">
-                    {module.title}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-muted-foreground text-sm leading-relaxed text-center mb-4">
-                    {module.description}
-                  </p>
-
-                  {/* Features */}
-                  {module.features.length > 0 && (
-                    <div className="space-y-2">
-                      {module.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground justify-end">
-                          <span>{feature}</span>
-                          <Sparkles className="w-4 h-4 text-primary" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Coming Soon Badge */}
-                  {module.disabled && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-2xl">
-                      <span className="text-muted-foreground text-sm font-medium">به زودی...</span>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
         </motion.div>
       </div>
     </div>
