@@ -17,7 +17,8 @@ import {
   FileDown,
   Home,
   Menu,
-  X
+  X,
+  Boxes
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
@@ -32,6 +33,7 @@ const sidebarItems = [
   { icon: Briefcase, label: "موقعیت‌های شغلی", path: "/job-description", external: false },
   { icon: Megaphone, label: "آگهی‌ها", path: "/smart-ad", external: false },
   { icon: Users, label: "مصاحبه‌ها", path: "/interviews", external: false },
+  { icon: Boxes, label: "ماژولها", path: "/modules", external: false },
   { icon: UserPlus, label: "آنبوردینگ", path: "/onboarding", external: false },
   { icon: FileText, label: "مستندات", path: "/dashboard#modules", external: false },
   { icon: Settings, label: "تنظیمات", path: "/dashboard", external: false },
