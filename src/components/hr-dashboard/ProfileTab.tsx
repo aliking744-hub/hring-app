@@ -117,7 +117,7 @@ export function ProfileTab({ data }: ProfileTabProps) {
 
       {/* Employee Selector */}
       <div className="bg-card/50 backdrop-blur-sm border border-border rounded-lg p-4">
-        <div className="flex items-center gap-4 justify-start flex-row-reverse">
+        <div className="flex items-center gap-4 justify-end">
           <label className="text-sm text-muted-foreground">کد پرسنلی:</label>
           <Select
             value={selectedEmployee.id}
