@@ -77,11 +77,18 @@ serve(async (req) => {
 
     console.log("Generating job ad for:", { jobTitle, companyName, contactMethod, industry, platform, tone, generateImage, imageFormat, imageWidth, imageHeight });
 
+    // Try user's GEMINI_API_KEY first, fallback to LOVABLE_API_KEY
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
+    
+    const useGeminiDirect = !!GEMINI_API_KEY;
+    
+    if (!GEMINI_API_KEY && !LOVABLE_API_KEY) {
+      console.error("No API key configured");
       throw new Error("API key not configured");
     }
+
+    console.log("Using:", useGeminiDirect ? "Google Gemini Direct API" : "Lovable AI Gateway");
 
     // Generate text
     const textPrompt = `Create a job advertisement for the following position:
@@ -92,20 +99,47 @@ ${industry ? `- Industry: ${industry}` : ""}`;
 
     console.log("Sending text generation request...");
 
-    const textResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: getSystemPrompt(platform, tone) },
-          { role: "user", content: textPrompt },
-        ],
-      }),
-    });
+    let textResponse;
+    
+    if (useGeminiDirect) {
+      // Use Google Gemini API directly
+      textResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { text: getSystemPrompt(platform, tone) + "\n\n" + textPrompt }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 2048,
+          }
+        }),
+      });
+    } else {
+      // Fallback to Lovable AI Gateway
+      textResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: getSystemPrompt(platform, tone) },
+            { role: "user", content: textPrompt },
+          ],
+        }),
+      });
+    }
 
     if (!textResponse.ok) {
       const errorText = await textResponse.text();
@@ -123,11 +157,19 @@ ${industry ? `- Industry: ${industry}` : ""}`;
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      throw new Error(`Text generation failed: ${textResponse.status}`);
+      throw new Error(`Text generation failed: ${textResponse.status} - ${errorText}`);
     }
 
     const textData = await textResponse.json();
-    const generatedText = textData.choices?.[0]?.message?.content || "";
+    
+    let generatedText = "";
+    if (useGeminiDirect) {
+      // Parse Gemini direct API response
+      generatedText = textData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    } else {
+      // Parse Lovable AI Gateway response
+      generatedText = textData.choices?.[0]?.message?.content || "";
+    }
 
     console.log("Text generated successfully");
 
@@ -147,7 +189,6 @@ ${industry ? `- Industry: ${industry}` : ""}`;
         if (lowerCompany.includes("meta") || lowerCompany.includes("facebook")) return "royal blue";
         if (lowerCompany.includes("netflix")) return "bold red and black";
         if (lowerCompany.includes("spotify")) return "vibrant green and black";
-        // Default: professional deep blue or dark grey
         return "professional deep blue (#1a365d) with subtle gradients";
       };
 
@@ -202,8 +243,6 @@ ${industry ? `- Industry: ${industry}` : ""}`;
 
       const toneStyle = getToneStyle(tone);
 
-      // Create image prompt with Persian text using Gemini 3 Pro
-      // This model handles Persian text much better!
       const imagePrompt = `یک پوستر استخدام برای شغل "${jobTitle}" در شرکت "${companyName}" طراحی کن.
 
 اطلاعات پوستر:
@@ -247,33 +286,76 @@ ${tone === "formal" ? "- رنگ‌های ساده و محافظه‌کارانه
 - اسم صنعت را روی تصویر ننویس (صنعت فقط برای المان‌های گرافیکی و حال و هوای تصویر است)
 ${tone === "formal" ? "- از رنگ‌های شاد مثل صورتی، نارنجی روشن استفاده نکن\n- از ایموجی و آیکون‌های کارتونی استفاده نکن" : ""}`;
 
-      console.log("Using Gemini 3 Pro for Persian text image generation");
+      console.log("Generating image with", useGeminiDirect ? "Gemini Direct API" : "Lovable AI Gateway");
 
       try {
-        const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-3-pro-image-preview",
-            messages: [
-              { role: "user", content: imagePrompt },
-            ],
-            modalities: ["image", "text"],
-          }),
-        });
-
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.json();
-          const imageBase64 = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-          if (imageBase64) {
-            imageUrl = imageBase64;
-            console.log("Image generated successfully");
+        let imageResponse;
+        
+        if (useGeminiDirect) {
+          // Use Google Gemini API directly for image generation
+          // Note: gemini-2.0-flash can generate images via Imagen integration
+          imageResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GEMINI_API_KEY}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    { text: imagePrompt }
+                  ]
+                }
+              ],
+              generationConfig: {
+                responseModalities: ["image", "text"],
+              }
+            }),
+          });
+          
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json();
+            // Gemini returns inline_data with base64
+            const parts = imageData.candidates?.[0]?.content?.parts || [];
+            for (const part of parts) {
+              if (part.inlineData?.mimeType?.startsWith("image/")) {
+                imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                console.log("Image generated successfully via Gemini Direct");
+                break;
+              }
+            }
+          } else {
+            const errorText = await imageResponse.text();
+            console.error("Gemini image generation failed:", errorText);
           }
         } else {
-          console.error("Image generation failed:", await imageResponse.text());
+          // Fallback to Lovable AI Gateway
+          imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-3-pro-image-preview",
+              messages: [
+                { role: "user", content: imagePrompt },
+              ],
+              modalities: ["image", "text"],
+            }),
+          });
+
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json();
+            const imageBase64 = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+            if (imageBase64) {
+              imageUrl = imageBase64;
+              console.log("Image generated successfully via Lovable AI");
+            }
+          } else {
+            console.error("Lovable AI image generation failed:", await imageResponse.text());
+          }
         }
       } catch (imgError) {
         console.error("Image generation error:", imgError);
@@ -283,7 +365,7 @@ ${tone === "formal" ? "- از رنگ‌های شاد مثل صورتی، نار�
 
     return new Response(
       JSON.stringify({
-        text: generatedText,
+        generatedText: generatedText,
         imageUrl: imageUrl,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
