@@ -14,6 +14,7 @@ import SmartAdGenerator from "./pages/SmartAdGenerator";
 import InterviewAssistant from "./pages/InterviewAssistant";
 import OnboardingRoadmap from "./pages/OnboardingRoadmap";
 import ToolsGrid from "./pages/ToolsGrid";
+import HRDashboard from "./pages/HRDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -81,6 +82,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ToolsGrid />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/hr-dashboard" 
+              element={
+                <ProtectedRoute>
+                  <HRDashboard />
                 </ProtectedRoute>
               } 
             />
