@@ -92,8 +92,8 @@ export function SalaryTab({ data }: SalaryTabProps) {
           <ResponsiveContainer width="100%" height={350}>
             <ComposedChart data={deptData}>
               <XAxis dataKey="name" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }} angle={-30} textAnchor="end" height={70} />
-              <YAxis yAxisId="left" tick={{ fill: 'hsl(var(--foreground))', fontSize: 9 }} tickFormatter={(value) => formatSalary(value)} width={70} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fill: 'hsl(var(--foreground))', fontSize: 9 }} width={40} />
+              <YAxis yAxisId="left" tick={{ fill: 'hsl(var(--foreground))', fontSize: 8 }} tickFormatter={(value) => formatSalary(value)} width={85} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fill: 'hsl(var(--foreground))', fontSize: 8 }} width={35} />
               <Tooltip
                 contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
                 formatter={(value: number, name: string) => [formatSalary(value), name === 'avgSalary' ? 'میانگین حقوق' : 'تعداد']}
@@ -114,7 +114,7 @@ export function SalaryTab({ data }: SalaryTabProps) {
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={posData}>
                 <XAxis dataKey="name" tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }} />
-                <YAxis tick={{ fill: 'hsl(var(--foreground))', fontSize: 9 }} tickFormatter={(value) => formatSalary(value)} width={60} />
+                <YAxis tick={{ fill: 'hsl(var(--foreground))', fontSize: 8 }} tickFormatter={(value) => formatSalary(value)} width={80} />
                 <Tooltip
                   contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
                   formatter={(value: number) => [formatSalary(value), 'میانگین حقوق']}
@@ -156,7 +156,7 @@ export function SalaryTab({ data }: SalaryTabProps) {
       <ChartCard title="میانگین حقوق به تفکیک مدرک تحصیلی">
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={eduData} layout="vertical">
-            <XAxis type="number" tick={{ fill: 'hsl(var(--foreground))', fontSize: 9 }} tickFormatter={(value) => formatSalary(value)} />
+            <XAxis type="number" tick={{ fill: 'hsl(var(--foreground))', fontSize: 8 }} tickFormatter={(value) => formatSalary(value)} />
             <YAxis type="category" dataKey="name" tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }} width={100} />
             <Tooltip
               contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
