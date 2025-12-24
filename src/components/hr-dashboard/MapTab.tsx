@@ -5,18 +5,36 @@ import { PrintButton } from './PrintButton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Users } from 'lucide-react';
+import tehranMap from '@/assets/tehran-map.png';
 
 interface MapTabProps {
   data: Employee[];
 }
 
-// Position and click areas for each region (percentage-based grid layout)
-const regionPositions: Record<number, { row: number; col: number }> = {
-  1: { row: 0, col: 4 }, 2: { row: 0, col: 3 }, 3: { row: 0, col: 2 }, 4: { row: 1, col: 4 }, 5: { row: 0, col: 1 },
-  6: { row: 1, col: 2 }, 7: { row: 1, col: 3 }, 8: { row: 2, col: 4 }, 9: { row: 2, col: 1 }, 10: { row: 2, col: 2 },
-  11: { row: 2, col: 3 }, 12: { row: 3, col: 3 }, 13: { row: 3, col: 4 }, 14: { row: 4, col: 4 }, 15: { row: 4, col: 3 },
-  16: { row: 3, col: 2 }, 17: { row: 3, col: 1 }, 18: { row: 2, col: 0 }, 19: { row: 4, col: 1 }, 20: { row: 4, col: 2 },
-  21: { row: 1, col: 0 }, 22: { row: 0, col: 0 },
+// Position of each region on the Tehran map (percentage-based)
+const regionPositions: Record<number, { top: string; left: string }> = {
+  1: { top: '12%', left: '72%' },
+  2: { top: '18%', left: '45%' },
+  3: { top: '12%', left: '55%' },
+  4: { top: '22%', left: '82%' },
+  5: { top: '22%', left: '32%' },
+  6: { top: '32%', left: '48%' },
+  7: { top: '32%', left: '58%' },
+  8: { top: '35%', left: '72%' },
+  9: { top: '45%', left: '38%' },
+  10: { top: '45%', left: '48%' },
+  11: { top: '45%', left: '56%' },
+  12: { top: '48%', left: '65%' },
+  13: { top: '38%', left: '82%' },
+  14: { top: '52%', left: '78%' },
+  15: { top: '62%', left: '75%' },
+  16: { top: '58%', left: '55%' },
+  17: { top: '55%', left: '40%' },
+  18: { top: '48%', left: '15%' },
+  19: { top: '68%', left: '35%' },
+  20: { top: '75%', left: '62%' },
+  21: { top: '38%', left: '15%' },
+  22: { top: '22%', left: '15%' },
 };
 
 const COLORS = ['#1e3a5f', '#234b6e', '#2a5c7d', '#316d8c', '#387e9b', '#3f8faa', '#46a0b9', '#4db1c8'];
@@ -36,12 +54,6 @@ export function MapTab({ data }: MapTabProps) {
     : data;
 
   const formatNumber = (num: number) => new Intl.NumberFormat('fa-IR').format(num);
-
-  const getColorIntensity = (count: number) => {
-    const maxCount = Math.max(...Object.values(regionCounts), 1);
-    const index = Math.floor((count / maxCount) * (COLORS.length - 1));
-    return COLORS[index];
-  };
 
   return (
     <div className="space-y-4 print-area">
@@ -87,54 +99,54 @@ export function MapTab({ data }: MapTabProps) {
           </ScrollArea>
         </ChartCard>
 
-        {/* Map Grid */}
+        {/* Tehran Map */}
         <ChartCard title="نقشه پراکندگی پرسنل در مناطق تهران">
-          <div className="relative w-full rounded-lg overflow-hidden p-4">
-            <div className="grid grid-cols-5 gap-2">
-              {Array.from({ length: 5 }, (_, row) => (
-                Array.from({ length: 5 }, (_, col) => {
-                  const region = Object.entries(regionPositions).find(
-                    ([_, pos]) => pos.row === row && pos.col === col
-                  );
-                  
-                  if (!region) {
-                    return <div key={`${row}-${col}`} className="aspect-square" />;
-                  }
+          <div className="relative w-full rounded-lg overflow-hidden">
+            <img 
+              src={tehranMap} 
+              alt="نقشه تهران" 
+              className="w-full h-auto"
+            />
+            
+            {/* Region Labels */}
+            {Object.entries(regionPositions).map(([regionStr, pos]) => {
+              const regionNum = parseInt(regionStr);
+              const count = regionCounts[regionNum] || 0;
+              const isSelected = selectedRegion === regionNum;
 
-                  const regionNum = parseInt(region[0]);
-                  const count = regionCounts[regionNum] || 0;
-                  const isSelected = selectedRegion === regionNum;
+              return (
+                <button
+                  key={regionNum}
+                  onClick={() => setSelectedRegion(isSelected ? null : regionNum)}
+                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 rounded-full flex flex-col items-center justify-center transition-all duration-300 ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground scale-125 shadow-lg shadow-primary/50 z-20'
+                      : 'bg-background/90 text-foreground hover:scale-110 hover:bg-primary hover:text-primary-foreground z-10'
+                  }`}
+                  style={{
+                    top: pos.top,
+                    left: pos.left,
+                    width: count > 0 ? '2.5rem' : '2rem',
+                    height: count > 0 ? '2.5rem' : '2rem',
+                  }}
+                  title={`منطقه ${formatNumber(regionNum)} - ${formatNumber(count)} نفر`}
+                >
+                  <span className="font-bold text-xs">
+                    {formatNumber(regionNum)}
+                  </span>
+                  {count > 0 && (
+                    <span className="text-[10px] opacity-80">
+                      ({formatNumber(count)})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-                  return (
-                    <button
-                      key={regionNum}
-                      onClick={() => setSelectedRegion(isSelected ? null : regionNum)}
-                      className={`aspect-square rounded-lg flex flex-col items-center justify-center transition-all duration-300 border-2 ${
-                        isSelected
-                          ? 'bg-primary border-primary scale-105 shadow-lg shadow-primary/30 z-10'
-                          : 'hover:scale-105 hover:shadow-md border-border/50'
-                      }`}
-                      style={{
-                        backgroundColor: isSelected ? undefined : getColorIntensity(count),
-                      }}
-                      title={`منطقه ${formatNumber(regionNum)} - ${formatNumber(count)} نفر`}
-                    >
-                      <span className="font-bold text-white text-sm">
-                        {formatNumber(regionNum)}
-                      </span>
-                      <span className="text-white/80 text-xs">
-                        ({formatNumber(count)})
-                      </span>
-                    </button>
-                  );
-                })
-              )).flat()}
-            </div>
-
-            {/* Instructions */}
-            <div className="mt-4 text-center bg-muted/50 px-3 py-2 rounded-lg">
-              <span className="text-muted-foreground text-sm">برای مشاهده لیست پرسنل روی هر منطقه کلیک کنید</span>
-            </div>
+          {/* Instructions */}
+          <div className="mt-4 text-center bg-muted/50 px-3 py-2 rounded-lg">
+            <span className="text-muted-foreground text-sm">برای مشاهده لیست پرسنل روی هر منطقه کلیک کنید</span>
           </div>
         </ChartCard>
       </div>
