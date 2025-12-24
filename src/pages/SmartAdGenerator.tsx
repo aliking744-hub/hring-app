@@ -50,8 +50,15 @@ const SmartAdGenerator = () => {
 
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-smart-ad', {
-        body: { position, platform, tone, highlights }
+      const { data, error } = await supabase.functions.invoke('generate-job-ad', {
+        body: { 
+          jobTitle: position, 
+          companyName: "شرکت", 
+          platform, 
+          tone, 
+          industry: highlights,
+          generateImage: false 
+        }
       });
 
       if (error) throw error;
@@ -65,7 +72,13 @@ const SmartAdGenerator = () => {
         return;
       }
 
-      setAdData(data.ad);
+      setAdData({
+        adText: data.text,
+        imagePrompt: "",
+        imageDimensions: { width: 1200, height: 628, aspectRatio: "1.91:1" },
+        hashtags: [],
+        tips: []
+      });
       toast({
         title: "موفق",
         description: "آگهی با موفقیت تولید شد.",
