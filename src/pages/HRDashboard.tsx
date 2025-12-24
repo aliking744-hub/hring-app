@@ -4,10 +4,13 @@ import { FilterBar } from '@/components/hr-dashboard/FilterBar';
 import { OverviewTab } from '@/components/hr-dashboard/OverviewTab';
 import { BirthdaysTab } from '@/components/hr-dashboard/BirthdaysTab';
 import { SalaryTab } from '@/components/hr-dashboard/SalaryTab';
+import { MapTab } from '@/components/hr-dashboard/MapTab';
+import { ProfileTab } from '@/components/hr-dashboard/ProfileTab';
+import { OvertimeTab } from '@/components/hr-dashboard/OvertimeTab';
 import { UploadPage } from '@/components/hr-dashboard/UploadPage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, LayoutDashboard, Cake, Banknote, RefreshCw } from 'lucide-react';
+import { ArrowRight, LayoutDashboard, Cake, Banknote, MapPin, User, Clock, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AuroraBackground from '@/components/AuroraBackground';
 
@@ -53,6 +56,9 @@ export default function HRDashboard() {
     { id: 'overview' as TabType, label: 'نمای کلی', icon: LayoutDashboard },
     { id: 'birthdays' as TabType, label: 'تولدها', icon: Cake },
     { id: 'salary' as TabType, label: 'حقوق', icon: Banknote },
+    { id: 'map' as TabType, label: 'نقشه', icon: MapPin },
+    { id: 'profile' as TabType, label: 'پروفایل', icon: User },
+    { id: 'overtime' as TabType, label: 'اضافه کار', icon: Clock },
   ];
 
   return (
@@ -100,6 +106,18 @@ export default function HRDashboard() {
 
           <TabsContent value="salary" className="mt-0">
             <SalaryTab data={filteredData} />
+          </TabsContent>
+
+          <TabsContent value="map" className="mt-0">
+            <MapTab data={filteredData} />
+          </TabsContent>
+
+          <TabsContent value="profile" className="mt-0">
+            <ProfileTab data={filteredData} />
+          </TabsContent>
+
+          <TabsContent value="overtime" className="mt-0">
+            <OvertimeTab data={filteredData} />
           </TabsContent>
         </Tabs>
 
