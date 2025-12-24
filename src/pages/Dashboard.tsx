@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, 
   Briefcase, 
@@ -20,7 +21,9 @@ import {
   Building2,
   BarChart3,
   Target,
-  Sparkles
+  Sparkles,
+  Menu,
+  X
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
@@ -99,6 +102,7 @@ const modules = [
 ];
 
 const Dashboard = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -126,6 +130,102 @@ const Dashboard = () => {
   return (
     <div className="relative min-h-screen flex" dir="rtl">
       <AuroraBackground />
+
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setMobileMenuOpen(true)}
+        className="lg:hidden fixed top-4 right-4 z-50 w-12 h-12 glass-card flex items-center justify-center rounded-xl"
+      >
+        <Menu className="w-6 h-6 text-foreground" />
+      </button>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="lg:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+            />
+            <motion.aside
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="lg:hidden fixed top-0 right-0 bottom-0 w-72 glass-card z-50 p-4 flex flex-col overflow-y-auto"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="absolute top-4 left-4 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-secondary/50 transition-colors"
+              >
+                <X className="w-5 h-5 text-foreground" />
+              </button>
+
+              {/* Logo */}
+              <Link to="/" className="text-2xl font-bold gradient-text-primary mb-4">
+                hring
+              </Link>
+
+              {/* Back to Home */}
+              <Link 
+                to="/" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 mb-4 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors border border-border/50"
+              >
+                <Home className="w-5 h-5" />
+                <span className="font-medium">بازگشت به صفحه اصلی</span>
+              </Link>
+
+              {/* Nav Items */}
+              <nav className="flex-1 space-y-2">
+                {sidebarItems.map((item) => (
+                  item.external ? (
+                    <a
+                      key={item.label}
+                      href={item.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-right text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="font-medium">{item.label}</span>
+                    </a>
+                  ) : (
+                    <Link
+                      key={item.label}
+                      to={item.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-right ${
+                        isActive(item.path)
+                          ? "bg-primary/10 text-primary" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="font-medium">{item.label}</span>
+                    </Link>
+                  )
+                ))}
+              </nav>
+
+              {/* Logout */}
+              <button 
+                onClick={() => {
+                  handleLogout();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">خروج</span>
+              </button>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
       
       {/* Sidebar */}
       <motion.aside
@@ -188,7 +288,7 @@ const Dashboard = () => {
       </motion.aside>
 
       {/* Main Content */}
-      <div className="flex-1 p-4 lg:pr-0">
+      <div className="flex-1 p-4 lg:pr-0 pt-20 lg:pt-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
