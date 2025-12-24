@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import { Upload, FileSpreadsheet, Sparkles, Download } from 'lucide-react';
+import { Upload, FileSpreadsheet, Sparkles, Download, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { Employee } from '@/types/employee';
 import { parseExcelData, generateSampleData } from '@/utils/sampleData';
@@ -12,6 +13,7 @@ interface UploadPageProps {
 }
 
 export function UploadPage({ onDataLoaded }: UploadPageProps) {
+  const navigate = useNavigate();
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -132,7 +134,15 @@ export function UploadPage({ onDataLoaded }: UploadPageProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 transition-colors duration-300" dir="rtl">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 transition-colors duration-300 relative" dir="rtl">
+      {/* Back Button */}
+      <div className="absolute top-4 right-4">
+        <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')} className="gap-2">
+          <ArrowRight className="w-4 h-4" />
+          <span>بازگشت به پنل کاربری</span>
+        </Button>
+      </div>
+
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
