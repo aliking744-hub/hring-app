@@ -83,15 +83,17 @@ export function MapTab({ data }: MapTabProps) {
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
-                  <TableHead className="text-right text-foreground">منطقه</TableHead>
+                  <TableHead className="text-right text-foreground">کد پرسنلی</TableHead>
                   <TableHead className="text-right text-foreground">نام و نام خانوادگی</TableHead>
+                  <TableHead className="text-right text-foreground">منطقه</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEmployees.sort((a, b) => a.region - b.region).map((employee) => (
                   <TableRow key={employee.id} className="border-border hover:bg-muted/50">
-                    <TableCell className="text-foreground">{formatNumber(employee.region)}</TableCell>
+                    <TableCell className="text-foreground">{employee.id}</TableCell>
                     <TableCell className="text-foreground">{employee.fullName}</TableCell>
+                    <TableCell className="text-foreground">{formatNumber(employee.region)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
