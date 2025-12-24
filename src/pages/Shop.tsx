@@ -52,7 +52,7 @@ const Shop = () => {
       <AuroraBackground />
       
       {/* Sticky Back Button */}
-      <Link to="/dashboard" className="fixed top-6 right-6 z-50">
+      <Link to="/dashboard" className="fixed top-24 right-6 z-50">
         <Button variant="outline" className="border-border bg-secondary/80 backdrop-blur-sm shadow-lg">
           <ArrowRight className="w-4 h-4 ml-2" />
           بازگشت به داشبورد
