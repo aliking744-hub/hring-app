@@ -13,7 +13,8 @@ import {
   Calendar,
   FileText,
   Grid3X3,
-  FileDown
+  FileDown,
+  Home
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
@@ -77,8 +78,17 @@ const Dashboard = () => {
         className="w-64 glass-card m-4 p-4 hidden lg:flex flex-col"
       >
         {/* Logo */}
-        <Link to="/" className="text-2xl font-bold gradient-text-primary mb-8">
+        <Link to="/" className="text-2xl font-bold gradient-text-primary mb-4">
           hring
+        </Link>
+
+        {/* Back to Home */}
+        <Link 
+          to="/" 
+          className="flex items-center gap-3 px-4 py-3 mb-4 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors border border-border/50"
+        >
+          <Home className="w-5 h-5" />
+          <span className="font-medium">بازگشت به صفحه اصلی</span>
         </Link>
 
         {/* Nav Items */}
