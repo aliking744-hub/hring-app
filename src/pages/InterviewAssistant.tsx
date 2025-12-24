@@ -1,14 +1,15 @@
 import { useState, useRef } from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, Users, Calendar, Clock, FileText, Loader2, Printer, AlertTriangle, CheckCircle, Brain, Target, Heart, Code } from "lucide-react";
-import { Link } from "react-router-dom";
-import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowRight, Loader2, Download, ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, MessageSquare, Brain, Users, Briefcase } from "lucide-react";
+import { Link } from "react-router-dom";
+import logo from "@/assets/logo.png";
 
 interface InterviewQuestion {
   id: string;
@@ -17,10 +18,6 @@ interface InterviewQuestion {
   question: string;
   goodSigns: string[];
   redFlags: string[];
-}
-
-interface InterviewKit {
-  questions: InterviewQuestion[];
 }
 
 const seniorityLevels = [
@@ -41,29 +38,30 @@ const InterviewAssistant = () => {
   const [jobTitle, setJobTitle] = useState("");
   const [industry, setIndustry] = useState("");
   const [seniorityLevel, setSeniorityLevel] = useState("");
-  const [focusArea, setFocusArea] = useState("general");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [kit, setKit] = useState<InterviewKit | null>(null);
-  const printRef = useRef<HTMLDivElement>(null);
+  const [focusArea, setFocusArea] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
+  const [openAnswerKeys, setOpenAnswerKeys] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+  const resultRef = useRef<HTMLDivElement>(null);
 
-  const getSectionIcon = (iconType: string) => {
-    switch (iconType) {
+  const getSectionIcon = (icon: string) => {
+    switch (icon) {
       case "technical":
-        return <Code className="w-5 h-5" />;
+        return <Briefcase className="w-5 h-5" />;
       case "behavioral":
-        return <Heart className="w-5 h-5" />;
+        return <Users className="w-5 h-5" />;
       case "intelligence":
         return <Brain className="w-5 h-5" />;
       case "cultural":
-        return <Target className="w-5 h-5" />;
+        return <MessageSquare className="w-5 h-5" />;
       default:
-        return <FileText className="w-5 h-5" />;
+        return <Briefcase className="w-5 h-5" />;
     }
   };
 
   const handleGenerate = async () => {
-    if (!jobTitle.trim() || !seniorityLevel) {
+    if (!jobTitle || !seniorityLevel) {
       toast({
         title: "خطا",
         description: "لطفاً عنوان شغل و سطح ارشدیت را وارد کنید.",
@@ -72,250 +70,268 @@ const InterviewAssistant = () => {
       return;
     }
 
-    setIsGenerating(true);
+    setIsLoading(true);
+    setQuestions([]);
+
     try {
-      const { data, error } = await supabase.functions.invoke('generate-interview-kit', {
-        body: { jobTitle, industry, seniorityLevel, focusArea }
+      const { data, error } = await supabase.functions.invoke("generate-interview-kit", {
+        body: {
+          jobTitle,
+          industry,
+          seniorityLevel,
+          focusArea: focusArea || "general",
+        },
       });
 
       if (error) throw error;
-      
-      if (data.error) {
-        toast({
-          title: "خطا",
-          description: data.error,
-          variant: "destructive",
-        });
-        return;
-      }
 
-      setKit(data);
-      toast({
-        title: "موفق",
-        description: "راهنمای مصاحبه با موفقیت تولید شد.",
-      });
-    } catch (error) {
-      console.error("Error generating kit:", error);
+      if (data?.questions) {
+        setQuestions(data.questions);
+        toast({
+          title: "موفق",
+          description: "راهنمای مصاحبه با موفقیت تولید شد.",
+        });
+        setTimeout(() => {
+          resultRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
+      }
+    } catch (error: any) {
+      console.error("Error generating interview kit:", error);
       toast({
         title: "خطا",
-        description: "خطا در تولید راهنما. لطفاً دوباره تلاش کنید.",
+        description: error.message || "خطا در تولید راهنمای مصاحبه",
         variant: "destructive",
       });
     } finally {
-      setIsGenerating(false);
+      setIsLoading(false);
     }
   };
 
-  const handlePrint = () => {
+  const toggleAnswerKey = (id: string) => {
+    setOpenAnswerKeys((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const handleDownloadPDF = () => {
     window.print();
   };
 
-  // Group questions by section
-  const groupedQuestions = kit?.questions?.reduce((acc, q) => {
+  const groupedQuestions = questions.reduce((acc, q) => {
     if (!acc[q.section]) {
-      acc[q.section] = { icon: q.sectionIcon, questions: [] };
+      acc[q.section] = [];
     }
-    acc[q.section].questions.push(q);
+    acc[q.section].push(q);
     return acc;
-  }, {} as Record<string, { icon: string; questions: InterviewQuestion[] }>) || {};
+  }, {} as Record<string, InterviewQuestion[]>);
 
   return (
-    <div className="relative min-h-screen" dir="rtl">
-      <AuroraBackground />
-      
-      <div className="relative z-10 container mx-auto px-4 py-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8 print:hidden"
-        >
-          <div className="flex items-center gap-4">
-            <Link to="/dashboard">
-              <Button variant="outline" size="icon" className="border-border bg-secondary/50">
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-            </Link>
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Print Footer */}
+      <div className="hidden print:block fixed bottom-4 left-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="لوگو" className="w-6 h-6" />
+          <span>تولید شده توسط سیستم مدیریت منابع انسانی</span>
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <div className="bg-gradient-to-l from-primary to-primary/80 text-primary-foreground py-12 px-4 print:hidden">
+        <div className="container max-w-4xl mx-auto">
+          <Link to="/dashboard" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
+            <ArrowRight className="w-4 h-4" />
+            بازگشت به داشبورد
+          </Link>
+          <div className="flex items-center gap-4 mb-4">
+            <img src={logo} alt="لوگو" className="w-16 h-16" />
             <div>
-              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <Users className="w-6 h-6 text-primary" />
-                دستیار مصاحبه هوشمند
-              </h1>
-              <p className="text-muted-foreground">تولید سوالات تیز مصاحبه با هوش مصنوعی</p>
+              <h1 className="text-3xl font-bold">دستیار مصاحبه</h1>
+              <p className="text-primary-foreground/80">تولید راهنمای جامع مصاحبه با کلید ارزیابی</p>
             </div>
           </div>
-          {kit && (
-            <Button onClick={handlePrint} variant="outline" className="border-border bg-secondary/50">
-              <Printer className="w-4 h-4 ml-2" />
-              چاپ راهنما
-            </Button>
-          )}
-        </motion.div>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Input Form */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="glass-card p-6 space-y-6 print:hidden"
-          >
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              اطلاعات موقعیت شغلی
-            </h2>
-
-            <div className="space-y-2">
-              <Label>عنوان شغل *</Label>
-              <Input 
-                placeholder="مثال: توسعه‌دهنده فرانت‌اند" 
-                className="bg-secondary/50 border-border"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-              />
+      {/* Main Content */}
+      <div className="container max-w-4xl mx-auto py-8 px-4">
+        {/* Input Form */}
+        <Card className="shadow-lg border-0 mb-8 print:hidden">
+          <CardHeader>
+            <CardTitle>اطلاعات موقعیت شغلی</CardTitle>
+            <CardDescription>جزئیات شغل را وارد کنید تا سوالات مصاحبه تولید شود</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="jobTitle">عنوان شغل *</Label>
+                <Input
+                  id="jobTitle"
+                  placeholder="مثال: مدیر مالی، برنامه‌نویس فرانت‌اند"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="industry">صنعت</Label>
+                <Input
+                  id="industry"
+                  placeholder="مثال: بانکداری، فناوری اطلاعات"
+                  value={industry}
+                  onChange={(e) => setIndustry(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>صنعت (اختیاری)</Label>
-              <Input 
-                placeholder="مثال: فناوری اطلاعات" 
-                className="bg-secondary/50 border-border"
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-              />
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="seniorityLevel">سطح ارشدیت *</Label>
+                <Select value={seniorityLevel} onValueChange={setSeniorityLevel}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="انتخاب کنید..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {seniorityLevels.map((level) => (
+                      <SelectItem key={level.value} value={level.value}>
+                        {level.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="focusArea">تمرکز مصاحبه</Label>
+                <Select value={focusArea} onValueChange={setFocusArea}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="انتخاب کنید..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {focusAreas.map((area) => (
+                      <SelectItem key={area.value} value={area.value}>
+                        {area.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>سطح ارشدیت *</Label>
-              <Select value={seniorityLevel} onValueChange={setSeniorityLevel}>
-                <SelectTrigger className="bg-secondary/50 border-border">
-                  <SelectValue placeholder="انتخاب کنید..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {seniorityLevels.map((level) => (
-                    <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>تمرکز مصاحبه</Label>
-              <Select value={focusArea} onValueChange={setFocusArea}>
-                <SelectTrigger className="bg-secondary/50 border-border">
-                  <SelectValue placeholder="انتخاب کنید..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {focusAreas.map((area) => (
-                    <SelectItem key={area.value} value={area.value}>{area.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button 
-              className="w-full glow-button text-foreground"
+            <Button
               onClick={handleGenerate}
-              disabled={isGenerating}
+              disabled={isLoading}
+              className="w-full h-12 text-lg"
             >
-              {isGenerating ? (
+              {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  در حال تولید...
+                  <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                  در حال تولید سوالات...
                 </>
               ) : (
-                <>
-                  <FileText className="w-4 h-4 ml-2" />
-                  تولید سوالات مصاحبه
-                </>
+                "تولید راهنمای مصاحبه"
               )}
             </Button>
-          </motion.div>
+          </CardContent>
+        </Card>
 
-          {/* Generated Kit */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="lg:col-span-2 glass-card p-6 print:shadow-none print:border-none"
-            ref={printRef}
-          >
+        {/* Results Section */}
+        {questions.length > 0 && (
+          <div ref={resultRef} className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between print:hidden">
+              <h2 className="text-2xl font-bold text-foreground">راهنمای مصاحبه</h2>
+              <Button onClick={handleDownloadPDF} variant="outline" className="gap-2">
+                <Download className="w-4 h-4" />
+                دانلود PDF
+              </Button>
+            </div>
+
             {/* Print Header */}
-            {kit && (
-              <div className="hidden print:block mb-6 pb-4 border-b-2 border-primary">
-                <h1 className="text-2xl font-bold text-center">راهنمای مصاحبه</h1>
-                <div className="text-center mt-2">
-                  <p className="text-lg font-semibold">موقعیت: {jobTitle}</p>
-                  <p className="text-muted-foreground">سطح: {seniorityLevels.find(l => l.value === seniorityLevel)?.label}</p>
+            <div className="hidden print:block mb-8 text-center border-b pb-4">
+              <h1 className="text-2xl font-bold">راهنمای مصاحبه</h1>
+              <p className="text-muted-foreground">
+                {jobTitle} | {seniorityLevels.find((l) => l.value === seniorityLevel)?.label}
+                {industry && ` | ${industry}`}
+              </p>
+            </div>
+
+            {/* Questions by Section */}
+            {Object.entries(groupedQuestions).map(([section, sectionQuestions]) => (
+              <div key={section} className="space-y-4">
+                <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+                  {getSectionIcon(sectionQuestions[0]?.sectionIcon)}
+                  <span>{section}</span>
                 </div>
-              </div>
-            )}
 
-            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2 print:hidden">
-              <Clock className="w-5 h-5 text-primary" />
-              سوالات مصاحبه
-            </h2>
-
-            {!kit ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p>اطلاعات را وارد کنید و روی "تولید سوالات" کلیک کنید.</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {Object.entries(groupedQuestions).map(([sectionName, section], sIndex) => (
-                  <div key={sIndex} className="bg-secondary/20 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-                      {getSectionIcon(section.icon)}
-                      {sectionName}
-                    </h3>
-                    <div className="space-y-4">
-                      {section.questions.map((q, qIndex) => (
-                        <div key={qIndex} className="border-r-2 border-primary/30 pr-4 pb-4">
-                          <p className="font-medium text-foreground mb-3">
-                            {qIndex + 1}. {q.question}
-                          </p>
-                          
-                          {/* Good Signs */}
-                          {q.goodSigns?.length > 0 && (
-                            <div className="mb-2">
-                              <p className="text-sm font-medium text-green-400 mb-1 flex items-center gap-1">
-                                <CheckCircle className="w-4 h-4" />
-                                نشانه‌های مثبت:
-                              </p>
-                              <ul className="space-y-1 mr-5">
+                {sectionQuestions.map((q, index) => (
+                  <Card key={q.id} className="shadow-md border-0 overflow-hidden">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                          {index + 1}
+                        </span>
+                        <p className="text-lg leading-relaxed pt-1">{q.question}</p>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <Collapsible open={openAnswerKeys[q.id]} onOpenChange={() => toggleAnswerKey(q.id)}>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground print:hidden">
+                            {openAnswerKeys[q.id] ? (
+                              <>
+                                <ChevronUp className="w-4 h-4" />
+                                پنهان کردن کلید ارزیابی
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="w-4 h-4" />
+                                نمایش کلید ارزیابی
+                              </>
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="print:block">
+                          <div className="mt-4 space-y-3">
+                            {/* Good Signs */}
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                              <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-semibold mb-2">
+                                <CheckCircle2 className="w-5 h-5" />
+                                نشانه‌های مثبت
+                              </div>
+                              <ul className="space-y-1 text-sm">
                                 {q.goodSigns.map((sign, i) => (
-                                  <li key={i} className="text-sm text-muted-foreground">✓ {sign}</li>
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-green-600 dark:text-green-400 mt-1">•</span>
+                                    <span>{sign}</span>
+                                  </li>
                                 ))}
                               </ul>
                             </div>
-                          )}
-                          
-                          {/* Red Flags */}
-                          {q.redFlags?.length > 0 && (
-                            <div>
-                              <p className="text-sm font-medium text-red-400 mb-1 flex items-center gap-1">
-                                <AlertTriangle className="w-4 h-4" />
-                                هشدارها:
-                              </p>
-                              <div className="flex flex-wrap gap-2 mr-5">
-                                {q.redFlags.map((flag, i) => (
-                                  <span key={i} className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">
-                                    ⚠️ {flag}
-                                  </span>
-                                ))}
+
+                            {/* Red Flags */}
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                              <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-semibold mb-2">
+                                <AlertTriangle className="w-5 h-5" />
+                                هشدارها (Red Flags)
                               </div>
+                              <ul className="space-y-1 text-sm">
+                                {q.redFlags.map((flag, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-red-600 dark:text-red-400 mt-1">•</span>
+                                    <span>{flag}</span>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
-            )}
-          </motion.div>
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
