@@ -13,6 +13,7 @@ import JobDescriptionGenerator from "./pages/JobDescriptionGenerator";
 import SmartAdGenerator from "./pages/SmartAdGenerator";
 import InterviewAssistant from "./pages/InterviewAssistant";
 import OnboardingRoadmap from "./pages/OnboardingRoadmap";
+import ToolsGrid from "./pages/ToolsGrid";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +73,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <OnboardingRoadmap />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/tools" 
+              element={
+                <ProtectedRoute>
+                  <ToolsGrid />
                 </ProtectedRoute>
               } 
             />

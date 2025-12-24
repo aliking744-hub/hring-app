@@ -11,16 +11,20 @@ import {
   Search,
   TrendingUp,
   Calendar,
-  FileText
+  FileText,
+  Grid3X3,
+  FileDown
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const sidebarItems = [
-  { icon: LayoutDashboard, label: "داشبورد", path: "/dashboard" },
+  { icon: LayoutDashboard, label: "نمای کلی", path: "/dashboard" },
+  { icon: Grid3X3, label: "داشبورد مدیریتی", path: "/tools" },
   { icon: Briefcase, label: "موقعیت‌های شغلی", path: "/job-description" },
   { icon: Megaphone, label: "آگهی‌ها", path: "/smart-ad" },
   { icon: Users, label: "مصاحبه‌ها", path: "/interviews" },
@@ -40,6 +44,7 @@ const Dashboard = () => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
 
   const handleLogout = async () => {
     await signOut();
@@ -47,6 +52,18 @@ const Dashboard = () => {
   };
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleExportPDF = () => {
+    toast({
+      title: "در حال آماده‌سازی گزارش...",
+      description: "گزارش PDF به زودی دانلود می‌شود.",
+    });
+    // Simple print-based PDF export
+    window.print();
+  };
+
+  // Calculate hiring health (mock data)
+  const hiringHealth = 95;
 
   return (
     <div className="relative min-h-screen flex" dir="rtl">
@@ -103,7 +120,7 @@ const Dashboard = () => {
           {/* Header */}
           <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">داشبورد</h1>
+              <h1 className="text-2xl font-bold text-foreground">نمای کلی</h1>
               <p className="text-muted-foreground">خوش آمدید! اینجا خلاصه‌ای از وضعیت استخدام شماست.</p>
             </div>
             
@@ -124,14 +141,52 @@ const Dashboard = () => {
             </div>
           </header>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Stats Grid with Hiring Health */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            {/* Hiring Health Widget */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="glass-card p-5 flex flex-col items-center justify-center"
+            >
+              <p className="text-muted-foreground text-sm mb-3">سلامت استخدام</p>
+              <div className="relative w-20 h-20">
+                <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-secondary"
+                    strokeWidth="3"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className="text-primary"
+                    strokeWidth="3"
+                    strokeDasharray={`${hiringHealth}, 100`}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-lg font-bold text-foreground">٪{hiringHealth}</span>
+                </div>
+              </div>
+              <p className="text-sm text-green-500 mt-2">عالی</p>
+            </motion.div>
+
             {stats.map((stat, index) => (
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + index * 0.1 }}
+                transition={{ delay: 0.3 + (index + 1) * 0.1 }}
                 className="glass-card p-5"
               >
                 <div className="flex items-start justify-between">
@@ -184,10 +239,10 @@ const Dashboard = () => {
                 <Button 
                   variant="outline" 
                   className="border-border bg-secondary/50 h-12"
-                  onClick={() => navigate('/shop')}
+                  onClick={handleExportPDF}
                 >
-                  <FileText className="w-4 h-4 ml-2" />
-                  گزارش‌گیری
+                  <FileDown className="w-4 h-4 ml-2" />
+                  گزارش PDF
                 </Button>
               </div>
             </motion.div>

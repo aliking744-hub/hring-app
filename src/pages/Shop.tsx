@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Download, Search, Filter, ShoppingCart, Check } from "lucide-react";
+import { FileText, Download, Search, Filter, ShoppingCart, Check, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
 import Navbar from "@/components/Navbar";
@@ -50,6 +50,15 @@ const Shop = () => {
   return (
     <div className="relative min-h-screen" dir="rtl">
       <AuroraBackground />
+      
+      {/* Sticky Back Button */}
+      <Link to="/dashboard" className="fixed top-6 right-6 z-50">
+        <Button variant="outline" className="border-border bg-secondary/80 backdrop-blur-sm shadow-lg">
+          <ArrowRight className="w-4 h-4 ml-2" />
+          بازگشت به داشبورد
+        </Button>
+      </Link>
+      
       <Navbar />
       
       <main className="pt-32 pb-24 px-4">
