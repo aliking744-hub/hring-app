@@ -13,20 +13,20 @@ import {
   Calendar,
   FileText
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 
 const sidebarItems = [
-  { icon: LayoutDashboard, label: "داشبورد", active: true },
-  { icon: Briefcase, label: "موقعیت‌های شغلی" },
-  { icon: Megaphone, label: "آگهی‌ها" },
-  { icon: Users, label: "مصاحبه‌ها" },
-  { icon: UserPlus, label: "آنبوردینگ" },
-  { icon: FileText, label: "مستندات" },
-  { icon: Settings, label: "تنظیمات" },
+  { icon: LayoutDashboard, label: "داشبورد", path: "/dashboard" },
+  { icon: Briefcase, label: "موقعیت‌های شغلی", path: "/job-description" },
+  { icon: Megaphone, label: "آگهی‌ها", path: "/smart-ad" },
+  { icon: Users, label: "مصاحبه‌ها", path: "/interviews" },
+  { icon: UserPlus, label: "آنبوردینگ", path: "/onboarding" },
+  { icon: FileText, label: "مستندات", path: "/shop" },
+  { icon: Settings, label: "تنظیمات", path: "/dashboard" },
 ];
 
 const stats = [
@@ -39,11 +39,14 @@ const stats = [
 const Dashboard = () => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     await signOut();
     navigate('/');
   };
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <div className="relative min-h-screen flex" dir="rtl">
@@ -64,17 +67,18 @@ const Dashboard = () => {
         {/* Nav Items */}
         <nav className="flex-1 space-y-2">
           {sidebarItems.map((item) => (
-            <button
+            <Link
               key={item.label}
+              to={item.path}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-right ${
-                item.active 
+                isActive(item.path)
                   ? "bg-primary/10 text-primary" 
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
               }`}
             >
               <item.icon className="w-5 h-5" />
               <span className="font-medium">{item.label}</span>
-            </button>
+            </Link>
           ))}
         </nav>
 
@@ -154,19 +158,34 @@ const Dashboard = () => {
             >
               <h2 className="text-lg font-semibold text-foreground mb-4">اقدامات سریع</h2>
               <div className="grid grid-cols-2 gap-3">
-                <Button className="glow-button text-foreground h-12">
+                <Button 
+                  className="glow-button text-foreground h-12"
+                  onClick={() => navigate('/job-description')}
+                >
                   <Briefcase className="w-4 h-4 ml-2" />
                   موقعیت جدید
                 </Button>
-                <Button variant="outline" className="border-border bg-secondary/50 h-12">
+                <Button 
+                  variant="outline" 
+                  className="border-border bg-secondary/50 h-12"
+                  onClick={() => navigate('/smart-ad')}
+                >
                   <Megaphone className="w-4 h-4 ml-2" />
                   آگهی جدید
                 </Button>
-                <Button variant="outline" className="border-border bg-secondary/50 h-12">
+                <Button 
+                  variant="outline" 
+                  className="border-border bg-secondary/50 h-12"
+                  onClick={() => navigate('/interviews')}
+                >
                   <Calendar className="w-4 h-4 ml-2" />
                   زمان‌بندی مصاحبه
                 </Button>
-                <Button variant="outline" className="border-border bg-secondary/50 h-12">
+                <Button 
+                  variant="outline" 
+                  className="border-border bg-secondary/50 h-12"
+                  onClick={() => navigate('/shop')}
+                >
                   <FileText className="w-4 h-4 ml-2" />
                   گزارش‌گیری
                 </Button>
