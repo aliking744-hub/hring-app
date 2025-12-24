@@ -117,7 +117,8 @@ export function ProfileTab({ data }: ProfileTabProps) {
 
       {/* Employee Selector */}
       <div className="bg-card/50 backdrop-blur-sm border border-border rounded-lg p-4">
-        <div className="flex items-center gap-4 justify-end">
+        <div className="flex items-center gap-4 justify-start flex-row-reverse">
+          <label className="text-sm text-muted-foreground">کد پرسنلی:</label>
           <Select
             value={selectedEmployee.id}
             onValueChange={(value) => {
@@ -125,18 +126,17 @@ export function ProfileTab({ data }: ProfileTabProps) {
               if (emp) setSelectedEmployee(emp);
             }}
           >
-            <SelectTrigger className="w-[200px] bg-muted border-border text-right">
+            <SelectTrigger className="w-[200px] bg-primary text-primary-foreground border-primary">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {data.map((emp) => (
                 <SelectItem key={emp.id} value={emp.id} className="text-right">
-                  {emp.personnelCode}{emp.fullName ? ` - ${emp.fullName}` : ''}
+                  {emp.fullName ? `${emp.fullName} - ` : ''}{emp.personnelCode}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <label className="text-sm text-muted-foreground">:کد پرسنلی</label>
         </div>
       </div>
 
