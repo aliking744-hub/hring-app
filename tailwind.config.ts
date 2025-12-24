@@ -14,7 +14,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['IRANSans', 'BNazanin', 'Inter', 'system-ui', 'sans-serif'],
+        afarin: ['Afarin', 'sans-serif'],
+        nazanin: ['BNazanin', 'serif'],
+        iransans: ['IRANSans', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
