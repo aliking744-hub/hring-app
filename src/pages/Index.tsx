@@ -2,7 +2,6 @@ import AuroraBackground from "@/components/AuroraBackground";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
 import BentoGrid from "@/components/landing/BentoGrid";
-import ModulesGrid from "@/components/landing/ModulesGrid";
 import DashboardPreview from "@/components/landing/DashboardPreview";
 import ShopTeaser from "@/components/landing/ShopTeaser";
 import Footer from "@/components/landing/Footer";
@@ -15,7 +14,6 @@ const Index = () => {
       <main>
         <HeroSection />
         <BentoGrid />
-        <ModulesGrid />
         <DashboardPreview />
         <ShopTeaser />
       </main>
