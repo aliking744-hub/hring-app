@@ -3,10 +3,10 @@ import { Employee, FilterState, TabType } from '@/types/employee';
 import { FilterBar } from '@/components/hr-dashboard/FilterBar';
 import { KPICard } from '@/components/hr-dashboard/KPICard';
 import { ChartCard } from '@/components/hr-dashboard/ChartCard';
-import { generateSampleData } from '@/utils/sampleData';
+import { UploadPage } from '@/components/hr-dashboard/UploadPage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Users, Building2, Banknote, Clock, Calendar, LayoutDashboard, Cake } from 'lucide-react';
+import { ArrowRight, Users, Building2, Banknote, Clock, Calendar, LayoutDashboard, Cake, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area } from 'recharts';
 import AuroraBackground from '@/components/AuroraBackground';
@@ -47,7 +47,7 @@ function calculateAgeFromPersianDate(birthDate: string): number | null {
 
 export default function HRDashboard() {
   const navigate = useNavigate();
-  const [data] = useState<Employee[]>(() => generateSampleData(78));
+  const [data, setData] = useState<Employee[] | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     gender: [],
     education: [],
@@ -57,24 +57,27 @@ export default function HRDashboard() {
   });
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
-  const filterOptions = useMemo(() => ({
+  // Show upload page if no data
+  if (!data) {
+    return <UploadPage onDataLoaded={setData} />;
+  }
+
+  const filterOptions = {
     genders: [...new Set(data.map(e => e.gender))],
     educations: [...new Set(data.map(e => e.education))].filter(Boolean),
     departments: [...new Set(data.map(e => e.department))].filter(Boolean),
     locations: [...new Set(data.map(e => e.location))].filter(Boolean),
     positions: [...new Set(data.map(e => e.position))].filter(Boolean),
-  }), [data]);
+  };
 
-  const filteredData = useMemo(() => {
-    return data.filter(e => {
-      if (filters.gender.length > 0 && !filters.gender.includes(e.gender)) return false;
-      if (filters.education.length > 0 && !filters.education.includes(e.education)) return false;
-      if (filters.department.length > 0 && !filters.department.includes(e.department)) return false;
-      if (filters.location.length > 0 && !filters.location.includes(e.location)) return false;
-      if (filters.position.length > 0 && !filters.position.includes(e.position)) return false;
-      return true;
-    });
-  }, [data, filters]);
+  const filteredData = data.filter(e => {
+    if (filters.gender.length > 0 && !filters.gender.includes(e.gender)) return false;
+    if (filters.education.length > 0 && !filters.education.includes(e.education)) return false;
+    if (filters.department.length > 0 && !filters.department.includes(e.department)) return false;
+    if (filters.location.length > 0 && !filters.location.includes(e.location)) return false;
+    if (filters.position.length > 0 && !filters.position.includes(e.position)) return false;
+    return true;
+  });
 
   const handleFilterChange = (key: keyof FilterState, value: string[]) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -131,6 +134,10 @@ export default function HRDashboard() {
               <p className="text-muted-foreground text-xs md:text-sm mt-1 hidden sm:block">تحلیل و گزارش‌گیری اطلاعات پرسنلی</p>
             </div>
           </div>
+          <Button variant="outline" size="sm" onClick={() => setData(null)} className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            <span>بارگذاری مجدد</span>
+          </Button>
         </div>
 
         {/* Filter Bar */}
