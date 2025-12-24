@@ -23,14 +23,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 const sidebarItems = [
-  { icon: LayoutDashboard, label: "نمای کلی", path: "/dashboard" },
-  { icon: Grid3X3, label: "داشبورد مدیریتی", path: "/tools" },
-  { icon: Briefcase, label: "موقعیت‌های شغلی", path: "/job-description" },
-  { icon: Megaphone, label: "آگهی‌ها", path: "/smart-ad" },
-  { icon: Users, label: "مصاحبه‌ها", path: "/interviews" },
-  { icon: UserPlus, label: "آنبوردینگ", path: "/onboarding" },
-  { icon: FileText, label: "مستندات", path: "/shop" },
-  { icon: Settings, label: "تنظیمات", path: "/dashboard" },
+  { icon: LayoutDashboard, label: "نمای کلی", path: "/dashboard", external: false },
+  { icon: Grid3X3, label: "ابزارهای مدیریتی", path: "https://id-preview--496b8c23-c7ce-4367-85a8-6c0e5cb09873.lovable.app/?__lovable_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiamtLVVd2dlZiSFh1ellPRE5xQzM0a2VjNXZ1MSIsInByb2plY3RfaWQiOiI0OTZiOGMyMy1jN2NlLTQzNjctODVhOC02YzBlNWNiMDk4NzMiLCJub25jZSI6ImJkOWNlYWNkNDViYzQ5OWQ1MDU4ZmRlZWRiMTAzZTY0IiwiaXNzIjoibG92YWJsZS1hcGkiLCJzdWIiOiI0OTZiOGMyMy1jN2NlLTQzNjctODVhOC02YzBlNWNiMDk4NzMiLCJhdWQiOlsibG92YWJsZS1hcHAiXSwiZXhwIjoxNzY3MTcyNDMyLCJuYmYiOjE3NjY1Njc2MzIsImlhdCI6MTc2NjU2NzYzMn0.DeZvX1eDDgKWMIVc2psqpVXH3gbDyqzVH2RPssDpNr4", external: true },
+  { icon: Briefcase, label: "موقعیت‌های شغلی", path: "/job-description", external: false },
+  { icon: Megaphone, label: "آگهی‌ها", path: "/smart-ad", external: false },
+  { icon: Users, label: "مصاحبه‌ها", path: "/interviews", external: false },
+  { icon: UserPlus, label: "آنبوردینگ", path: "/onboarding", external: false },
+  { icon: FileText, label: "مستندات", path: "/shop", external: false },
+  { icon: Settings, label: "تنظیمات", path: "/dashboard", external: false },
 ];
 
 const stats = [
@@ -84,18 +84,29 @@ const Dashboard = () => {
         {/* Nav Items */}
         <nav className="flex-1 space-y-2">
           {sidebarItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.path}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-right ${
-                isActive(item.path)
-                  ? "bg-primary/10 text-primary" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
-            </Link>
+            item.external ? (
+              <a
+                key={item.label}
+                href={item.path}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-right text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </a>
+            ) : (
+              <Link
+                key={item.label}
+                to={item.path}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-right ${
+                  isActive(item.path)
+                    ? "bg-primary/10 text-primary" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            )
           ))}
         </nav>
 
