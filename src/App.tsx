@@ -54,7 +54,7 @@ const App = () => (
               } 
             />
             <Route 
-              path="/smart-ad" 
+              path="/smart-ad-generator" 
               element={
                 <ProtectedRoute>
                   <SmartAdGenerator />
@@ -62,7 +62,7 @@ const App = () => (
               } 
             />
             <Route 
-              path="/interviews" 
+              path="/interview-assistant" 
               element={
                 <ProtectedRoute>
                   <InterviewAssistant />
