@@ -77,7 +77,7 @@ const SmartAdGenerator = () => {
   };
 
   const handleGenerate = async () => {
-    if (!jobTitle || !companyName || !platform || !tone) {
+    if (!jobTitle || !companyName || !contactMethod || !platform || !tone) {
       toast({
         title: "خطا",
         description: "لطفاً تمام فیلدهای ضروری را پر کنید",
@@ -92,7 +92,7 @@ const SmartAdGenerator = () => {
     setGeneratedImage(null);
 
     try {
-      const selectedFormat = imageFormats.find(f => f.value === imageFormat);
+      const selectedFormat = imageFormats.find((f) => f.value === imageFormat);
       const { data, error } = await supabase.functions.invoke("generate-job-ad", {
         body: {
           jobTitle,
@@ -102,7 +102,7 @@ const SmartAdGenerator = () => {
           platform,
           tone,
           generateImage,
-          imageFormat: imageFormat,
+          imageFormat,
           imageWidth: selectedFormat?.width || 1920,
           imageHeight: selectedFormat?.height || 1080,
         },
@@ -110,25 +110,45 @@ const SmartAdGenerator = () => {
 
       if (error) {
         console.error("Error:", error);
-        if (error.message?.includes("429") || error.message?.includes("rate limit")) {
+
+        const status = (error as any)?.context?.status as number | undefined;
+        let serverMessage: string | undefined;
+
+        try {
+          const body = await (error as any)?.context?.json?.();
+          if (body?.error) serverMessage = String(body.error);
+        } catch {
+          // ignore
+        }
+
+        if (status === 429) {
           toast({
             title: "محدودیت درخواست",
             description: "لطفاً کمی صبر کنید و دوباره تلاش کنید",
             variant: "destructive",
           });
-        } else if (error.message?.includes("402") || error.message?.includes("credit")) {
+        } else if (status === 402) {
           toast({
             title: "اعتبار ناکافی",
-            description: "اعتبار API به پایان رسیده است",
+            description: "اعتبار هوش مصنوعی کافی نیست. لطفاً حساب را شارژ کنید.",
             variant: "destructive",
           });
         } else {
           toast({
             title: "خطا",
-            description: "مشکلی در تولید آگهی پیش آمد. لطفاً دوباره تلاش کنید.",
+            description: serverMessage || "مشکلی در تولید آگهی پیش آمد. لطفاً دوباره تلاش کنید.",
             variant: "destructive",
           });
         }
+        return;
+      }
+
+      if (data?.error) {
+        toast({
+          title: "خطا",
+          description: String(data.error),
+          variant: "destructive",
+        });
         return;
       }
 
