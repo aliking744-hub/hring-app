@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.png";
 
 const navLinks = [
   { href: "/", label: "خانه" },
@@ -18,9 +19,15 @@ const Navbar = () => {
       <div className="glass-card mx-4 mt-4 md:mx-8">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-3">
+            <motion.img
+              src={logo}
+              alt="hring logo"
+              className="h-8 w-8"
+              whileHover={{ scale: 1.05 }}
+            />
             <motion.div
-              className="text-2xl font-bold gradient-text-primary"
+              className="text-2xl font-bold gradient-text-primary font-afarin"
               whileHover={{ scale: 1.05 }}
             >
               hring
@@ -79,7 +86,10 @@ const Navbar = () => {
               className="fixed top-0 right-0 h-full w-80 glass-card md:hidden p-6"
             >
               <div className="flex justify-between items-center mb-8">
-                <span className="text-xl font-bold gradient-text-primary">hring</span>
+                <div className="flex items-center gap-2">
+                  <img src={logo} alt="hring logo" className="h-6 w-6" />
+                  <span className="text-xl font-bold gradient-text-primary font-afarin">hring</span>
+                </div>
                 <button onClick={() => setIsOpen(false)}>
                   <X size={24} />
                 </button>
