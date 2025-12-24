@@ -110,9 +110,14 @@ export function ProfileTab({ data }: ProfileTabProps) {
 
   return (
     <div className="space-y-6 print-area" dir="rtl">
-      {/* Print Button & Employee Selector */}
-      <div className="flex items-center justify-end gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
+      {/* Print Button */}
+      <div className="flex justify-start">
+        <PrintButton title="گزارش پروفایل کارمند" />
+      </div>
+
+      {/* Employee Selector */}
+      <div className="bg-card/50 backdrop-blur-sm border border-border rounded-lg p-4">
+        <div className="flex items-center gap-4 justify-end">
           <label className="text-sm text-muted-foreground">کد پرسنلی:</label>
           <Select
             value={selectedEmployee.id}
@@ -133,7 +138,6 @@ export function ProfileTab({ data }: ProfileTabProps) {
             </SelectContent>
           </Select>
         </div>
-        <PrintButton title="گزارش پروفایل کارمند" />
       </div>
 
       {/* Profile Info Cards */}
