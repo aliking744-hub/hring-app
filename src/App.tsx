@@ -15,6 +15,7 @@ import InterviewAssistant from "./pages/InterviewAssistant";
 import OnboardingRoadmap from "./pages/OnboardingRoadmap";
 import ToolsGrid from "./pages/ToolsGrid";
 import HRDashboard from "./pages/HRDashboard";
+import Modules from "./pages/Modules";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -90,6 +91,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <HRDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/modules" 
+              element={
+                <ProtectedRoute>
+                  <Modules />
                 </ProtectedRoute>
               } 
             />
