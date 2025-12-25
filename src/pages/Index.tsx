@@ -13,8 +13,8 @@ const Index = () => {
       <Navbar />
       <main>
         <HeroSection />
-        <BentoGrid />
         <DashboardPreview />
+        <BentoGrid />
         <ShopTeaser />
       </main>
       <Footer />
