@@ -14,13 +14,37 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      user_credits: {
+        Row: {
+          created_at: string
+          credits: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      deduct_credits: { Args: { amount: number }; Returns: boolean }
+      get_user_credits: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never
