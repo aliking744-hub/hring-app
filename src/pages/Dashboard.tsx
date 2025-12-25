@@ -18,7 +18,8 @@ import {
   Home,
   Menu,
   X,
-  Boxes
+  Boxes,
+  Gem
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
@@ -26,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useCredits } from "@/hooks/useCredits";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "نمای کلی", path: "/dashboard", external: false },
@@ -53,6 +55,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { credits, loading: creditsLoading } = useCredits();
 
   const handleLogout = async () => {
     await signOut();
@@ -249,7 +252,16 @@ const Dashboard = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="relative">
+              {/* Credits Display */}
+              <div className="flex items-center gap-2 px-4 py-2 glass-card rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+                <Gem className="w-5 h-5 text-primary" />
+                <span className="font-bold text-foreground">
+                  {creditsLoading ? "..." : credits}
+                </span>
+                <span className="text-sm text-muted-foreground">GEM</span>
+              </div>
+              
+              <div className="relative hidden sm:block">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   placeholder="جستجو..." 
