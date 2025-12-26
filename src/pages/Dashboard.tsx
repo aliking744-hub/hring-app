@@ -37,7 +37,7 @@ const sidebarItems = [
   { icon: Grid3X3, label: "ابزارهای مدیریتی", path: "/hr-dashboard", external: false },
   { icon: Boxes, label: "ماژولها", path: "/modules", external: false },
   { icon: UserPlus, label: "آنبوردینگ", path: "/onboarding", external: false },
-  { icon: FileText, label: "مستندات", path: "/dashboard#modules", external: false },
+  { icon: FileText, label: "فروشگاه", path: "/shop", external: false },
   { icon: Settings, label: "تنظیمات", path: "/dashboard", external: false },
 ];
 
