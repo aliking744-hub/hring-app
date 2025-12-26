@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Briefcase, Sparkles, FileText, Copy, Download, Loader2 } from "lucide-react";
+import { ArrowRight, Briefcase, Sparkles, FileText, Copy, Download, Loader2, Coins } from "lucide-react";
 import { Link } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCredits, CREDIT_COSTS } from "@/hooks/useCredits";
 import ReactMarkdown from "react-markdown";
 
 const seniorityLevels = [
@@ -26,6 +27,7 @@ const JobDescriptionGenerator = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
   const { toast } = useToast();
+  const { credits, deductForOperation, hasEnoughCredits } = useCredits();
 
   const handleGenerate = async () => {
     if (!jobTitle || !industry || !seniorityLevel) {
@@ -37,8 +39,29 @@ const JobDescriptionGenerator = () => {
       return;
     }
 
+    // Check credits
+    if (!hasEnoughCredits('JOB_PROFILE')) {
+      toast({
+        title: "اعتبار ناکافی",
+        description: `برای این عملیات ${CREDIT_COSTS.JOB_PROFILE} جم نیاز دارید. اعتبار فعلی: ${credits}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
+      // Deduct credits first
+      const deducted = await deductForOperation('JOB_PROFILE');
+      if (!deducted) {
+        toast({
+          title: "خطا",
+          description: "کسر اعتبار با مشکل مواجه شد",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-job-profile", {
         body: { jobTitle, industry, seniorityLevel, companyName },
       });
