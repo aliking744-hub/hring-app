@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRight, Megaphone, Loader2, Copy, Download, Sparkles, Image as ImageIcon, Upload, X } from "lucide-react";
+import { useCredits, CREDIT_COSTS } from "@/hooks/useCredits";
+import { ArrowRight, Megaphone, Loader2, Copy, Download, Sparkles, Image as ImageIcon, Upload, X, Coins } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
@@ -49,6 +50,7 @@ const SmartAdGenerator = () => {
   const resultRef = useRef<HTMLDivElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { credits, deductCredits, hasEnoughCredits } = useCredits();
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -86,12 +88,36 @@ const SmartAdGenerator = () => {
       return;
     }
 
+    // Calculate required credits
+    const requiredCredits = generateImage ? CREDIT_COSTS.SMART_AD_IMAGE : CREDIT_COSTS.SMART_AD_TEXT;
+    
+    if (credits < requiredCredits) {
+      toast({
+        title: "اعتبار ناکافی",
+        description: `برای این عملیات ${requiredCredits} جم نیاز دارید. اعتبار فعلی: ${credits}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     setGeneratedText("");
     setEditableText("");
     setGeneratedImage(null);
 
     try {
+      // Deduct credits first
+      const deducted = await deductCredits(requiredCredits);
+      if (!deducted) {
+        toast({
+          title: "خطا",
+          description: "کسر اعتبار با مشکل مواجه شد",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const selectedFormat = imageFormats.find((f) => f.value === imageFormat);
       const { data, error } = await supabase.functions.invoke("generate-job-ad", {
         body: {

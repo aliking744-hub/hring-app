@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
+import { useCredits, CREDIT_COSTS } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Loader2, Download, ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, MessageSquare, Brain, Users, Briefcase } from "lucide-react";
+import { ArrowRight, Loader2, Download, ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, MessageSquare, Brain, Users, Briefcase, Coins } from "lucide-react";
 import { Link } from "react-router-dom";
 import logo from "@/assets/logo.png";
 
@@ -43,6 +44,7 @@ const InterviewAssistant = () => {
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [openAnswerKeys, setOpenAnswerKeys] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+  const { credits, deductForOperation, hasEnoughCredits } = useCredits();
   const resultRef = useRef<HTMLDivElement>(null);
 
   const getSectionIcon = (icon: string) => {
@@ -70,10 +72,32 @@ const InterviewAssistant = () => {
       return;
     }
 
+    // Check credits
+    if (!hasEnoughCredits('INTERVIEW_KIT')) {
+      toast({
+        title: "اعتبار ناکافی",
+        description: `برای این عملیات ${CREDIT_COSTS.INTERVIEW_KIT} جم نیاز دارید. اعتبار فعلی: ${credits}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     setQuestions([]);
 
     try {
+      // Deduct credits first
+      const deducted = await deductForOperation('INTERVIEW_KIT');
+      if (!deducted) {
+        toast({
+          title: "خطا",
+          description: "کسر اعتبار با مشکل مواجه شد",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-interview-kit", {
         body: {
           jobTitle,

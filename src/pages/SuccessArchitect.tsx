@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRight, Route, Loader2, Sparkles, Download, Copy, Mail } from "lucide-react";
+import { useCredits, CREDIT_COSTS } from "@/hooks/useCredits";
+import { ArrowRight, Route, Loader2, Sparkles, Download, Copy, Mail, Coins } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 import ReactMarkdown from "react-markdown";
@@ -36,6 +37,7 @@ const SuccessArchitect = () => {
   const [isLoading, setIsLoading] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { credits, deductForOperation, hasEnoughCredits } = useCredits();
 
   const handleGenerate = async () => {
     if (!jobTitle || !seniority || !expectation) {
@@ -47,11 +49,33 @@ const SuccessArchitect = () => {
       return;
     }
 
+    // Check credits
+    if (!hasEnoughCredits('ONBOARDING_PLAN')) {
+      toast({
+        title: "اعتبار ناکافی",
+        description: `برای این عملیات ${CREDIT_COSTS.ONBOARDING_PLAN} جم نیاز دارید. اعتبار فعلی: ${credits}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     setGeneratedPlan("");
     setWelcomeEmail("");
 
     try {
+      // Deduct credits first
+      const deducted = await deductForOperation('ONBOARDING_PLAN');
+      if (!deducted) {
+        toast({
+          title: "خطا",
+          description: "کسر اعتبار با مشکل مواجه شد",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-onboarding-plan", {
         body: {
           jobTitle,
