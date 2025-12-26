@@ -77,13 +77,14 @@ serve(async (req) => {
 
     console.log("Generating job ad for:", { jobTitle, companyName, contactMethod, industry, platform, tone, generateImage, imageFormat, imageWidth, imageHeight });
 
-    // Try user's GEMINI_API_KEY first, fallback to LOVABLE_API_KEY
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    // Always prefer Lovable AI Gateway for better rate limits
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     
-    const useGeminiDirect = !!GEMINI_API_KEY;
+    // Use Lovable AI Gateway first (better rate limits), fallback to Gemini Direct
+    const useGeminiDirect = !LOVABLE_API_KEY && !!GEMINI_API_KEY;
     
-    if (!GEMINI_API_KEY && !LOVABLE_API_KEY) {
+    if (!LOVABLE_API_KEY && !GEMINI_API_KEY) {
       console.error("No API key configured");
       throw new Error("API key not configured");
     }
