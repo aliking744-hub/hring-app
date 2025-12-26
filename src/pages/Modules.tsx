@@ -136,7 +136,7 @@ const Modules = () => {
           </Link>
 
           {/* 90-Day Onboarding */}
-          <Link to="/onboarding" className="group">
+          <Link to="/success-architect" className="group">
             <Card className="h-full shadow-md hover:shadow-xl transition-all duration-300 border-0 bg-white group-hover:-translate-y-1">
               <CardHeader>
                 <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
