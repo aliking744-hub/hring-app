@@ -33,14 +33,18 @@ const RialInput = ({
   label: string;
   placeholder?: string;
 }) => {
-  const [displayValue, setDisplayValue] = useState(value ? formatNumber(value) : '');
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
-    const numValue = parseNumber(rawValue);
-    setDisplayValue(numValue ? formatNumber(numValue) : '');
+    // Remove all non-digit characters (including Persian digits formatting)
+    const cleaned = rawValue.replace(/[^\d۰-۹]/g, '');
+    // Convert Persian digits to English
+    const englishDigits = cleaned.replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString());
+    const numValue = parseInt(englishDigits) || 0;
     onChange(numValue);
   };
+
+  // Display formatted value
+  const displayValue = value ? formatNumber(value) : '';
 
   return (
     <div className="space-y-2">
@@ -52,6 +56,7 @@ const RialInput = ({
           placeholder={placeholder}
           className="text-left bg-secondary/50 border-border pl-16"
           dir="ltr"
+          inputMode="numeric"
         />
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
           ریال
