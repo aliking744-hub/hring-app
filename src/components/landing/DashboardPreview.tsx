@@ -1,7 +1,9 @@
 import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import ScrollReveal from "@/components/ScrollReveal";
-import { LayoutGrid, Cake, DollarSign, MapPin, User, Timer } from "lucide-react";
+import { LayoutGrid, Cake, DollarSign, MapPin, User, Timer, ArrowLeft, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Import dashboard screenshots
 import dashboardOverview from "@/assets/dashboard-overview.png";
@@ -154,6 +156,22 @@ const DashboardPreview = () => {
                 </div>
               </div>
             </motion.div>
+          </div>
+        </ScrollReveal>
+
+        {/* CTA Button */}
+        <ScrollReveal delay={0.3}>
+          <div className="flex justify-center mt-10">
+            <Link to="/analytics">
+              <Button
+                size="lg"
+                className="glow-button text-lg px-8 py-6 gap-3"
+              >
+                <BarChart3 className="w-5 h-5" />
+                مشاهده داشبورد کامل و فیلترها
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </Link>
           </div>
         </ScrollReveal>
       </div>

@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   Boxes,
-  Gem
+  Gem,
+  BarChart3
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
@@ -31,6 +32,7 @@ import { useCredits } from "@/hooks/useCredits";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "نمای کلی", path: "/dashboard", external: false },
+  { icon: BarChart3, label: "مرکز تحلیل", path: "/analytics", external: false },
   { icon: Grid3X3, label: "ابزارهای مدیریتی", path: "/hr-dashboard", external: false },
   { icon: Briefcase, label: "موقعیت‌های شغلی", path: "/job-description", external: false },
   { icon: Megaphone, label: "آگهی‌ها", path: "/smart-ad", external: false },
