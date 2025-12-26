@@ -91,12 +91,13 @@ const Modules = () => {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="mb-6"
+              className="mb-6 relative"
             >
+              <div className="absolute inset-0 w-24 h-24 mx-auto rounded-full bg-primary/30 blur-xl animate-pulse" />
               <img
                 src={logo}
                 alt="لوگو"
-                className="w-24 h-24 mx-auto"
+                className="w-24 h-24 mx-auto relative z-10 animate-pulse drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]"
               />
             </motion.div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
