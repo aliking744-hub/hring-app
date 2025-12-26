@@ -74,7 +74,7 @@ const Modules = () => {
           </Link>
 
           {/* Job Ad Generator */}
-          <Link to="/smart-ad" className="group">
+          <Link to="/smart-ad-generator" className="group">
             <Card className="h-full shadow-md hover:shadow-xl transition-all duration-300 border-0 bg-white group-hover:-translate-y-1">
               <CardHeader>
                 <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors">
