@@ -34,11 +34,7 @@ import { useCredits } from "@/hooks/useCredits";
 const sidebarItems = [
   { icon: LayoutDashboard, label: "نمای کلی", path: "/dashboard", external: false },
   { icon: Calculator, label: "محاسبه بهای تمام شده", path: "/cost-calculator", external: false },
-  { icon: BarChart3, label: "مرکز تحلیل", path: "/analytics", external: false },
   { icon: Grid3X3, label: "ابزارهای مدیریتی", path: "/hr-dashboard", external: false },
-  { icon: Briefcase, label: "موقعیت‌های شغلی", path: "/job-description", external: false },
-  { icon: Megaphone, label: "آگهی‌ها", path: "/smart-ad", external: false },
-  { icon: Users, label: "مصاحبه‌ها", path: "/interviews", external: false },
   { icon: Boxes, label: "ماژولها", path: "/modules", external: false },
   { icon: UserPlus, label: "آنبوردینگ", path: "/onboarding", external: false },
   { icon: FileText, label: "مستندات", path: "/dashboard#modules", external: false },
