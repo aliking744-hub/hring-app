@@ -13,6 +13,7 @@ import JobDescriptionGenerator from "./pages/JobDescriptionGenerator";
 import SmartAdGenerator from "./pages/SmartAdGenerator";
 import InterviewAssistant from "./pages/InterviewAssistant";
 import OnboardingRoadmap from "./pages/OnboardingRoadmap";
+import SuccessArchitect from "./pages/SuccessArchitect";
 import ToolsGrid from "./pages/ToolsGrid";
 import HRDashboard from "./pages/HRDashboard";
 import Modules from "./pages/Modules";
@@ -77,6 +78,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <OnboardingRoadmap />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/success-architect" 
+              element={
+                <ProtectedRoute>
+                  <SuccessArchitect />
                 </ProtectedRoute>
               } 
             />
