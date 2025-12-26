@@ -20,7 +20,8 @@ import {
   X,
   Boxes,
   Gem,
-  BarChart3
+  BarChart3,
+  Calculator
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
@@ -32,6 +33,7 @@ import { useCredits } from "@/hooks/useCredits";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "نمای کلی", path: "/dashboard", external: false },
+  { icon: Calculator, label: "محاسبه بهای تمام شده", path: "/cost-calculator", external: false },
   { icon: BarChart3, label: "مرکز تحلیل", path: "/analytics", external: false },
   { icon: Grid3X3, label: "ابزارهای مدیریتی", path: "/hr-dashboard", external: false },
   { icon: Briefcase, label: "موقعیت‌های شغلی", path: "/job-description", external: false },
