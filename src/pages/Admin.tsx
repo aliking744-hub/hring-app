@@ -1,0 +1,66 @@
+import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, FileText, Package, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import BlogManager from '@/components/admin/BlogManager';
+import ProductManager from '@/components/admin/ProductManager';
+import UsersView from '@/components/admin/UsersView';
+
+const Admin = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('blog');
+
+  return (
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Header */}
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-xl font-bold text-foreground">پنل مدیریت</h1>
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/dashboard')}
+            className="gap-2"
+          >
+            <span>بازگشت به داشبورد</span>
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="blog" className="gap-2">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">مدیریت بلاگ</span>
+            </TabsTrigger>
+            <TabsTrigger value="products" className="gap-2">
+              <Package className="w-4 h-4" />
+              <span className="hidden sm:inline">مدیریت محصولات</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">کاربران</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="blog">
+            <BlogManager />
+          </TabsContent>
+
+          <TabsContent value="products">
+            <ProductManager />
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UsersView />
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+};
+
+export default Admin;
