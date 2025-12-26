@@ -26,12 +26,14 @@ const RialInput = ({
   value, 
   onChange, 
   label, 
-  placeholder = "۰" 
+  placeholder = "۰",
+  disabled = false
 }: { 
   value: number; 
   onChange: (val: number) => void; 
   label: string;
   placeholder?: string;
+  disabled?: boolean;
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
@@ -48,15 +50,16 @@ const RialInput = ({
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm text-muted-foreground">{label}</Label>
+      <Label className={`text-sm ${disabled ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>{label}</Label>
       <div className="relative">
         <Input
           value={displayValue}
           onChange={handleChange}
           placeholder={placeholder}
-          className="text-left bg-secondary/50 border-border pl-16"
+          className={`text-left bg-secondary/50 border-border pl-16 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           dir="ltr"
           inputMode="numeric"
+          disabled={disabled}
         />
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
           ریال
@@ -129,20 +132,23 @@ export default function CostCalculator() {
 
   // Calculations
   const calculations = useMemo(() => {
-    // Gross-up calculation if Net contract
     let effectiveBase = baseSalary;
-    let effectiveAbsorption = jobAbsorption;
-    let effectiveResponsibility = responsibilityAllowance;
-    let effectiveSuperlative = jobSuperlative;
+    let effectiveAbsorption = 0;
+    let effectiveResponsibility = 0;
+    let effectiveSuperlative = 0;
 
     if (isNetContract) {
-      // Reverse calculate: Net = Gross - 7% Insurance - Tax
+      // In net mode, only baseSalary is used (as net salary)
+      // Gross-up: Net = Gross - 7% Insurance - Tax
       // Simplified: Gross ≈ Net / 0.93 (approximate for 7% employee insurance)
       const grossUpFactor = 1 / 0.93;
       effectiveBase = baseSalary * grossUpFactor;
-      effectiveAbsorption = jobAbsorption * grossUpFactor;
-      effectiveResponsibility = responsibilityAllowance * grossUpFactor;
-      effectiveSuperlative = jobSuperlative * grossUpFactor;
+      // Other components are ignored in net mode
+    } else {
+      // In gross mode, use all components
+      effectiveAbsorption = jobAbsorption;
+      effectiveResponsibility = responsibilityAllowance;
+      effectiveSuperlative = jobSuperlative;
     }
 
     // Gross salary components subject to insurance
@@ -266,14 +272,18 @@ export default function CostCalculator() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <RialInput label="پایه حقوق" value={baseSalary} onChange={setBaseSalary} />
-                    <RialInput label="حق جذب" value={jobAbsorption} onChange={setJobAbsorption} />
-                    <RialInput label="حق مسئولیت" value={responsibilityAllowance} onChange={setResponsibilityAllowance} />
-                    <RialInput label="فوق‌العاده شغل" value={jobSuperlative} onChange={setJobSuperlative} />
-                    <RialInput label="حق مسکن (ثابت)" value={housingAllowance} onChange={setHousingAllowance} />
-                    <RialInput label="بن خواروبار (ثابت)" value={groceryAllowance} onChange={setGroceryAllowance} />
-                    <RialInput label="حق اولاد" value={childrenAllowance} onChange={setChildrenAllowance} />
-                    <RialInput label="سایر مزایا" value={otherBenefits} onChange={setOtherBenefits} />
+                    <RialInput 
+                      label={isNetContract ? "حقوق خالص ماهانه" : "پایه حقوق"} 
+                      value={baseSalary} 
+                      onChange={setBaseSalary} 
+                    />
+                    <RialInput label="حق جذب" value={jobAbsorption} onChange={setJobAbsorption} disabled={isNetContract} />
+                    <RialInput label="حق مسئولیت" value={responsibilityAllowance} onChange={setResponsibilityAllowance} disabled={isNetContract} />
+                    <RialInput label="فوق‌العاده شغل" value={jobSuperlative} onChange={setJobSuperlative} disabled={isNetContract} />
+                    <RialInput label="حق مسکن (ثابت)" value={housingAllowance} onChange={setHousingAllowance} disabled={isNetContract} />
+                    <RialInput label="بن خواروبار (ثابت)" value={groceryAllowance} onChange={setGroceryAllowance} disabled={isNetContract} />
+                    <RialInput label="حق اولاد" value={childrenAllowance} onChange={setChildrenAllowance} disabled={isNetContract} />
+                    <RialInput label="سایر مزایا" value={otherBenefits} onChange={setOtherBenefits} disabled={isNetContract} />
                   </div>
                 </CardContent>
               </Card>
