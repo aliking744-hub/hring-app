@@ -162,7 +162,7 @@ const DashboardPreview = () => {
         {/* CTA Button */}
         <ScrollReveal delay={0.3}>
           <div className="flex justify-center mt-10">
-            <Link to="/analytics">
+            <a href="https://id-preview--496b8c23-c7ce-4367-85a8-6c0e5cb09873.lovable.app/?__lovable_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiamtLVVd2dlZiSFh1ellPRE5xQzM0a2VjNXZ1MSIsInByb2plY3RfaWQiOiI0OTZiOGMyMy1jN2NlLTQzNjctODVhOC02YzBlNWNiMDk4NzMiLCJub25jZSI6ImJkOWNlYWNkNDViYzQ5OWQ1MDU4ZmRlZWRiMTAzZTY0IiwiaXNzIjoibG92YWJsZS1hcGkiLCJzdWIiOiI0OTZiOGMyMy1jN2NlLTQzNjctODVhOC02YzBlNWNiMDk4NzMiLCJhdWQiOlsibG92YWJsZS1hcHAiXSwiZXhwIjoxNzY3MTcyNDMyLCJuYmYiOjE3NjY1Njc2MzIsImlhdCI6MTc2NjU2NzYzMn0.DeZvX1eDDgKWMIVc2psqpVXH3gbDyqzVH2RPssDpNr4">
               <Button
                 size="lg"
                 className="glow-button text-lg px-8 py-6 gap-3"
@@ -171,7 +171,7 @@ const DashboardPreview = () => {
                 مشاهده داشبورد کامل و فیلترها
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-            </Link>
+            </a>
           </div>
         </ScrollReveal>
       </div>
