@@ -131,6 +131,72 @@ export default function CostCalculator() {
   const [trainingCost, setTrainingCost] = useState(0);
   const [miscCost, setMiscCost] = useState(0);
 
+  // Income Tax Calculation 1404 - Progressive brackets (Annual amounts in Rials)
+  // Monthly thresholds = Annual / 12
+  const calculateIncomeTax = (monthlyTaxableIncome: number): number => {
+    const annualIncome = monthlyTaxableIncome * 12;
+    
+    // 1404 Tax Brackets (Annual in Rials)
+    // 0 - 1,680,000,000: Exempt
+    // 1,680,000,001 - 2,760,000,000: 10%
+    // 2,760,000,001 - 4,320,000,000: 15%
+    // 4,320,000,001 - 7,200,000,000: 20%
+    // 7,200,000,001 - 12,000,000,000: 25%
+    // Above 12,000,000,000: 30%
+    
+    const exemptLimit = 1680000000;
+    const bracket1Limit = 2760000000;
+    const bracket2Limit = 4320000000;
+    const bracket3Limit = 7200000000;
+    const bracket4Limit = 12000000000;
+    
+    let annualTax = 0;
+    
+    if (annualIncome <= exemptLimit) {
+      annualTax = 0;
+    } else if (annualIncome <= bracket1Limit) {
+      annualTax = (annualIncome - exemptLimit) * 0.10;
+    } else if (annualIncome <= bracket2Limit) {
+      annualTax = (bracket1Limit - exemptLimit) * 0.10 +
+                  (annualIncome - bracket1Limit) * 0.15;
+    } else if (annualIncome <= bracket3Limit) {
+      annualTax = (bracket1Limit - exemptLimit) * 0.10 +
+                  (bracket2Limit - bracket1Limit) * 0.15 +
+                  (annualIncome - bracket2Limit) * 0.20;
+    } else if (annualIncome <= bracket4Limit) {
+      annualTax = (bracket1Limit - exemptLimit) * 0.10 +
+                  (bracket2Limit - bracket1Limit) * 0.15 +
+                  (bracket3Limit - bracket2Limit) * 0.20 +
+                  (annualIncome - bracket3Limit) * 0.25;
+    } else {
+      annualTax = (bracket1Limit - exemptLimit) * 0.10 +
+                  (bracket2Limit - bracket1Limit) * 0.15 +
+                  (bracket3Limit - bracket2Limit) * 0.20 +
+                  (bracket4Limit - bracket3Limit) * 0.25 +
+                  (annualIncome - bracket4Limit) * 0.30;
+    }
+    
+    return annualTax / 12; // Monthly tax
+  };
+
+  // Gross-up calculation for net contracts (iterative approach)
+  const grossUpFromNet = (netSalary: number): number => {
+    // Net = Gross - 7% Insurance - Tax(Gross)
+    // We need to find Gross such that: Gross - 0.07*Gross - Tax(Gross) = Net
+    // Using iterative approach for accurate calculation
+    let gross = netSalary / 0.93; // Initial estimate
+    
+    for (let i = 0; i < 10; i++) {
+      const insurance = gross * 0.07;
+      const tax = calculateIncomeTax(gross);
+      const calculatedNet = gross - insurance - tax;
+      const diff = netSalary - calculatedNet;
+      gross += diff;
+    }
+    
+    return gross;
+  };
+
   // Calculations
   const calculations = useMemo(() => {
     let effectiveBase = baseSalary;
@@ -139,11 +205,9 @@ export default function CostCalculator() {
     let effectiveSuperlative = 0;
 
     if (isNetContract) {
-      // In net mode, only baseSalary is used (as net salary)
-      // Gross-up: Net = Gross - 7% Insurance - Tax
-      // Simplified: Gross ≈ Net / 0.93 (approximate for 7% employee insurance)
-      const grossUpFactor = 1 / 0.93;
-      effectiveBase = baseSalary * grossUpFactor;
+      // In net mode, baseSalary is the net salary
+      // Gross-up considering 7% insurance AND income tax
+      effectiveBase = grossUpFromNet(baseSalary);
       // Other components are ignored in net mode
     } else {
       // In gross mode, use all components
@@ -168,14 +232,24 @@ export default function CostCalculator() {
     // Annual benefits amortized monthly
     const monthlyOccasionalBenefits = annualOccasionalBenefits / 12;
 
+    // Calculate income tax
+    const incomeTax = calculateIncomeTax(insurableGross);
+    
     // Statutory costs (Employer)
-    const employerInsurance = insurableGross * 0.23; // 23% employer share
+    // In Net contract: Employer pays 30% (23% + 7% employee share) + Income Tax
+    // In Gross contract: Employer pays only 23%
+    const employerInsuranceRate = isNetContract ? 0.30 : 0.23;
+    const employerInsurance = insurableGross * employerInsuranceRate;
+    
+    // Income tax cost for employer (only in net contract, in gross the employee pays)
+    const employerIncomeTax = isNetContract ? incomeTax : 0;
+    
     const severanceAccrual = effectiveBase / 12; // 1 month per year
     const eidiAccrual = (effectiveBase * 2) / 12; // 2 months per year
     const leaveRedemption = (effectiveBase / 30) * 2.5; // 2.5 days per month
 
     // Total statutory costs
-    const totalStatutory = employerInsurance + severanceAccrual + eidiAccrual + leaveRedemption;
+    const totalStatutory = employerInsurance + employerIncomeTax + severanceAccrual + eidiAccrual + leaveRedemption;
 
     // Welfare costs
     const totalWelfare = supplementaryInsurance + monthlyOccasionalBenefits;
@@ -187,8 +261,9 @@ export default function CostCalculator() {
     const totalMonthlyCost = totalGross + variablePay + totalStatutory + totalWelfare + totalHiddenHR;
 
     // Net salary (for comparison)
-    const employeeInsurance = insurableGross * 0.07;
-    const netSalary = totalGross - employeeInsurance;
+    const employeeInsurance = isNetContract ? 0 : insurableGross * 0.07;
+    const employeeTax = isNetContract ? 0 : incomeTax;
+    const netSalary = isNetContract ? baseSalary : (totalGross - employeeInsurance - employeeTax);
 
     // Multiplier
     const multiplier = netSalary > 0 ? totalMonthlyCost / netSalary : 0;
@@ -201,6 +276,8 @@ export default function CostCalculator() {
       variablePay,
       monthlyOccasionalBenefits,
       employerInsurance,
+      employerIncomeTax,
+      incomeTax,
       severanceAccrual,
       eidiAccrual,
       leaveRedemption,
@@ -209,7 +286,8 @@ export default function CostCalculator() {
       totalHiddenHR,
       totalMonthlyCost,
       netSalary,
-      multiplier
+      multiplier,
+      isNetContract
     };
   }, [
     isNetContract, baseSalary, jobAbsorption, responsibilityAllowance, jobSuperlative,
@@ -468,9 +546,21 @@ export default function CostCalculator() {
                     <p className="text-sm text-muted-foreground mb-2">هزینه‌های قانونی کارفرما</p>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span>بیمه کارفرما (۲۳٪)</span>
+                        <span>بیمه کارفرما ({calculations.isNetContract ? '۳۰٪' : '۲۳٪'})</span>
                         <span className="font-medium">{formatNumber(calculations.employerInsurance)}</span>
                       </div>
+                      {calculations.isNetContract && calculations.employerIncomeTax > 0 && (
+                        <div className="flex justify-between text-amber-500">
+                          <span>مالیات حقوق (پلکانی ۱۴۰۴)</span>
+                          <span className="font-medium">{formatNumber(calculations.employerIncomeTax)}</span>
+                        </div>
+                      )}
+                      {!calculations.isNetContract && calculations.incomeTax > 0 && (
+                        <div className="flex justify-between text-muted-foreground/70">
+                          <span>مالیات حقوق (سهم کارمند)</span>
+                          <span className="font-medium">{formatNumber(calculations.incomeTax)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span>ذخیره سنوات (پایه÷۱۲)</span>
                         <span className="font-medium">{formatNumber(calculations.severanceAccrual)}</span>
