@@ -17,6 +17,7 @@ import ToolsGrid from "./pages/ToolsGrid";
 import HRDashboard from "./pages/HRDashboard";
 import Modules from "./pages/Modules";
 import AnalyticsHub from "./pages/AnalyticsHub";
+import CostCalculator from "./pages/CostCalculator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -108,6 +109,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AnalyticsHub />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/cost-calculator" 
+              element={
+                <ProtectedRoute>
+                  <CostCalculator />
                 </ProtectedRoute>
               } 
             />
