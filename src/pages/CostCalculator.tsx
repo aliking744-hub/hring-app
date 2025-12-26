@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Calculator, Users, Clock, Gift, Building2, Briefcase, TrendingUp } from 'lucide-react';
+import { ArrowRight, Calculator, Users, Clock, Gift, Building2, Briefcase, TrendingUp, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AuroraBackground from '@/components/AuroraBackground';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import logo from '@/assets/logo.png';
 
 // Format number with Persian separators
 const formatNumber = (num: number): string => {
@@ -217,24 +218,43 @@ export default function CostCalculator() {
     supplementaryInsurance, annualOccasionalBenefits,
     recruitmentCost, trainingCost, miscCost
   ]);
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
     <div className="relative min-h-screen" dir="rtl">
       <AuroraBackground />
-      <div className="relative z-10 p-4 md:p-6 max-w-7xl mx-auto">
+      <div className="relative z-10 p-4 md:p-6 max-w-7xl mx-auto print:p-2 print:max-w-full">
+        {/* Print Logo - only visible when printing */}
+        <div className="hidden print:flex print:justify-center print:mb-6">
+          <img src={logo} alt="Logo" className="h-16" />
+        </div>
+        
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="icon" onClick={() => navigate('/dashboard')}>
-            <ArrowRight className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              محاسبه بهای تمام شده نیروی انسانی
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              محاسبه دقیق هزینه واقعی ماهانه کارمند بر اساس استانداردهای ایرانی
-            </p>
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => navigate('/dashboard')} className="print:hidden">
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent print:text-foreground print:bg-none">
+                محاسبه بهای تمام شده نیروی انسانی
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                محاسبه دقیق هزینه واقعی ماهانه کارمند بر اساس استانداردهای ایرانی
+              </p>
+            </div>
           </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handlePrint}
+            className="print:hidden gap-2"
+          >
+            <Printer className="w-4 h-4" />
+            پرینت
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
