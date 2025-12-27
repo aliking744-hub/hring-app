@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Briefcase, Sparkles, Download, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -20,6 +20,11 @@ const seniorityLevels = [
   { value: "manager", label: "مدیر (Manager)" },
 ];
 
+// Function to reverse Persian text for RTL display in PDF
+const reverseText = (text: string): string => {
+  return text.split('').reverse().join('');
+};
+
 const JobDescriptionGenerator = () => {
   const [jobTitle, setJobTitle] = useState("");
   const [industry, setIndustry] = useState("");
@@ -27,8 +32,26 @@ const JobDescriptionGenerator = () => {
   const [companyName, setCompanyName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
+  const [fontBase64, setFontBase64] = useState<string | null>(null);
   const { toast } = useToast();
   const { credits, deductForOperation, hasEnoughCredits } = useCredits();
+
+  // Load font on mount
+  useEffect(() => {
+    const loadFont = async () => {
+      try {
+        const response = await fetch('/fonts/BNAZANIN.TTF');
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = btoa(
+          new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        setFontBase64(base64);
+      } catch (error) {
+        console.error('Error loading font:', error);
+      }
+    };
+    loadFont();
+  }, []);
 
   const handleGenerate = async () => {
     if (!jobTitle || !industry || !seniorityLevel) {
@@ -78,13 +101,26 @@ const JobDescriptionGenerator = () => {
   };
 
   const generatePDF = async () => {
-    if (!generatedContent) return;
+    if (!generatedContent || !fontBase64) {
+      toast({ title: "خطا", description: "لطفاً صبر کنید تا فونت بارگذاری شود", variant: "destructive" });
+      return;
+    }
 
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
       format: "a4",
     });
+
+    // Add B Nazanin font
+    doc.addFileToVFS("BNazanin.ttf", fontBase64);
+    doc.addFont("BNazanin.ttf", "BNazanin", "normal");
+    doc.setFont("BNazanin");
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - margin * 2;
 
     // Load and add logo
     const img = new Image();
@@ -94,74 +130,134 @@ const JobDescriptionGenerator = () => {
       img.onload = resolve;
     });
 
-    // Add logo centered at top
-    const logoWidth = 30;
-    const logoHeight = 30;
-    const pageWidth = doc.internal.pageSize.getWidth();
+    const logoWidth = 25;
+    const logoHeight = 25;
     doc.addImage(img, "PNG", (pageWidth - logoWidth) / 2, 10, logoWidth, logoHeight);
 
-    // Add Persian font support - use built-in Helvetica for now with RTL handling
-    doc.setFont("Helvetica", "normal");
-    
-    // Parse markdown content and convert to clean text
-    const cleanContent = generatedContent
-      .replace(/#{1,6}\s/g, "") // Remove markdown headers
-      .replace(/\*\*/g, "") // Remove bold markers
-      .replace(/\*/g, "") // Remove italic markers
-      .replace(/\|/g, " | ") // Clean table separators
-      .replace(/-{3,}/g, "") // Remove horizontal rules
-      .replace(/^\s*[-*]\s/gm, "• ") // Convert list items
+    // Add title
+    doc.setFontSize(16);
+    doc.setTextColor(59, 130, 246);
+    const title = "سند هویت و مشخصات شغلی";
+    doc.text(reverseText(title), pageWidth - margin, 45, { align: "left" });
+
+    // Parse and clean content
+    const lines = generatedContent
+      .replace(/\*\*/g, "")
+      .replace(/\*/g, "")
       .split("\n")
-      .filter(line => line.trim() !== "");
+      .filter(line => line.trim() !== "" && !line.match(/^-{3,}$/));
 
-    let yPosition = 50;
-    const margin = 15;
-    const lineHeight = 7;
-    const maxWidth = pageWidth - margin * 2;
+    let yPosition = 55;
+    const lineHeight = 6;
 
-    for (const line of cleanContent) {
-      // Check if we need a new page
-      if (yPosition > doc.internal.pageSize.getHeight() - 20) {
+    for (const line of lines) {
+      // Check for new page
+      if (yPosition > pageHeight - 25) {
         doc.addPage();
         yPosition = 20;
       }
 
-      // Check if it's a section header (lines that were headers in markdown)
-      const isHeader = line.includes("بخش") || line.includes("هویت") || line.includes("ماموریت") || 
-                       line.includes("مسئولیت") || line.includes("شایستگی") || line.includes("شرایط");
+      const trimmedLine = line.trim();
       
-      if (isHeader && !line.includes("|")) {
-        doc.setFontSize(14);
-        doc.setTextColor(59, 130, 246); // Primary blue color
-        yPosition += 5;
-      } else {
-        doc.setFontSize(10);
-        doc.setTextColor(51, 51, 51);
+      // Section headers (## )
+      if (trimmedLine.startsWith("##")) {
+        const headerText = trimmedLine.replace(/^#+\s*/, "");
+        doc.setFontSize(13);
+        doc.setTextColor(59, 130, 246);
+        yPosition += 4;
+        doc.text(reverseText(headerText), pageWidth - margin, yPosition, { align: "left" });
+        yPosition += lineHeight + 2;
+        
+        // Add underline
+        doc.setDrawColor(59, 130, 246);
+        doc.setLineWidth(0.3);
+        doc.line(margin, yPosition - 2, pageWidth - margin, yPosition - 2);
+        yPosition += 2;
+        continue;
       }
 
-      // Split long lines
-      const splitLines = doc.splitTextToSize(line, maxWidth);
+      // Sub-headers (### )
+      if (trimmedLine.startsWith("###")) {
+        const subHeaderText = trimmedLine.replace(/^#+\s*/, "");
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+        yPosition += 2;
+        doc.text(reverseText(subHeaderText), pageWidth - margin, yPosition, { align: "left" });
+        yPosition += lineHeight;
+        continue;
+      }
+
+      // Table rows
+      if (trimmedLine.startsWith("|")) {
+        const cells = trimmedLine.split("|").filter(c => c.trim() !== "");
+        if (cells.length >= 2 && !cells[0].match(/^-+$/)) {
+          doc.setFontSize(9);
+          doc.setTextColor(51, 51, 51);
+          
+          // Draw table row background
+          doc.setFillColor(245, 245, 245);
+          doc.rect(margin, yPosition - 4, contentWidth, lineHeight + 2, "F");
+          
+          const cellWidth = contentWidth / cells.length;
+          cells.forEach((cell, index) => {
+            const cellText = cell.trim();
+            const xPos = pageWidth - margin - (index * cellWidth) - cellWidth / 2;
+            doc.text(reverseText(cellText), xPos, yPosition, { align: "center" });
+          });
+          yPosition += lineHeight + 1;
+        }
+        continue;
+      }
+
+      // Bullet points
+      if (trimmedLine.startsWith("-") || trimmedLine.startsWith("•")) {
+        const bulletText = trimmedLine.replace(/^[-•]\s*/, "");
+        doc.setFontSize(10);
+        doc.setTextColor(51, 51, 51);
+        
+        // Add bullet
+        doc.circle(pageWidth - margin - 2, yPosition - 1.5, 0.8, "F");
+        
+        // Split long text
+        const maxTextWidth = contentWidth - 10;
+        const splitLines = doc.splitTextToSize(reverseText(bulletText), maxTextWidth);
+        for (const splitLine of splitLines) {
+          if (yPosition > pageHeight - 25) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          doc.text(splitLine, pageWidth - margin - 6, yPosition, { align: "left" });
+          yPosition += lineHeight;
+        }
+        continue;
+      }
+
+      // Regular text
+      doc.setFontSize(10);
+      doc.setTextColor(51, 51, 51);
+      const maxTextWidth = contentWidth;
+      const splitLines = doc.splitTextToSize(reverseText(trimmedLine), maxTextWidth);
       for (const splitLine of splitLines) {
-        if (yPosition > doc.internal.pageSize.getHeight() - 20) {
+        if (yPosition > pageHeight - 25) {
           doc.addPage();
           yPosition = 20;
         }
-        // Right-align text for RTL
-        doc.text(splitLine, pageWidth - margin, yPosition, { align: "right" });
+        doc.text(splitLine, pageWidth - margin, yPosition, { align: "left" });
         yPosition += lineHeight;
       }
     }
 
-    // Add footer
+    // Add footer to all pages
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(`صفحه ${i} از ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+      doc.setTextColor(150, 150, 150);
+      const footerText = `${i} / ${pageCount}`;
+      doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: "center" });
     }
 
-    doc.save(`job-profile-${jobTitle || "document"}.pdf`);
+    doc.save(`پروفایل-شغلی-${jobTitle || "سند"}.pdf`);
     toast({ title: "موفق", description: "فایل PDF با موفقیت دانلود شد." });
   };
 
@@ -217,7 +313,7 @@ const JobDescriptionGenerator = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-foreground">پیش‌نمایش</h2>
               {generatedContent && (
-                <Button onClick={generatePDF} className="glow-button text-foreground">
+                <Button onClick={generatePDF} disabled={!fontBase64} className="glow-button text-foreground">
                   <Download className="w-4 h-4 ml-2" />
                   دانلود PDF
                 </Button>
@@ -225,19 +321,38 @@ const JobDescriptionGenerator = () => {
             </div>
             <div className="bg-secondary/30 rounded-lg p-4 min-h-[400px] max-h-[600px] overflow-y-auto">
               {generatedContent ? (
-                <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                <div className="text-sm text-foreground leading-relaxed space-y-2" style={{ fontFamily: 'BNazanin, Tahoma, sans-serif' }}>
                   {generatedContent.split('\n').map((line, index) => {
-                    const isHeader = line.startsWith('##');
-                    const cleanLine = line.replace(/#{1,6}\s?/g, '').replace(/\*\*/g, '');
+                    const trimmed = line.trim();
+                    if (!trimmed || trimmed.match(/^-{3,}$/)) return null;
                     
-                    if (isHeader) {
-                      return <h3 key={index} className="text-primary font-bold mt-4 mb-2 text-base">{cleanLine}</h3>;
+                    if (trimmed.startsWith("##")) {
+                      const text = trimmed.replace(/^#+\s*/, '').replace(/\*\*/g, '');
+                      return <h3 key={index} className="text-primary font-bold mt-4 mb-2 text-base border-b border-primary/30 pb-1">{text}</h3>;
                     }
-                    if (line.startsWith('|')) {
-                      return <div key={index} className="font-mono text-xs bg-secondary/50 px-2 py-1 rounded my-1">{cleanLine}</div>;
+                    if (trimmed.startsWith("###")) {
+                      const text = trimmed.replace(/^#+\s*/, '').replace(/\*\*/g, '');
+                      return <h4 key={index} className="text-muted-foreground font-semibold mt-3 mb-1">{text}</h4>;
                     }
-                    if (line.trim() === '') return <br key={index} />;
-                    return <p key={index} className="mb-1">{cleanLine}</p>;
+                    if (trimmed.startsWith("|")) {
+                      const cells = trimmed.split("|").filter(c => c.trim() && !c.match(/^-+$/));
+                      if (cells.length >= 2) {
+                        return (
+                          <div key={index} className="grid grid-cols-2 gap-2 bg-secondary/50 px-3 py-1.5 rounded text-xs">
+                            {cells.map((cell, i) => (
+                              <span key={i} className={i === 0 ? "font-semibold" : ""}>{cell.trim().replace(/\*\*/g, '')}</span>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }
+                    if (trimmed.startsWith("-") || trimmed.startsWith("•")) {
+                      const text = trimmed.replace(/^[-•]\s*/, '').replace(/\*\*/g, '');
+                      return <p key={index} className="pr-4 relative before:content-['•'] before:absolute before:right-0 before:text-primary">{text}</p>;
+                    }
+                    const text = trimmed.replace(/\*\*/g, '');
+                    return <p key={index}>{text}</p>;
                   })}
                 </div>
               ) : (
