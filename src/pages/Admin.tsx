@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, FileText, Package, Users } from 'lucide-react';
+import { ArrowRight, FileText, Package, Users, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BlogManager from '@/components/admin/BlogManager';
 import ProductManager from '@/components/admin/ProductManager';
-import UsersView from '@/components/admin/UsersView';
+import UsersCreditsManager from '@/components/admin/UsersCreditsManager';
+import SiteSettingsManager from '@/components/admin/SiteSettingsManager';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -31,18 +32,22 @@ const Admin = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="blog" className="gap-2">
               <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">مدیریت بلاگ</span>
+              <span className="hidden sm:inline">بلاگ</span>
             </TabsTrigger>
             <TabsTrigger value="products" className="gap-2">
               <Package className="w-4 h-4" />
-              <span className="hidden sm:inline">مدیریت محصولات</span>
+              <span className="hidden sm:inline">فایل‌ها</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">کاربران</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">متون</span>
             </TabsTrigger>
           </TabsList>
 
@@ -55,7 +60,11 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="users">
-            <UsersView />
+            <UsersCreditsManager />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <SiteSettingsManager />
           </TabsContent>
         </Tabs>
       </main>
