@@ -23,6 +23,7 @@ import AnalyticsHub from "./pages/AnalyticsHub";
 import CostCalculator from "./pages/CostCalculator";
 import SmartHeadhunting from "./pages/SmartHeadhunting";
 import CampaignDetail from "./pages/CampaignDetail";
+import CandidateDetail from "./pages/CandidateDetail";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -148,6 +149,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <CampaignDetail />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/campaign/:campaignId/candidate/:candidateId" 
+                element={
+                  <ProtectedRoute>
+                    <CandidateDetail />
                   </ProtectedRoute>
                 } 
               />
