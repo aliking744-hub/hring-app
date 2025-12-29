@@ -23,7 +23,8 @@ import {
   Boxes,
   Gem,
   BarChart3,
-  Calculator
+  Calculator,
+  Crosshair
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
@@ -39,6 +40,7 @@ const sidebarItems = [
   { icon: Grid3X3, label: "ابزارهای مدیریتی", path: "/hr-dashboard", external: false },
   { icon: Boxes, label: "ماژولها", path: "/modules", external: false },
   { icon: UserPlus, label: "آنبوردینگ", path: "/onboarding", external: false },
+  { icon: Crosshair, label: "هدهانتینگ هوشمند", path: "/smart-headhunting", external: false },
   { icon: FileText, label: "فروشگاه", path: "/shop", external: false },
   { icon: Settings, label: "تنظیمات", path: "/dashboard", external: false },
 ];

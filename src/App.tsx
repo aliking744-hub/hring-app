@@ -21,6 +21,7 @@ import HRDashboard from "./pages/HRDashboard";
 import Modules from "./pages/Modules";
 import AnalyticsHub from "./pages/AnalyticsHub";
 import CostCalculator from "./pages/CostCalculator";
+import SmartHeadhunting from "./pages/SmartHeadhunting";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -130,6 +131,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <CostCalculator />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/smart-headhunting" 
+                element={
+                  <ProtectedRoute>
+                    <SmartHeadhunting />
                   </ProtectedRoute>
                 } 
               />
