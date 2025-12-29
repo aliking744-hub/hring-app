@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
 import jsPDF from "jspdf";
 import { 
@@ -141,9 +142,16 @@ const Dashboard = () => {
   const hiringHealth = 95;
 
   return (
-    <div className="relative min-h-screen flex" dir="rtl">
-      <AuroraBackground />
-
+    <>
+      <Helmet>
+        <title>داشبورد | HRing - پنل مدیریت منابع انسانی</title>
+        <meta 
+          name="description" 
+          content="پنل مدیریت منابع انسانی HRing. مشاهده وضعیت استخدام، مصاحبه‌ها و آمار تیم در یک نگاه." 
+        />
+      </Helmet>
+      <div className="relative min-h-screen flex" dir="rtl">
+        <AuroraBackground />
       {/* Mobile Menu Button */}
       <button
         onClick={() => setMobileMenuOpen(true)}
@@ -474,7 +482,8 @@ const Dashboard = () => {
 
         </motion.div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

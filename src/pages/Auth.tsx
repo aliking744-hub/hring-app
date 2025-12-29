@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -116,8 +117,19 @@ const Auth = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4" dir="rtl">
-      <AuroraBackground />
+    <>
+      <Helmet>
+        <title>{isLogin ? "ورود به حساب" : "ثبت‌نام"} | HRing</title>
+        <meta 
+          name="description" 
+          content={isLogin 
+            ? "ورود به پنل مدیریت منابع انسانی HRing. به ابزارهای هوشمند استخدام و مدیریت تیم دسترسی پیدا کنید."
+            : "ایجاد حساب کاربری در HRing. همین حالا شروع کنید و از امکانات هوش مصنوعی برای استخدام بهره‌مند شوید."
+          } 
+        />
+      </Helmet>
+      <div className="relative min-h-screen flex items-center justify-center p-4" dir="rtl">
+        <AuroraBackground />
       
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -263,7 +275,8 @@ const Auth = () => {
           </div>
         </div>
       </motion.div>
-    </div>
+      </div>
+    </>
   );
 };
 
