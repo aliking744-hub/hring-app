@@ -434,12 +434,12 @@ const CampaignDetail = () => {
                   
                   <div className="divide-y divide-slate-700/50 max-h-[600px] overflow-y-auto">
                     {candidates.map((candidate) => (
-                      <div
+                      <Link
                         key={candidate.id}
-                        className={`p-4 cursor-pointer transition-colors hover:bg-slate-800/50 ${
+                        to={`/campaign/${id}/candidate/${candidate.id}`}
+                        className={`p-4 block cursor-pointer transition-colors hover:bg-slate-800/50 ${
                           selectedCandidate?.id === candidate.id ? "bg-slate-800/70" : ""
                         }`}
-                        onClick={() => setSelectedCandidate(candidate)}
                       >
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
@@ -472,7 +472,7 @@ const CampaignDetail = () => {
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>
