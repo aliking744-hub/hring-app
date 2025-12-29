@@ -157,6 +157,29 @@ const SmartHeadhunting = () => {
     );
   };
 
+  // Smart column name detection - finds columns regardless of position
+  const findColumnValue = (row: any, patterns: string[]): string => {
+    // First try exact key match (case insensitive)
+    for (const key of Object.keys(row)) {
+      const keyLower = key.toLowerCase().trim();
+      for (const pattern of patterns) {
+        if (keyLower === pattern.toLowerCase()) {
+          return (row[key] ?? '').toString().trim();
+        }
+      }
+    }
+    // Then try partial match (key contains pattern)
+    for (const key of Object.keys(row)) {
+      const keyLower = key.toLowerCase().trim();
+      for (const pattern of patterns) {
+        if (keyLower.includes(pattern.toLowerCase()) || pattern.toLowerCase().includes(keyLower)) {
+          return (row[key] ?? '').toString().trim();
+        }
+      }
+    }
+    return '';
+  };
+
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -168,34 +191,56 @@ const SmartHeadhunting = () => {
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
       
+      console.log("Excel raw data:", jsonData);
+      console.log("Excel columns:", jsonData.length > 0 ? Object.keys(jsonData[0] as object) : []);
+      
       if (jsonData.length > 100) {
         toast.error("حداکثر ۱۰۰ ردیف قابل پردازش است");
         return;
       }
       
-      // Map common column names to our structure
-      const candidatesRaw = jsonData.map((row: any) => ({
-        name: (row['نام'] || row['Name'] || row['name'] || row['نام و نام خانوادگی'] || '').toString().trim(),
-        email: (row['ایمیل'] || row['Email'] || row['email'] || '').toString().trim(),
-        phone: (row['تلفن'] || row['Phone'] || row['phone'] || row['موبایل'] || '').toString().trim(),
-        skills: (row['مهارت‌ها'] || row['Skills'] || row['skills'] || '').toString().trim(),
-        experience: (row['سابقه کار'] || row['Experience'] || row['experience'] || '').toString().trim(),
-        education: (row['تحصیلات'] || row['Education'] || row['education'] || row['مدرک تحصیلی'] || '').toString().trim(),
-        lastCompany: (row['شرکت'] || row['Company'] || row['company'] || row['آخرین شرکت'] || '').toString().trim(),
-        location: (row['شهر'] || row['City'] || row['city'] || row['محل زندگی'] || '').toString().trim(),
-      }));
+      // Smart column mapping - searches for patterns in column names
+      const namePatterns = ['نام', 'name', 'firstname', 'first_name', 'نام و نام خانوادگی', 'fullname', 'full_name', 'اسم', 'نام کامل'];
+      const emailPatterns = ['ایمیل', 'email', 'e-mail', 'mail', 'پست الکترونیک', 'آدرس ایمیل'];
+      const phonePatterns = ['تلفن', 'phone', 'mobile', 'موبایل', 'شماره تماس', 'شماره تلفن', 'همراه', 'tel', 'telephone'];
+      const skillsPatterns = ['مهارت', 'skills', 'skill', 'توانایی', 'مهارت‌ها', 'تخصص'];
+      const experiencePatterns = ['سابقه', 'experience', 'تجربه', 'سابقه کار', 'سال تجربه', 'years'];
+      const educationPatterns = ['تحصیلات', 'education', 'مدرک', 'مدرک تحصیلی', 'degree', 'رشته'];
+      const companyPatterns = ['شرکت', 'company', 'سازمان', 'آخرین شرکت', 'محل کار', 'employer', 'organization'];
+      const locationPatterns = ['شهر', 'city', 'location', 'محل', 'محل زندگی', 'استان', 'آدرس'];
+      
+      const candidatesRaw = jsonData.map((row: any, index: number) => {
+        const candidate = {
+          name: findColumnValue(row, namePatterns),
+          email: findColumnValue(row, emailPatterns),
+          phone: findColumnValue(row, phonePatterns),
+          skills: findColumnValue(row, skillsPatterns),
+          experience: findColumnValue(row, experiencePatterns),
+          education: findColumnValue(row, educationPatterns),
+          lastCompany: findColumnValue(row, companyPatterns),
+          location: findColumnValue(row, locationPatterns),
+          // Keep all original data for AI analysis
+          rawData: row,
+        };
+        console.log(`Row ${index + 1} parsed:`, candidate);
+        return candidate;
+      });
 
       const candidatesNonEmpty = candidatesRaw.filter((c) =>
-        Object.values(c).some((v) => (v ?? '').toString().trim().length > 0)
+        Object.values(c).some((v) => v && typeof v === 'string' && v.trim().length > 0)
       );
 
       // Remove rows that have no identifying info at all
       const candidates = candidatesNonEmpty.filter((c) => c.name || c.email || c.phone);
 
+      console.log("Final candidates:", candidates);
+
       if (candidates.length === 0) {
         setParsedCandidates([]);
         setExcelFile(null);
-        toast.error("ستون‌های فایل شناسایی نشد؛ حداقل یکی از ستون‌های «نام»، «ایمیل» یا «تلفن» لازم است");
+        // Show what columns were found
+        const foundCols = jsonData.length > 0 ? Object.keys(jsonData[0] as object).join('، ') : 'هیچ';
+        toast.error(`ستون‌های شناسایی‌شده: ${foundCols}\nحداقل یکی از ستون‌های «نام»، «ایمیل» یا «تلفن» لازم است`);
         return;
       }
 
