@@ -278,6 +278,14 @@ const CampaignDetail = () => {
     { name: "سرد", value: stats.coldCandidates || 0, color: "#3b82f6" },
   ];
 
+  // Status distribution data
+  const statusDistributionData = [
+    { name: "در انتظار", value: statusCounts.pending, color: "#94a3b8" },
+    { name: "تأیید شده", value: statusCounts.approved, color: "#10b981" },
+    { name: "رد شده", value: statusCounts.rejected, color: "#ef4444" },
+    { name: "در انتظار بررسی", value: statusCounts.waiting, color: "#f59e0b" },
+  ].filter(item => item.value > 0);
+
   // Calculate education distribution from candidates
   const educationMap: Record<string, number> = {};
   candidates.forEach(c => {
@@ -333,7 +341,50 @@ const CampaignDetail = () => {
           ) : (
             <>
               {/* Stats Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+                {/* Status Distribution */}
+                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    وضعیت کاندیداها
+                  </h3>
+                  <div className="h-[180px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={statusDistributionData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={70}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {statusDistributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#1e293b",
+                            border: "1px solid #334155",
+                            borderRadius: "8px",
+                            color: "#fff",
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-2 mt-2">
+                    {statusDistributionData.map((item) => (
+                      <div key={item.name} className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-xs text-slate-300">{item.name}: {item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Quality Distribution */}
                 <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
