@@ -44,12 +44,6 @@ export interface Candidate {
   raw_data: any;
   created_at: string;
 }
-  green_flags: string[] | null;
-  red_flags: string[] | null;
-  layer_scores: Record<string, number> | null;
-  raw_data: Record<string, unknown> | null;
-  created_at: string;
-}
 
 export const useCampaigns = () => {
   const { user } = useAuth();
@@ -226,8 +220,8 @@ export const useCampaigns = () => {
       recommendation: c.recommendation || null,
       green_flags: c.green_flags || null,
       red_flags: c.red_flags || null,
-      layer_scores: c.layer_scores || null,
-      raw_data: c.raw_data || null,
+      layer_scores: c.layer_scores ? JSON.parse(JSON.stringify(c.layer_scores)) : null,
+      raw_data: c.raw_data ? JSON.parse(JSON.stringify(c.raw_data)) : null,
     }));
 
     const { data, error } = await supabase
