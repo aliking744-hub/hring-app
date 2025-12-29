@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { 
   Crosshair, 
@@ -86,9 +86,19 @@ const initialCampaigns = [
   },
 ];
 
+const CAMPAIGNS_STORAGE_KEY = "smart_headhunting_campaigns";
+
 const SmartHeadhunting = () => {
   const navigate = useNavigate();
-  const [campaigns, setCampaigns] = useState(initialCampaigns);
+  const [campaigns, setCampaigns] = useState(() => {
+    try {
+      const stored = localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch {
+      // ignore
+    }
+    return initialCampaigns;
+  });
   const [showNewCampaignForm, setShowNewCampaignForm] = useState(false);
   const [autoHeadhunting, setAutoHeadhunting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -109,6 +119,14 @@ const SmartHeadhunting = () => {
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
   const [parsedCandidates, setParsedCandidates] = useState<any[]>([]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(campaigns));
+    } catch {
+      // ignore
+    }
+  }, [campaigns]);
+
   const getSourceBadge = (source: string) => {
     switch (source) {
       case "excel":
@@ -116,6 +134,13 @@ const SmartHeadhunting = () => {
           <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30">
             <FileSpreadsheet className="w-3 h-3 ml-1" />
             Excel
+          </Badge>
+        );
+      case "pdf":
+        return (
+          <Badge className="bg-sky-500/20 text-sky-400 border-sky-500/30 hover:bg-sky-500/30">
+            <FileText className="w-3 h-3 ml-1" />
+            PDF
           </Badge>
         );
       case "api":
@@ -221,20 +246,40 @@ const SmartHeadhunting = () => {
     }
 
     const campaignId = Date.now().toString();
-    
+
     // Create new campaign with processing status
     const newCampaign = {
       id: campaignId,
       name: formData.jobTitle,
       status: "processing",
-      source: autoHeadhunting ? "auto" : excelFile ? "excel" : "api",
+      source: autoHeadhunting ? "auto" : excelFile ? "excel" : pdfFiles.length > 0 ? "pdf" : "api",
       candidatesCount: 0,
       avgMatchScore: 0,
       lastUpdated: "در حال پردازش...",
       city: formData.city,
     };
 
-    setCampaigns(prev => [newCampaign, ...prev]);
+    // Persist a placeholder immediately so returning to the page / opening details won't "lose" the campaign
+    const emptyStats = {
+      total: 0,
+      excellent: 0,
+      good: 0,
+      average: 0,
+      avgScore: 0,
+      hotCandidates: 0,
+      warmCandidates: 0,
+      coldCandidates: 0,
+    };
+    try {
+      localStorage.setItem(
+        `campaign_${campaignId}`,
+        JSON.stringify({ ...newCampaign, candidates: [], stats: emptyStats })
+      );
+    } catch {
+      // ignore
+    }
+
+    setCampaigns((prev) => [newCampaign, ...prev]);
     setShowNewCampaignForm(false);
     setIsProcessing(true);
 
@@ -242,21 +287,41 @@ const SmartHeadhunting = () => {
       if (autoHeadhunting) {
         // For auto headhunting, we'll connect to Make.com later
         toast.info("هدهانتینگ خودکار در حال آماده‌سازی...");
-        
+
         // Simulate processing for now
         setTimeout(() => {
-          setCampaigns(prev => prev.map(c => 
-            c.id === campaignId 
-              ? { ...c, status: "active", candidatesCount: 15, avgMatchScore: 75, lastUpdated: "همین الان" }
-              : c
-          ));
+          setCampaigns((prev) =>
+            prev.map((c) =>
+              c.id === campaignId
+                ? { ...c, status: "active", candidatesCount: 15, avgMatchScore: 75, lastUpdated: "همین الان" }
+                : c
+            )
+          );
+
+          try {
+            localStorage.setItem(
+              `campaign_${campaignId}`,
+              JSON.stringify({
+                ...newCampaign,
+                status: "active",
+                candidatesCount: 15,
+                avgMatchScore: 75,
+                lastUpdated: "همین الان",
+                candidates: [],
+                stats: { ...emptyStats, total: 15, avgScore: 75 },
+              })
+            );
+          } catch {
+            // ignore
+          }
+
           toast.success("کمپین آماده شد!");
         }, 3000);
       } else if (parsedCandidates.length > 0) {
         // Process with AI
         toast.info("در حال تحلیل کاندیداها با هوش مصنوعی...");
-        
-        const { data, error } = await supabase.functions.invoke('analyze-candidates', {
+
+        const { data, error } = await supabase.functions.invoke("analyze-candidates", {
           body: {
             candidates: parsedCandidates,
             jobRequirements: {
@@ -276,37 +341,80 @@ const SmartHeadhunting = () => {
         }
 
         // Store results in localStorage for campaign detail page
-        localStorage.setItem(`campaign_${campaignId}`, JSON.stringify({
-          ...newCampaign,
-          candidates: data.candidates,
-          stats: data.stats,
-        }));
+        localStorage.setItem(
+          `campaign_${campaignId}`,
+          JSON.stringify({
+            ...newCampaign,
+            status: "active",
+            candidatesCount: data.stats.total,
+            avgMatchScore: data.stats.avgScore,
+            lastUpdated: "همین الان",
+            candidates: data.candidates,
+            stats: data.stats,
+          })
+        );
 
         // Update campaign with results
-        setCampaigns(prev => prev.map(c => 
-          c.id === campaignId 
-            ? { 
-                ...c, 
-                status: "active", 
-                candidatesCount: data.stats.total, 
-                avgMatchScore: data.stats.avgScore,
-                lastUpdated: "همین الان" 
-              }
-            : c
-        ));
+        setCampaigns((prev) =>
+          prev.map((c) =>
+            c.id === campaignId
+              ? {
+                  ...c,
+                  status: "active",
+                  candidatesCount: data.stats.total,
+                  avgMatchScore: data.stats.avgScore,
+                  lastUpdated: "همین الان",
+                }
+              : c
+          )
+        );
 
         toast.success(`تحلیل ${data.stats.total} کاندیدا با موفقیت انجام شد!`);
+      } else if (pdfFiles.length > 0) {
+        toast.error("تحلیل رزومه‌های PDF هنوز فعال نیست؛ لطفاً اکسل آپلود کنید.");
+
+        setCampaigns((prev) =>
+          prev.map((c) =>
+            c.id === campaignId ? { ...c, status: "paused", lastUpdated: "نیاز به فایل اکسل" } : c
+          )
+        );
+
+        try {
+          const stored = localStorage.getItem(`campaign_${campaignId}`);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            localStorage.setItem(
+              `campaign_${campaignId}`,
+              JSON.stringify({ ...parsed, status: "paused", lastUpdated: "نیاز به فایل اکسل" })
+            );
+          }
+        } catch {
+          // ignore
+        }
       }
     } catch (error: any) {
       console.error("Error processing campaign:", error);
-      toast.error(error.message || "خطا در پردازش کمپین");
-      
+      toast.error(error?.message || "خطا در پردازش کمپین");
+
       // Update campaign status to error
-      setCampaigns(prev => prev.map(c => 
-        c.id === campaignId 
-          ? { ...c, status: "paused", lastUpdated: "خطا در پردازش" }
-          : c
-      ));
+      setCampaigns((prev) =>
+        prev.map((c) =>
+          c.id === campaignId ? { ...c, status: "paused", lastUpdated: "خطا در پردازش" } : c
+        )
+      );
+
+      try {
+        const stored = localStorage.getItem(`campaign_${campaignId}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          localStorage.setItem(
+            `campaign_${campaignId}`,
+            JSON.stringify({ ...parsed, status: "paused", lastUpdated: "خطا در پردازش" })
+          );
+        }
+      } catch {
+        // ignore
+      }
     } finally {
       setIsProcessing(false);
       setFormData({
