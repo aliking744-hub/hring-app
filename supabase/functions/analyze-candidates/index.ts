@@ -112,17 +112,19 @@ serve(async (req) => {
 
     // Perform web search for each candidate (if enabled)
     const candidatesWithWebInfo = await Promise.all(
-      candidates.map(async (candidate: CandidateInput) => {
+      candidates.map(async (candidate: CandidateInput, sourceIndex: number) => {
         let webResearchInfo = "";
         if (enableWebSearch && candidate.name) {
           webResearchInfo = await searchCandidateOnWeb(candidate, jobRequirements);
         }
         return {
           ...candidate,
+          sourceIndex,
           webResearchInfo,
         };
       })
     );
+
 
     // Senior Headhunter AI Prompt with 5-Layer Analysis
     const systemPrompt = `تو یک «استعدادیاب ارشد» (Senior Headhunter) هستی که وظیفه داری با تحلیل عمیق داده‌های افراد از رزومه یا اطلاعات وارد شده و اطلاعات جمع‌آوری شده از وب، بهترین کاندیدا را پیدا کنی.

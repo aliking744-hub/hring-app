@@ -215,43 +215,52 @@ const CampaignDetail = () => {
   const [campaignData, setCampaignData] = useState<CampaignData | null>(null);
 
   useEffect(() => {
-    // Try to load from localStorage
-    const stored = localStorage.getItem(`campaign_${id}`);
-    console.log("Loading campaign", id, "stored:", stored);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        console.log("Parsed campaign data:", parsed);
-        setCampaignData(parsed);
-      } catch (e) {
-        console.error("Error parsing campaign data:", e);
-        setCampaignData(fallbackCampaign);
-      }
-    } else {
-      // Check if it's one of the initial demo campaigns (id 1, 2, 3)
-      if (id === "1" || id === "2" || id === "3") {
-        setCampaignData(fallbackCampaign);
-      } else {
-        // New campaign that hasn't been processed yet
-        setCampaignData({
-          id: id || "unknown",
-          name: "در حال بارگذاری...",
-          city: "",
-          candidates: [],
-          stats: {
-            total: 0,
-            excellent: 0,
-            good: 0,
-            average: 0,
-            avgScore: 0,
-            hotCandidates: 0,
-            warmCandidates: 0,
-            coldCandidates: 0,
-          },
-        });
-      }
+    const campaignId = id || "";
+
+    const empty: CampaignData = {
+      id: campaignId || "unknown",
+      name: "در حال پردازش...",
+      city: "",
+      candidates: [],
+      stats: {
+        total: 0,
+        excellent: 0,
+        good: 0,
+        average: 0,
+        avgScore: 0,
+        hotCandidates: 0,
+        warmCandidates: 0,
+        coldCandidates: 0,
+      },
+    };
+
+    if (!campaignId) {
+      setCampaignData({ ...empty, name: "کمپین نامعتبر" });
+      return;
+    }
+
+    const stored = localStorage.getItem(`campaign_${campaignId}`);
+    if (!stored) {
+      // No fallback/sample data for real campaigns
+      setCampaignData({ ...empty, name: "کمپین پیدا نشد" });
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored);
+      setCampaignData({
+        ...empty,
+        ...parsed,
+        id: String(parsed?.id ?? campaignId),
+        candidates: Array.isArray(parsed?.candidates) ? parsed.candidates : [],
+        stats: parsed?.stats ?? empty.stats,
+      });
+    } catch (e) {
+      console.error("Error parsing campaign data:", e);
+      setCampaignData({ ...empty, name: "خطا در بارگذاری داده کمپین" });
     }
   }, [id]);
+
 
   if (!campaignData) {
     return (

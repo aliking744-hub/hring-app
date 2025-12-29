@@ -52,39 +52,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 
-// Initial sample campaign data
-const initialCampaigns = [
-  {
-    id: "1",
-    name: "Senior React Developer",
-    status: "active",
-    source: "excel",
-    candidatesCount: 124,
-    avgMatchScore: 78,
-    lastUpdated: "۲ ساعت پیش",
-    city: "تهران",
-  },
-  {
-    id: "2",
-    name: "HR Manager - Tehran",
-    status: "active",
-    source: "api",
-    candidatesCount: 56,
-    avgMatchScore: 82,
-    lastUpdated: "۱ روز پیش",
-    city: "تهران",
-  },
-  {
-    id: "3",
-    name: "Product Designer",
-    status: "paused",
-    source: "excel",
-    candidatesCount: 89,
-    avgMatchScore: 71,
-    lastUpdated: "۳ روز پیش",
-    city: "اصفهان",
-  },
-];
+// Initial campaigns start empty (no demo / fake data)
+const initialCampaigns: any[] = [];
+
 
 const CAMPAIGNS_STORAGE_KEY = "smart_headhunting_campaigns";
 
@@ -204,20 +174,39 @@ const SmartHeadhunting = () => {
       }
       
       // Map common column names to our structure
-      const candidates = jsonData.map((row: any) => ({
-        name: row['نام'] || row['Name'] || row['name'] || row['نام و نام خانوادگی'] || '',
-        email: row['ایمیل'] || row['Email'] || row['email'] || '',
-        phone: row['تلفن'] || row['Phone'] || row['phone'] || row['موبایل'] || '',
-        skills: row['مهارت‌ها'] || row['Skills'] || row['skills'] || '',
-        experience: row['سابقه کار'] || row['Experience'] || row['experience'] || '',
-        education: row['تحصیلات'] || row['Education'] || row['education'] || row['مدرک تحصیلی'] || '',
-        lastCompany: row['شرکت'] || row['Company'] || row['company'] || row['آخرین شرکت'] || '',
-        location: row['شهر'] || row['City'] || row['city'] || row['محل زندگی'] || '',
+      const candidatesRaw = jsonData.map((row: any) => ({
+        name: (row['نام'] || row['Name'] || row['name'] || row['نام و نام خانوادگی'] || '').toString().trim(),
+        email: (row['ایمیل'] || row['Email'] || row['email'] || '').toString().trim(),
+        phone: (row['تلفن'] || row['Phone'] || row['phone'] || row['موبایل'] || '').toString().trim(),
+        skills: (row['مهارت‌ها'] || row['Skills'] || row['skills'] || '').toString().trim(),
+        experience: (row['سابقه کار'] || row['Experience'] || row['experience'] || '').toString().trim(),
+        education: (row['تحصیلات'] || row['Education'] || row['education'] || row['مدرک تحصیلی'] || '').toString().trim(),
+        lastCompany: (row['شرکت'] || row['Company'] || row['company'] || row['آخرین شرکت'] || '').toString().trim(),
+        location: (row['شهر'] || row['City'] || row['city'] || row['محل زندگی'] || '').toString().trim(),
       }));
-      
+
+      const candidatesNonEmpty = candidatesRaw.filter((c) =>
+        Object.values(c).some((v) => (v ?? '').toString().trim().length > 0)
+      );
+
+      // Remove rows that have no identifying info at all
+      const candidates = candidatesNonEmpty.filter((c) => c.name || c.email || c.phone);
+
+      if (candidates.length === 0) {
+        setParsedCandidates([]);
+        setExcelFile(null);
+        toast.error("ستون‌های فایل شناسایی نشد؛ حداقل یکی از ستون‌های «نام»، «ایمیل» یا «تلفن» لازم است");
+        return;
+      }
+
+      if (candidates.length !== candidatesNonEmpty.length) {
+        toast.info(`${candidatesNonEmpty.length - candidates.length} ردیف بدون نام/ایمیل/تلفن حذف شد`);
+      }
+
       setParsedCandidates(candidates);
       setExcelFile(file);
       toast.success(`${candidates.length} کاندیدا از فایل استخراج شد`);
+
     } catch (error) {
       console.error("Error parsing Excel:", error);
       toast.error("خطا در خواندن فایل اکسل");
