@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { 
   ArrowLeft, 
@@ -23,7 +23,9 @@ import {
   Brain,
   Heart,
   Shield,
-  Loader2
+  Loader2,
+  Clock,
+  Filter
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -76,7 +78,10 @@ interface UICandidate {
   greenFlags?: string[];
   summary?: string;
   recommendation?: string;
+  status?: 'pending' | 'approved' | 'rejected' | 'waiting';
 }
+
+type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected' | 'waiting';
 
 const CampaignDetail = () => {
   const { id } = useParams();
@@ -100,9 +105,10 @@ const CampaignDetail = () => {
 
   const { campaign, candidates: dbCandidates, stats, loading, error } = useCampaignDetail(id);
   const [selectedCandidate, setSelectedCandidate] = useState<UICandidate | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   // Transform DB candidates to UI format
-  const candidates: UICandidate[] = dbCandidates.map((c) => ({
+  const allCandidates: UICandidate[] = useMemo(() => dbCandidates.map((c: any) => ({
     id: c.id,
     name: c.name || "بدون نام",
     email: c.email || "",
@@ -112,7 +118,7 @@ const CampaignDetail = () => {
     experience: c.experience || "",
     lastCompany: c.last_company || "",
     location: c.location || "",
-    skills: c.skills ? c.skills.split(",").map(s => s.trim()) : [],
+    skills: c.skills ? c.skills.split(",").map((s: string) => s.trim()) : [],
     matchScore: c.match_score,
     candidateTemperature: c.candidate_temperature as "hot" | "warm" | "cold",
     layerScores: c.layer_scores as LayerScores | undefined,
@@ -125,7 +131,51 @@ const CampaignDetail = () => {
     redFlags: c.red_flags || [],
     greenFlags: c.green_flags || [],
     recommendation: c.recommendation || undefined,
-  }));
+    status: c.status as 'pending' | 'approved' | 'rejected' | 'waiting' | undefined,
+  })), [dbCandidates]);
+
+  // Filter candidates by status
+  const candidates = useMemo(() => {
+    if (statusFilter === 'all') return allCandidates;
+    return allCandidates.filter(c => c.status === statusFilter);
+  }, [allCandidates, statusFilter]);
+
+  // Status counts for filter badges
+  const statusCounts = useMemo(() => ({
+    all: allCandidates.length,
+    pending: allCandidates.filter(c => !c.status || c.status === 'pending').length,
+    approved: allCandidates.filter(c => c.status === 'approved').length,
+    rejected: allCandidates.filter(c => c.status === 'rejected').length,
+    waiting: allCandidates.filter(c => c.status === 'waiting').length,
+  }), [allCandidates]);
+
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'approved':
+        return (
+          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
+            <Check className="w-3 h-3 ml-1" />
+            تأیید
+          </Badge>
+        );
+      case 'rejected':
+        return (
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
+            <X className="w-3 h-3 ml-1" />
+            رد
+          </Badge>
+        );
+      case 'waiting':
+        return (
+          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
+            <Clock className="w-3 h-3 ml-1" />
+            انتظار
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
 
   if (loading) {
     return (
@@ -426,54 +476,123 @@ const CampaignDetail = () => {
                 {/* Candidates List */}
                 <div className="lg:col-span-2 rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
                   <div className="p-6 border-b border-slate-700/50">
-                    <h2 className="text-xl font-semibold text-white flex items-center gap-3">
-                      <Users className="w-5 h-5 text-violet-400" />
-                      لیست کاندیداها ({candidates.length})
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-semibold text-white flex items-center gap-3">
+                        <Users className="w-5 h-5 text-violet-400" />
+                        لیست کاندیداها ({candidates.length})
+                      </h2>
+                    </div>
+                    
+                    {/* Status Filter */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Filter className="w-4 h-4 text-slate-400" />
+                      <Button
+                        variant={statusFilter === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('all')}
+                        className={statusFilter === 'all' 
+                          ? 'bg-violet-600 hover:bg-violet-500' 
+                          : 'border-slate-600 text-slate-400 hover:text-white'}
+                      >
+                        همه ({statusCounts.all})
+                      </Button>
+                      <Button
+                        variant={statusFilter === 'pending' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('pending')}
+                        className={statusFilter === 'pending' 
+                          ? 'bg-slate-600 hover:bg-slate-500' 
+                          : 'border-slate-600 text-slate-400 hover:text-white'}
+                      >
+                        <Target className="w-3 h-3 ml-1" />
+                        بررسی ({statusCounts.pending})
+                      </Button>
+                      <Button
+                        variant={statusFilter === 'approved' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('approved')}
+                        className={statusFilter === 'approved' 
+                          ? 'bg-emerald-600 hover:bg-emerald-500' 
+                          : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'}
+                      >
+                        <Check className="w-3 h-3 ml-1" />
+                        تأیید ({statusCounts.approved})
+                      </Button>
+                      <Button
+                        variant={statusFilter === 'waiting' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('waiting')}
+                        className={statusFilter === 'waiting' 
+                          ? 'bg-amber-600 hover:bg-amber-500' 
+                          : 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10'}
+                      >
+                        <Clock className="w-3 h-3 ml-1" />
+                        انتظار ({statusCounts.waiting})
+                      </Button>
+                      <Button
+                        variant={statusFilter === 'rejected' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('rejected')}
+                        className={statusFilter === 'rejected' 
+                          ? 'bg-red-600 hover:bg-red-500' 
+                          : 'border-red-500/30 text-red-400 hover:bg-red-500/10'}
+                      >
+                        <X className="w-3 h-3 ml-1" />
+                        رد ({statusCounts.rejected})
+                      </Button>
+                    </div>
                   </div>
                   
                   <div className="divide-y divide-slate-700/50 max-h-[600px] overflow-y-auto">
-                    {candidates.map((candidate) => (
-                      <Link
-                        key={candidate.id}
-                        to={`/campaign/${id}/candidate/${candidate.id}`}
-                        className={`p-4 block cursor-pointer transition-colors hover:bg-slate-800/50 ${
-                          selectedCandidate?.id === candidate.id ? "bg-slate-800/70" : ""
-                        }`}
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                            {candidate.name.charAt(0)}
+                    {candidates.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <Target className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                        <p className="text-slate-400">کاندیدایی با این وضعیت یافت نشد</p>
+                      </div>
+                    ) : (
+                      candidates.map((candidate) => (
+                        <Link
+                          key={candidate.id}
+                          to={`/campaign/${id}/candidate/${candidate.id}`}
+                          className={`p-4 block cursor-pointer transition-colors hover:bg-slate-800/50 ${
+                            selectedCandidate?.id === candidate.id ? "bg-slate-800/70" : ""
+                          }`}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                              {candidate.name.charAt(0)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-white truncate">{candidate.name}</h3>
+                                {getTemperatureIcon(candidate.candidateTemperature)}
+                                {getStatusBadge(candidate.status)}
+                              </div>
+                              <p className="text-sm text-slate-400 truncate">{candidate.title || candidate.lastCompany || "—"}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
+                                  {candidate.experience || "—"}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
+                                  {candidate.location || "—"}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-left">
+                              <div className={`text-2xl font-bold ${getScoreColor(candidate.matchScore)}`}>
+                                {candidate.matchScore}%
+                              </div>
+                              <div className="w-16 h-1.5 bg-slate-700 rounded-full mt-1 overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full ${getScoreBgColor(candidate.matchScore)}`}
+                                  style={{ width: `${candidate.matchScore}%` }}
+                                />
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-white truncate">{candidate.name}</h3>
-                              {getTemperatureIcon(candidate.candidateTemperature)}
-                            </div>
-                            <p className="text-sm text-slate-400 truncate">{candidate.title || candidate.lastCompany || "—"}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
-                                {candidate.experience || "—"}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
-                                {candidate.location || "—"}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="text-left">
-                            <div className={`text-2xl font-bold ${getScoreColor(candidate.matchScore)}`}>
-                              {candidate.matchScore}%
-                            </div>
-                            <div className="w-16 h-1.5 bg-slate-700 rounded-full mt-1 overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full ${getScoreBgColor(candidate.matchScore)}`}
-                                style={{ width: `${candidate.matchScore}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
+                        </Link>
+                      ))
+                    )}
                   </div>
                 </div>
 
