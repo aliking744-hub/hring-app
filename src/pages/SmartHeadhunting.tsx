@@ -49,8 +49,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
-// Sample campaign data
-const campaigns = [
+// Initial sample campaign data
+const initialCampaigns = [
   {
     id: "1",
     name: "Senior React Developer",
@@ -81,20 +81,11 @@ const campaigns = [
     lastUpdated: "۳ روز پیش",
     city: "اصفهان",
   },
-  {
-    id: "4",
-    name: "DevOps Engineer",
-    status: "processing",
-    source: "auto",
-    candidatesCount: 0,
-    avgMatchScore: 0,
-    lastUpdated: "در حال پردازش...",
-    city: "مشهد",
-  },
 ];
 
 const SmartHeadhunting = () => {
   const navigate = useNavigate();
+  const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [showNewCampaignForm, setShowNewCampaignForm] = useState(false);
   const [autoHeadhunting, setAutoHeadhunting] = useState(false);
   
@@ -194,6 +185,21 @@ const SmartHeadhunting = () => {
       toast.error("لطفاً فایل آپلود کنید یا گزینه هدهانتینگ خودکار را فعال کنید");
       return;
     }
+
+    // Create new campaign
+    const newCampaign = {
+      id: Date.now().toString(),
+      name: formData.jobTitle,
+      status: "processing",
+      source: autoHeadhunting ? "auto" : excelFile ? "excel" : "api",
+      candidatesCount: 0,
+      avgMatchScore: 0,
+      lastUpdated: "در حال پردازش...",
+      city: formData.city,
+    };
+
+    // Add to campaigns list
+    setCampaigns(prev => [newCampaign, ...prev]);
 
     toast.success("کمپین جدید ایجاد شد و در حال پردازش است...");
     setShowNewCampaignForm(false);
