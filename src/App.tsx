@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
@@ -26,126 +27,128 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/shop" 
-              element={
-                <ProtectedRoute>
-                  <Shop />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/job-description" 
-              element={
-                <ProtectedRoute>
-                  <JobDescriptionGenerator />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/smart-ad-generator" 
-              element={
-                <ProtectedRoute>
-                  <SmartAdGenerator />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/interview-assistant" 
-              element={
-                <ProtectedRoute>
-                  <InterviewAssistant />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/onboarding" 
-              element={
-                <ProtectedRoute>
-                  <OnboardingRoadmap />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/success-architect" 
-              element={
-                <ProtectedRoute>
-                  <SuccessArchitect />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/tools" 
-              element={
-                <ProtectedRoute>
-                  <ToolsGrid />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/hr-dashboard" 
-              element={
-                <ProtectedRoute>
-                  <HRDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/modules" 
-              element={
-                <ProtectedRoute>
-                  <Modules />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/analytics" 
-              element={
-                <ProtectedRoute>
-                  <AnalyticsHub />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/cost-calculator" 
-              element={
-                <ProtectedRoute>
-                  <CostCalculator />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                <AdminRoute>
-                  <Admin />
-                </AdminRoute>
-              } 
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/shop" 
+                element={
+                  <ProtectedRoute>
+                    <Shop />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/job-description" 
+                element={
+                  <ProtectedRoute>
+                    <JobDescriptionGenerator />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/smart-ad-generator" 
+                element={
+                  <ProtectedRoute>
+                    <SmartAdGenerator />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/interview-assistant" 
+                element={
+                  <ProtectedRoute>
+                    <InterviewAssistant />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/onboarding" 
+                element={
+                  <ProtectedRoute>
+                    <OnboardingRoadmap />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/success-architect" 
+                element={
+                  <ProtectedRoute>
+                    <SuccessArchitect />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/tools" 
+                element={
+                  <ProtectedRoute>
+                    <ToolsGrid />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/hr-dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <HRDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/modules" 
+                element={
+                  <ProtectedRoute>
+                    <Modules />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/analytics" 
+                element={
+                  <ProtectedRoute>
+                    <AnalyticsHub />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/cost-calculator" 
+                element={
+                  <ProtectedRoute>
+                    <CostCalculator />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin" 
+                element={
+                  <AdminRoute>
+                    <Admin />
+                  </AdminRoute>
+                } 
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;

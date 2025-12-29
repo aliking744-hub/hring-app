@@ -22,7 +22,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-3">
             <motion.img
               src={logo}
-              alt="hring logo"
+              alt="HRing - سیستم مدیریت منابع انسانی"
               className="h-8 w-8"
               whileHover={{ scale: 1.05 }}
             />
@@ -87,7 +87,7 @@ const Navbar = () => {
             >
               <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-2">
-                  <img src={logo} alt="hring logo" className="h-6 w-6" />
+                  <img src={logo} alt="HRing - سیستم مدیریت منابع انسانی" className="h-6 w-6" />
                   <span className="text-xl font-bold gradient-text-primary font-afarin">hring</span>
                 </div>
                 <button onClick={() => setIsOpen(false)}>
