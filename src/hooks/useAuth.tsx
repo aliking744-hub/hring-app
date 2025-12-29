@@ -20,22 +20,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // FIX: Auth Race Condition
+    // onAuthStateChange fires immediately with the current session on setup,
+    // so we rely solely on it as the single source of truth.
+    // This eliminates the race condition between getSession and onAuthStateChange.
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      (event, currentSession) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
         setLoading(false);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
+    // Cleanup subscription on unmount
     return () => subscription.unsubscribe();
   }, []);
 
