@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { 
   ArrowLeft, 
@@ -12,7 +12,6 @@ import {
   X,
   Check,
   Target,
-  BarChart3,
   AlertCircle,
   Flame,
   ThermometerSun,
@@ -23,12 +22,14 @@ import {
   TrendingUp,
   Brain,
   Heart,
-  Shield
+  Shield,
+  Loader2
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useCampaignDetail, Candidate as DBCandidate } from "@/hooks/useCampaigns";
 import {
   PieChart,
   Pie,
@@ -49,7 +50,8 @@ interface LayerScores {
   riskOpportunity: number;
 }
 
-interface Candidate {
+// Transform DB candidate to UI format
+interface UICandidate {
   id: string;
   name: string;
   email: string;
@@ -76,204 +78,61 @@ interface Candidate {
   recommendation?: string;
 }
 
-interface CampaignStats {
-  total: number;
-  excellent: number;
-  good: number;
-  average: number;
-  avgScore: number;
-  hotCandidates?: number;
-  warmCandidates?: number;
-  coldCandidates?: number;
-}
-
-interface CampaignData {
-  id: string;
-  name: string;
-  city: string;
-  candidates: Candidate[];
-  stats: CampaignStats;
-}
-
-// Fallback sample data with new 5-layer analysis
-const fallbackCampaign: CampaignData = {
-  id: "1",
-  name: "Senior React Developer",
-  city: "تهران",
-  candidates: [
-    {
-      id: "1",
-      name: "علی محمدی",
-      title: "Senior Frontend Developer",
-      matchScore: 95,
-      candidateTemperature: "hot",
-      education: "کارشناسی ارشد مهندسی نرم‌افزار",
-      experience: "۸ سال",
-      lastCompany: "دیجی‌کالا",
-      phone: "۰۹۱۲۳۴۵۶۷۸۹",
-      email: "ali@example.com",
-      location: "تهران",
-      linkedin: "https://linkedin.com/in/alimohammadi",
-      skills: ["React", "TypeScript", "Node.js", "GraphQL"],
-      layerScores: {
-        activitySentiment: 90,
-        hardSkillMatch: 95,
-        careerTrajectory: 92,
-        cultureFit: 88,
-        riskOpportunity: 85,
-      },
-      scores: {
-        skills: 95,
-        experience: 90,
-        education: 85,
-        culture: 92,
-      },
-      redFlags: [],
-      greenFlags: ["رشد پیوسته در مسیر شغلی", "گواهینامه‌های جدید", "فعالیت تخصصی بالا در لینکدین"],
-      summary: "کاندیدای عالی با تطابق بسیار بالا. رشد شغلی قوی از Junior به Senior در شرکت‌های معتبر.",
-      recommendation: "فوری تماس بگیرید",
-    },
-    {
-      id: "2",
-      name: "سارا احمدی",
-      title: "Full Stack Developer",
-      matchScore: 89,
-      candidateTemperature: "warm",
-      education: "کارشناسی مهندسی کامپیوتر",
-      experience: "۶ سال",
-      lastCompany: "اسنپ",
-      phone: "۰۹۱۲۸۷۶۵۴۳۲",
-      email: "sara@example.com",
-      location: "تهران",
-      linkedin: "https://linkedin.com/in/saraahmadi",
-      skills: ["React", "TypeScript", "Python", "PostgreSQL"],
-      layerScores: {
-        activitySentiment: 85,
-        hardSkillMatch: 88,
-        careerTrajectory: 80,
-        cultureFit: 90,
-        riskOpportunity: 82,
-      },
-      scores: {
-        skills: 88,
-        experience: 85,
-        education: 80,
-        culture: 90,
-      },
-      redFlags: ["یک تغییر شغل در کمتر از یک سال"],
-      greenFlags: ["مهارت‌های قوی فول‌استک", "تجربه در شرکت معتبر"],
-      summary: "کاندیدای مناسب با مهارت‌های قوی. نیاز به بررسی دلیل تغییر شغل سریع.",
-      recommendation: "در لیست انتظار",
-    },
-    {
-      id: "3",
-      name: "محمد رضایی",
-      title: "Frontend Engineer",
-      matchScore: 78,
-      candidateTemperature: "cold",
-      education: "کارشناسی علوم کامپیوتر",
-      experience: "۵ سال",
-      lastCompany: "تپسی",
-      phone: "۰۹۱۵۱۲۳۴۵۶۷",
-      email: "mohammad@example.com",
-      location: "مشهد",
-      skills: ["React", "JavaScript", "CSS", "REST API"],
-      layerScores: {
-        activitySentiment: 70,
-        hardSkillMatch: 82,
-        careerTrajectory: 75,
-        cultureFit: 80,
-        riskOpportunity: 65,
-      },
-      scores: {
-        skills: 82,
-        experience: 78,
-        education: 75,
-        culture: 80,
-      },
-      redFlags: ["فعالیت کم در شبکه‌های اجتماعی حرفه‌ای", "عدم TypeScript"],
-      greenFlags: ["کاندیدای مناسب با پتانسیل رشد"],
-      summary: "کاندیدای با پتانسیل ولی نیاز به آموزش TypeScript.",
-      recommendation: "در لیست انتظار",
-    },
-  ],
-  stats: {
-    total: 3,
-    excellent: 1,
-    good: 1,
-    average: 1,
-    avgScore: 87,
-    hotCandidates: 1,
-    warmCandidates: 1,
-    coldCandidates: 1,
-  },
-};
-
 const CampaignDetail = () => {
   const { id } = useParams();
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
-  const [campaignData, setCampaignData] = useState<CampaignData | null>(null);
+  const { campaign, candidates: dbCandidates, stats, loading, error } = useCampaignDetail(id);
+  const [selectedCandidate, setSelectedCandidate] = useState<UICandidate | null>(null);
 
-  useEffect(() => {
-    const campaignId = id || "";
+  // Transform DB candidates to UI format
+  const candidates: UICandidate[] = dbCandidates.map((c) => ({
+    id: c.id,
+    name: c.name || "بدون نام",
+    email: c.email || "",
+    phone: c.phone || "",
+    title: c.title || "",
+    education: c.education || "",
+    experience: c.experience || "",
+    lastCompany: c.last_company || "",
+    location: c.location || "",
+    skills: c.skills ? c.skills.split(",").map(s => s.trim()) : [],
+    matchScore: c.match_score,
+    candidateTemperature: c.candidate_temperature as "hot" | "warm" | "cold",
+    layerScores: c.layer_scores as LayerScores | undefined,
+    scores: {
+      skills: c.layer_scores?.hardSkillMatch || c.match_score,
+      experience: c.layer_scores?.careerTrajectory || c.match_score,
+      education: 70,
+      culture: c.layer_scores?.cultureFit || 70,
+    },
+    redFlags: c.red_flags || [],
+    greenFlags: c.green_flags || [],
+    recommendation: c.recommendation || undefined,
+  }));
 
-    const empty: CampaignData = {
-      id: campaignId || "unknown",
-      name: "در حال پردازش...",
-      city: "",
-      candidates: [],
-      stats: {
-        total: 0,
-        excellent: 0,
-        good: 0,
-        average: 0,
-        avgScore: 0,
-        hotCandidates: 0,
-        warmCandidates: 0,
-        coldCandidates: 0,
-      },
-    };
-
-    if (!campaignId) {
-      setCampaignData({ ...empty, name: "کمپین نامعتبر" });
-      return;
-    }
-
-    const stored = localStorage.getItem(`campaign_${campaignId}`);
-    if (!stored) {
-      // No fallback/sample data for real campaigns
-      setCampaignData({ ...empty, name: "کمپین پیدا نشد" });
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(stored);
-      setCampaignData({
-        ...empty,
-        ...parsed,
-        id: String(parsed?.id ?? campaignId),
-        candidates: Array.isArray(parsed?.candidates) ? parsed.candidates : [],
-        stats: parsed?.stats ?? empty.stats,
-      });
-    } catch (e) {
-      console.error("Error parsing campaign data:", e);
-      setCampaignData({ ...empty, name: "خطا در بارگذاری داده کمپین" });
-    }
-  }, [id]);
-
-
-  if (!campaignData) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 text-violet-400 mx-auto mb-4 animate-spin" />
           <p className="text-slate-400">در حال بارگذاری...</p>
         </div>
       </div>
     );
   }
 
-  const { candidates, stats } = campaignData;
+  if (error || !campaign) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center" dir="rtl">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <p className="text-slate-400 mb-4">{error || "کمپین پیدا نشد"}</p>
+          <Link to="/smart-headhunting">
+            <Button variant="outline" className="border-slate-700">بازگشت</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const getScoreColor = (score: number) => {
     if (score >= 85) return "text-emerald-400";
@@ -378,8 +237,8 @@ const CampaignDetail = () => {
   return (
     <>
       <Helmet>
-        <title>{campaignData.name} | هدهانتینگ هوشمند</title>
-        <meta name="description" content={`جزئیات کمپین ${campaignData.name}`} />
+        <title>{campaign.name} | هدهانتینگ هوشمند</title>
+        <meta name="description" content={`جزئیات کمپین ${campaign.name}`} />
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 lg:p-8" dir="rtl">
@@ -392,497 +251,397 @@ const CampaignDetail = () => {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-white">{campaignData.name}</h1>
-              <p className="text-slate-400 text-sm mt-1">{campaignData.city} • {stats.total} کاندیدا • میانگین امتیاز: {stats.avgScore}%</p>
+              <h1 className="text-2xl lg:text-3xl font-bold text-white">{campaign.name}</h1>
+              <p className="text-slate-400 text-sm mt-1">{campaign.city} • {stats.total} کاندیدا • میانگین امتیاز: {stats.avgScore}%</p>
             </div>
           </div>
 
-          {/* Stats Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-            {/* Quality Distribution */}
-            <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Target className="w-5 h-5 text-violet-400" />
-                توزیع کیفیت
-              </h3>
-              <div className="h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={qualityData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={70}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {qualityData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#1e293b",
-                        border: "1px solid #334155",
-                        borderRadius: "8px",
-                        color: "#fff",
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex justify-center gap-3 mt-2">
-                {qualityData.map((item) => (
-                  <div key={item.name} className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-xs text-slate-300">{item.name}: {item.value}</span>
-                  </div>
-                ))}
-              </div>
+          {candidates.length === 0 ? (
+            <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-12 text-center">
+              <Users className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+              <p className="text-slate-400 text-lg">هنوز کاندیدایی در این کمپین وجود ندارد</p>
+              <p className="text-slate-500 text-sm mt-2">لطفاً فایل اکسل کاندیداها را آپلود کنید</p>
             </div>
-
-            {/* Temperature Distribution */}
-            <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Flame className="w-5 h-5 text-red-400" />
-                دمای کاندیداها
-              </h3>
-              <div className="h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={temperatureData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={70}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {temperatureData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#1e293b",
-                        border: "1px solid #334155",
-                        borderRadius: "8px",
-                        color: "#fff",
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex justify-center gap-3 mt-2">
-                {temperatureData.map((item) => (
-                  <div key={item.name} className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-xs text-slate-300">{item.name}: {item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Education Distribution */}
-            <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-violet-400" />
-                مدارک تحصیلی
-              </h3>
-              <div className="h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={educationData} layout="vertical">
-                    <XAxis type="number" stroke="#64748b" fontSize={12} />
-                    <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={10} width={100} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#1e293b",
-                        border: "1px solid #334155",
-                        borderRadius: "8px",
-                        color: "#fff",
-                      }}
-                    />
-                    <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Experience Distribution */}
-            <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-violet-400" />
-                سابقه کاری
-              </h3>
-              <div className="h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={experienceData} layout="vertical">
-                    <XAxis type="number" stroke="#64748b" fontSize={12} />
-                    <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={10} width={80} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#1e293b",
-                        border: "1px solid #334155",
-                        borderRadius: "8px",
-                        color: "#fff",
-                      }}
-                    />
-                    <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          {/* Candidates List and Detail */}
-          <div className="flex gap-6">
-            {/* Candidates List */}
-            <div className={`flex-1 transition-all duration-300 ${selectedCandidate ? 'lg:w-[55%]' : 'w-full'}`}>
-              <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-700/50">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Users className="w-5 h-5 text-violet-400" />
-                    کاندیداها (مرتب بر اساس امتیاز)
+          ) : (
+            <>
+              {/* Stats Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+                {/* Quality Distribution */}
+                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-violet-400" />
+                    توزیع کیفیت
                   </h3>
+                  <div className="h-[180px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={qualityData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={70}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {qualityData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#1e293b",
+                            border: "1px solid #334155",
+                            borderRadius: "8px",
+                            color: "#fff",
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex justify-center gap-3 mt-2">
+                    {qualityData.map((item) => (
+                      <div key={item.name} className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-xs text-slate-300">{item.name}: {item.value}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                
-                <div className="divide-y divide-slate-700/50">
-                  {candidates.map((candidate, index) => (
-                    <div
-                      key={candidate.id}
-                      onClick={() => setSelectedCandidate(candidate)}
-                      className={`p-4 cursor-pointer transition-colors ${
-                        selectedCandidate?.id === candidate.id
-                          ? 'bg-violet-500/10'
-                          : 'hover:bg-slate-800/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                          {index + 1}
+
+                {/* Temperature Distribution */}
+                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Flame className="w-5 h-5 text-red-400" />
+                    دمای کاندیداها
+                  </h3>
+                  <div className="h-[180px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={temperatureData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={70}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {temperatureData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#1e293b",
+                            border: "1px solid #334155",
+                            borderRadius: "8px",
+                            color: "#fff",
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex justify-center gap-3 mt-2">
+                    {temperatureData.map((item) => (
+                      <div key={item.name} className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-xs text-slate-300">{item.name}: {item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Education Distribution */}
+                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-violet-400" />
+                    مدارک تحصیلی
+                  </h3>
+                  <div className="h-[180px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={educationData} layout="vertical">
+                        <XAxis type="number" stroke="#64748b" fontSize={12} />
+                        <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={10} width={100} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#1e293b",
+                            border: "1px solid #334155",
+                            borderRadius: "8px",
+                            color: "#fff",
+                          }}
+                        />
+                        <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Experience Distribution */}
+                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-violet-400" />
+                    سابقه کار
+                  </h3>
+                  <div className="h-[180px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={experienceData} layout="vertical">
+                        <XAxis type="number" stroke="#64748b" fontSize={12} />
+                        <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={10} width={80} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#1e293b",
+                            border: "1px solid #334155",
+                            borderRadius: "8px",
+                            color: "#fff",
+                          }}
+                        />
+                        <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Content Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Candidates List */}
+                <div className="lg:col-span-2 rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+                  <div className="p-6 border-b border-slate-700/50">
+                    <h2 className="text-xl font-semibold text-white flex items-center gap-3">
+                      <Users className="w-5 h-5 text-violet-400" />
+                      لیست کاندیداها ({candidates.length})
+                    </h2>
+                  </div>
+                  
+                  <div className="divide-y divide-slate-700/50 max-h-[600px] overflow-y-auto">
+                    {candidates.map((candidate) => (
+                      <div
+                        key={candidate.id}
+                        className={`p-4 cursor-pointer transition-colors hover:bg-slate-800/50 ${
+                          selectedCandidate?.id === candidate.id ? "bg-slate-800/70" : ""
+                        }`}
+                        onClick={() => setSelectedCandidate(candidate)}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                            {candidate.name.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-white truncate">{candidate.name}</h3>
+                              {getTemperatureIcon(candidate.candidateTemperature)}
+                            </div>
+                            <p className="text-sm text-slate-400 truncate">{candidate.title || candidate.lastCompany || "—"}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
+                                {candidate.experience || "—"}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
+                                {candidate.location || "—"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-left">
+                            <div className={`text-2xl font-bold ${getScoreColor(candidate.matchScore)}`}>
+                              {candidate.matchScore}%
+                            </div>
+                            <div className="w-16 h-1.5 bg-slate-700 rounded-full mt-1 overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full ${getScoreBgColor(candidate.matchScore)}`}
+                                style={{ width: `${candidate.matchScore}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Candidate Detail Panel */}
+                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+                  {selectedCandidate ? (
+                    <div className="h-full flex flex-col">
+                      {/* Header */}
+                      <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-violet-500/10 to-purple-500/10">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
+                              {selectedCandidate.name.charAt(0)}
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-white">{selectedCandidate.name}</h3>
+                              <p className="text-slate-400">{selectedCandidate.title}</p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setSelectedCandidate(null)}
+                            className="text-slate-400 hover:text-white"
+                          >
+                            <X className="w-5 h-5" />
+                          </Button>
                         </div>
                         
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-medium text-white">{candidate.name}</h4>
-                            {candidate.matchScore >= 85 && (
-                              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                                <Star className="w-3 h-3 ml-1" />
-                                عالی
-                              </Badge>
-                            )}
-                            {getTemperatureBadge(candidate.candidateTemperature)}
-                          </div>
-                          <p className="text-sm text-slate-400">{candidate.title}</p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-                            <span>{candidate.lastCompany}</span>
-                            <span>•</span>
-                            <span>{candidate.experience}</span>
-                            <span>•</span>
-                            <span>{candidate.location}</span>
-                          </div>
-                          {candidate.recommendation && (
-                            <Badge className={`mt-2 ${getRecommendationColor(candidate.recommendation)}`}>
-                              {candidate.recommendation}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {getTemperatureBadge(selectedCandidate.candidateTemperature)}
+                          {selectedCandidate.recommendation && (
+                            <Badge className={getRecommendationColor(selectedCandidate.recommendation)}>
+                              {selectedCandidate.recommendation}
                             </Badge>
                           )}
-                        </div>
-
-                        <div className="flex-shrink-0 text-left">
-                          <div className="relative w-16 h-16">
-                            <svg className="w-16 h-16 -rotate-90">
-                              <circle
-                                cx="32"
-                                cy="32"
-                                r="28"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                                className="text-slate-700"
-                              />
-                              <circle
-                                cx="32"
-                                cy="32"
-                                r="28"
-                                fill="none"
-                                stroke="url(#scoreGradient)"
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                                strokeDasharray={`${candidate.matchScore * 1.76} 176`}
-                              />
-                              <defs>
-                                <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                  <stop offset="0%" stopColor="#8b5cf6" />
-                                  <stop offset="100%" stopColor="#a855f7" />
-                                </linearGradient>
-                              </defs>
-                            </svg>
-                            <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${getScoreColor(candidate.matchScore)}`}>
-                              {candidate.matchScore}%
-                            </span>
+                          <div className={`text-lg font-bold ${getScoreColor(selectedCandidate.matchScore)}`}>
+                            امتیاز: {selectedCandidate.matchScore}%
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
 
-                {candidates.length === 0 && (
-                  <div className="p-12 text-center">
-                    <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                    <p className="text-slate-400">هنوز کاندیدایی تحلیل نشده است</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Candidate Detail Panel */}
-            {selectedCandidate && (
-              <div className="hidden lg:block w-[45%]">
-                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden sticky top-6">
-                  <div className="p-6 border-b border-slate-700/50 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-white">جزئیات کاندیدا</h3>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-slate-400 hover:text-white"
-                      onClick={() => setSelectedCandidate(null)}
-                    >
-                      <X className="w-5 h-5" />
-                    </Button>
-                  </div>
-
-                  <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-                    {/* Basic Info */}
-                    <div className="flex items-start gap-4 mb-6">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                        {selectedCandidate.name.charAt(0)}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-xl font-semibold text-white">{selectedCandidate.name}</h4>
-                        <p className="text-slate-400">{selectedCandidate.title}</p>
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          <Badge className={`${getScoreBgColor(selectedCandidate.matchScore)}/20 ${getScoreColor(selectedCandidate.matchScore)} border-current/30`}>
-                            امتیاز کل: {selectedCandidate.matchScore}%
-                          </Badge>
-                          {getTemperatureBadge(selectedCandidate.candidateTemperature)}
-                        </div>
-                        {selectedCandidate.recommendation && (
-                          <Badge className={`mt-2 ${getRecommendationColor(selectedCandidate.recommendation)}`}>
-                            {selectedCandidate.recommendation}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Summary */}
-                    {selectedCandidate.summary && (
-                      <div className="mb-6 p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                        <p className="text-sm text-violet-300">{selectedCandidate.summary}</p>
-                      </div>
-                    )}
-
-                    {/* Red Flags & Green Flags */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      {/* Red Flags */}
-                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                        <h5 className="text-sm font-medium text-red-400 mb-2 flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4" />
-                          هشدارها
-                        </h5>
-                        {selectedCandidate.redFlags && selectedCandidate.redFlags.length > 0 ? (
-                          <ul className="space-y-1">
-                            {selectedCandidate.redFlags.map((flag, idx) => (
-                              <li key={idx} className="text-xs text-red-300">• {flag}</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-slate-500">بدون هشدار</p>
-                        )}
-                      </div>
-
-                      {/* Green Flags */}
-                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <h5 className="text-sm font-medium text-emerald-400 mb-2 flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4" />
-                          نقاط قوت
-                        </h5>
-                        {selectedCandidate.greenFlags && selectedCandidate.greenFlags.length > 0 ? (
-                          <ul className="space-y-1">
-                            {selectedCandidate.greenFlags.map((flag, idx) => (
-                              <li key={idx} className="text-xs text-emerald-300">• {flag}</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-slate-500">-</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Contact Info */}
-                    <div className="space-y-3 mb-6">
-                      <div className="flex items-center gap-3 text-slate-300">
-                        <GraduationCap className="w-5 h-5 text-violet-400" />
-                        <span>{selectedCandidate.education}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-slate-300">
-                        <Briefcase className="w-5 h-5 text-violet-400" />
-                        <span>{selectedCandidate.experience} سابقه کار • {selectedCandidate.lastCompany}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-slate-300">
-                        <MapPin className="w-5 h-5 text-violet-400" />
-                        <span>{selectedCandidate.location}</span>
-                      </div>
-                      {selectedCandidate.phone && (
-                        <div className="flex items-center gap-3 text-slate-300">
-                          <Phone className="w-5 h-5 text-violet-400" />
-                          <span dir="ltr">{selectedCandidate.phone}</span>
-                        </div>
-                      )}
-                      {selectedCandidate.email && (
-                        <div className="flex items-center gap-3 text-slate-300">
-                          <Mail className="w-5 h-5 text-violet-400" />
-                          <span>{selectedCandidate.email}</span>
-                        </div>
-                      )}
-                      {selectedCandidate.linkedin && (
-                        <a 
-                          href={selectedCandidate.linkedin} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3 text-blue-400 hover:text-blue-300"
-                        >
-                          <Linkedin className="w-5 h-5" />
-                          <span>پروفایل لینکدین</span>
-                        </a>
-                      )}
-                    </div>
-
-                    {/* Skills */}
-                    {selectedCandidate.skills.length > 0 && (
-                      <div className="mb-6">
-                        <h5 className="text-sm font-medium text-slate-400 mb-3">مهارت‌ها</h5>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedCandidate.skills.map((skill, idx) => (
-                            <Badge
-                              key={idx}
-                              variant="outline"
-                              className="border-violet-500/30 text-violet-300 bg-violet-500/10"
-                            >
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 5-Layer Score Breakdown */}
-                    {selectedCandidate.layerScores && (
-                      <div className="mb-6">
-                        <h5 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
-                          <BarChart3 className="w-4 h-4" />
-                          تحلیل ۵ لایه‌ای
-                        </h5>
-                        <div className="space-y-4">
-                          {(Object.entries(selectedCandidate.layerScores) as [keyof LayerScores, number][]).map(([key, score]) => (
-                            <div key={key}>
-                              <div className="flex justify-between text-sm mb-1">
-                                <span className="text-slate-300 flex items-center gap-2">
-                                  {layerLabels[key].icon}
-                                  {layerLabels[key].label}
-                                </span>
-                                <span className={getScoreColor(score)}>
-                                  {score}%
-                                </span>
+                      {/* Content */}
+                      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {/* Contact Info */}
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-400 mb-3">اطلاعات تماس</h4>
+                          <div className="space-y-2">
+                            {selectedCandidate.email && (
+                              <div className="flex items-center gap-2 text-slate-300">
+                                <Mail className="w-4 h-4 text-slate-500" />
+                                <span className="text-sm">{selectedCandidate.email}</span>
                               </div>
-                              <Progress 
-                                value={score} 
-                                className="h-2 bg-slate-800"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Legacy Score Breakdown (if no layer scores) */}
-                    {!selectedCandidate.layerScores && (
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
-                          <BarChart3 className="w-4 h-4" />
-                          امتیازات جزئی
-                        </h5>
-                        <div className="space-y-4">
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-slate-300">مهارت‌ها</span>
-                              <span className={getScoreColor(selectedCandidate.scores.skills)}>
-                                {selectedCandidate.scores.skills}%
-                              </span>
-                            </div>
-                            <Progress 
-                              value={selectedCandidate.scores.skills} 
-                              className="h-2 bg-slate-800"
-                            />
-                          </div>
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-slate-300">تجربه کاری</span>
-                              <span className={getScoreColor(selectedCandidate.scores.experience)}>
-                                {selectedCandidate.scores.experience}%
-                              </span>
-                            </div>
-                            <Progress 
-                              value={selectedCandidate.scores.experience} 
-                              className="h-2 bg-slate-800"
-                            />
-                          </div>
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-slate-300">تحصیلات</span>
-                              <span className={getScoreColor(selectedCandidate.scores.education)}>
-                                {selectedCandidate.scores.education}%
-                              </span>
-                            </div>
-                            <Progress 
-                              value={selectedCandidate.scores.education} 
-                              className="h-2 bg-slate-800"
-                            />
-                          </div>
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-slate-300">تناسب فرهنگی</span>
-                              <span className={getScoreColor(selectedCandidate.scores.culture)}>
-                                {selectedCandidate.scores.culture}%
-                              </span>
-                            </div>
-                            <Progress 
-                              value={selectedCandidate.scores.culture} 
-                              className="h-2 bg-slate-800"
-                            />
+                            )}
+                            {selectedCandidate.phone && (
+                              <div className="flex items-center gap-2 text-slate-300">
+                                <Phone className="w-4 h-4 text-slate-500" />
+                                <span className="text-sm">{selectedCandidate.phone}</span>
+                              </div>
+                            )}
+                            {selectedCandidate.location && (
+                              <div className="flex items-center gap-2 text-slate-300">
+                                <MapPin className="w-4 h-4 text-slate-500" />
+                                <span className="text-sm">{selectedCandidate.location}</span>
+                              </div>
+                            )}
+                            {selectedCandidate.linkedin && (
+                              <a
+                                href={selectedCandidate.linkedin}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-blue-400 hover:text-blue-300"
+                              >
+                                <Linkedin className="w-4 h-4" />
+                                <span className="text-sm">پروفایل لینکدین</span>
+                              </a>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    )}
 
-                    {/* Actions */}
-                    <div className="mt-6 flex gap-3">
-                      <Button className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500">
-                        <Check className="w-4 h-4 ml-2" />
-                        تایید
-                      </Button>
-                      <Button variant="outline" className="flex-1 border-slate-700 text-slate-300 hover:text-white">
-                        <X className="w-4 h-4 ml-2" />
-                        رد
-                      </Button>
+                        {/* Skills */}
+                        {selectedCandidate.skills.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium text-slate-400 mb-3">مهارت‌ها</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedCandidate.skills.map((skill, index) => (
+                                <Badge
+                                  key={index}
+                                  variant="outline"
+                                  className="border-violet-500/30 text-violet-300"
+                                >
+                                  {skill}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Layer Scores */}
+                        {selectedCandidate.layerScores && (
+                          <div>
+                            <h4 className="text-sm font-medium text-slate-400 mb-3">تحلیل ۵ لایه‌ای</h4>
+                            <div className="space-y-3">
+                              {(Object.keys(selectedCandidate.layerScores) as Array<keyof LayerScores>).map((key) => {
+                                const score = selectedCandidate.layerScores![key];
+                                const label = layerLabels[key];
+                                return (
+                                  <div key={key}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <div className="flex items-center gap-2 text-sm text-slate-300">
+                                        {label.icon}
+                                        {label.label}
+                                      </div>
+                                      <span className={`text-sm font-medium ${getScoreColor(score)}`}>
+                                        {score}%
+                                      </span>
+                                    </div>
+                                    <Progress value={score} className="h-2" />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Green Flags */}
+                        {selectedCandidate.greenFlags && selectedCandidate.greenFlags.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium text-emerald-400 mb-3 flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4" />
+                              نقاط قوت
+                            </h4>
+                            <ul className="space-y-2">
+                              {selectedCandidate.greenFlags.map((flag, index) => (
+                                <li key={index} className="flex items-start gap-2 text-sm text-slate-300">
+                                  <Check className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                                  {flag}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Red Flags */}
+                        {selectedCandidate.redFlags && selectedCandidate.redFlags.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium text-red-400 mb-3 flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4" />
+                              نکات هشدار
+                            </h4>
+                            <ul className="space-y-2">
+                              {selectedCandidate.redFlags.map((flag, index) => (
+                                <li key={index} className="flex items-start gap-2 text-sm text-slate-300">
+                                  <X className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                                  {flag}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="p-4 border-t border-slate-700/50 flex gap-3">
+                        <Button className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white">
+                          <Check className="w-4 h-4 ml-2" />
+                          تأیید
+                        </Button>
+                        <Button variant="outline" className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10">
+                          <X className="w-4 h-4 ml-2" />
+                          رد
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="h-full flex items-center justify-center p-6">
+                      <div className="text-center">
+                        <Star className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                        <p className="text-slate-400">یک کاندیدا را انتخاب کنید</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
     </>

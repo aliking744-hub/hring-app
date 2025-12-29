@@ -14,6 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaigns: {
+        Row: {
+          auto_headhunting: boolean | null
+          city: string | null
+          created_at: string
+          education_level: string | null
+          experience_range: string | null
+          id: string
+          industry: string | null
+          job_title: string | null
+          name: string
+          progress: number
+          skills: string[] | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_headhunting?: boolean | null
+          city?: string | null
+          created_at?: string
+          education_level?: string | null
+          experience_range?: string | null
+          id?: string
+          industry?: string | null
+          job_title?: string | null
+          name: string
+          progress?: number
+          skills?: string[] | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_headhunting?: boolean | null
+          city?: string | null
+          created_at?: string
+          education_level?: string | null
+          experience_range?: string | null
+          id?: string
+          industry?: string | null
+          job_title?: string | null
+          name?: string
+          progress?: number
+          skills?: string[] | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      candidates: {
+        Row: {
+          campaign_id: string
+          candidate_temperature: string | null
+          created_at: string
+          education: string | null
+          email: string | null
+          experience: string | null
+          green_flags: string[] | null
+          id: string
+          last_company: string | null
+          layer_scores: Json | null
+          location: string | null
+          match_score: number | null
+          name: string | null
+          phone: string | null
+          raw_data: Json | null
+          recommendation: string | null
+          red_flags: string[] | null
+          skills: string | null
+          title: string | null
+        }
+        Insert: {
+          campaign_id: string
+          candidate_temperature?: string | null
+          created_at?: string
+          education?: string | null
+          email?: string | null
+          experience?: string | null
+          green_flags?: string[] | null
+          id?: string
+          last_company?: string | null
+          layer_scores?: Json | null
+          location?: string | null
+          match_score?: number | null
+          name?: string | null
+          phone?: string | null
+          raw_data?: Json | null
+          recommendation?: string | null
+          red_flags?: string[] | null
+          skills?: string | null
+          title?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          candidate_temperature?: string | null
+          created_at?: string
+          education?: string | null
+          email?: string | null
+          experience?: string | null
+          green_flags?: string[] | null
+          id?: string
+          last_company?: string | null
+          layer_scores?: Json | null
+          location?: string | null
+          match_score?: number | null
+          name?: string | null
+          phone?: string | null
+          raw_data?: Json | null
+          recommendation?: string | null
+          red_flags?: string[] | null
+          skills?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidates_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           author_id: string | null

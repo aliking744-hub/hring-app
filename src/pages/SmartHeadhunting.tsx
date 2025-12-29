@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { 
   Crosshair, 
   Plus, 
   Upload, 
-  Play, 
   Pause, 
-  MoreHorizontal,
   FileSpreadsheet,
   Zap,
   ChevronRight,
@@ -14,10 +12,8 @@ import {
   FileText,
   Target,
   Users,
-  ExternalLink,
   Check,
   X,
-  AlertCircle,
   Loader2
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -42,33 +38,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useCampaigns } from "@/hooks/useCampaigns";
+import { useAuth } from "@/hooks/useAuth";
 import * as XLSX from "xlsx";
-
-// Initial campaigns start empty (no demo / fake data)
-const initialCampaigns: any[] = [];
-
-
-const CAMPAIGNS_STORAGE_KEY = "smart_headhunting_campaigns";
 
 const SmartHeadhunting = () => {
   const navigate = useNavigate();
-  const [campaigns, setCampaigns] = useState(() => {
-    try {
-      const stored = localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
-      if (stored) return JSON.parse(stored);
-    } catch {
-      // ignore
-    }
-    return initialCampaigns;
-  });
+  const { user } = useAuth();
+  const { campaigns, loading, fetchCampaigns, createCampaign, updateCampaign, addCandidates } = useCampaigns();
+  
   const [showNewCampaignForm, setShowNewCampaignForm] = useState(false);
   const [autoHeadhunting, setAutoHeadhunting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -88,14 +68,6 @@ const SmartHeadhunting = () => {
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
   const [parsedCandidates, setParsedCandidates] = useState<any[]>([]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(campaigns));
-    } catch {
-      // ignore
-    }
-  }, [campaigns]);
 
   const getSourceBadge = (source: string) => {
     switch (source) {
@@ -219,7 +191,6 @@ const SmartHeadhunting = () => {
           education: findColumnValue(row, educationPatterns),
           lastCompany: findColumnValue(row, companyPatterns),
           location: findColumnValue(row, locationPatterns),
-          // Keep all original data for AI analysis
           rawData: row,
         };
         console.log(`Row ${index + 1} parsed:`, candidate);
@@ -230,7 +201,6 @@ const SmartHeadhunting = () => {
         Object.values(c).some((v) => v && typeof v === 'string' && v.trim().length > 0)
       );
 
-      // Remove rows that have no identifying info at all
       const candidates = candidatesNonEmpty.filter((c) => c.name || c.email || c.phone);
 
       console.log("Final candidates:", candidates);
@@ -238,7 +208,6 @@ const SmartHeadhunting = () => {
       if (candidates.length === 0) {
         setParsedCandidates([]);
         setExcelFile(null);
-        // Show what columns were found
         const foundCols = jsonData.length > 0 ? Object.keys(jsonData[0] as object).join('، ') : 'هیچ';
         toast.error(`ستون‌های شناسایی‌شده: ${foundCols}\nحداقل یکی از ستون‌های «نام»، «ایمیل» یا «تلفن» لازم است`);
         return;
@@ -269,6 +238,12 @@ const SmartHeadhunting = () => {
   };
 
   const handleCreateCampaign = async () => {
+    if (!user) {
+      toast.error("لطفاً ابتدا وارد شوید");
+      navigate("/auth");
+      return;
+    }
+
     if (!formData.jobTitle || !formData.city) {
       toast.error("لطفاً عنوان شغل و نام شهر را وارد کنید");
       return;
@@ -279,80 +254,34 @@ const SmartHeadhunting = () => {
       return;
     }
 
-    const campaignId = Date.now().toString();
-
-    // Create new campaign with processing status
-    const newCampaign = {
-      id: campaignId,
-      name: formData.jobTitle,
-      status: "processing",
-      source: autoHeadhunting ? "auto" : excelFile ? "excel" : pdfFiles.length > 0 ? "pdf" : "api",
-      candidatesCount: 0,
-      avgMatchScore: 0,
-      lastUpdated: "در حال پردازش...",
-      city: formData.city,
-    };
-
-    // Persist a placeholder immediately so returning to the page / opening details won't "lose" the campaign
-    const emptyStats = {
-      total: 0,
-      excellent: 0,
-      good: 0,
-      average: 0,
-      avgScore: 0,
-      hotCandidates: 0,
-      warmCandidates: 0,
-      coldCandidates: 0,
-    };
-    try {
-      localStorage.setItem(
-        `campaign_${campaignId}`,
-        JSON.stringify({ ...newCampaign, candidates: [], stats: emptyStats })
-      );
-    } catch {
-      // ignore
-    }
-
-    setCampaigns((prev) => [newCampaign, ...prev]);
-    setShowNewCampaignForm(false);
     setIsProcessing(true);
 
     try {
+      // Create campaign in database
+      const campaign = await createCampaign({
+        name: formData.jobTitle,
+        city: formData.city,
+        job_title: formData.jobTitle,
+        industry: formData.industry || undefined,
+        experience_range: formData.experience || undefined,
+        skills: formData.skills ? formData.skills.split(',').map(s => s.trim()) : undefined,
+        auto_headhunting: autoHeadhunting,
+      });
+
+      setShowNewCampaignForm(false);
+
       if (autoHeadhunting) {
-        // For auto headhunting, we'll connect to Make.com later
         toast.info("هدهانتینگ خودکار در حال آماده‌سازی...");
+        
+        // Update campaign to paused - auto headhunting not yet connected
+        await updateCampaign(campaign.id, {
+          status: "paused",
+          progress: 0,
+        });
 
-        // Simulate processing for now
-        setTimeout(() => {
-          setCampaigns((prev) =>
-            prev.map((c) =>
-              c.id === campaignId
-                ? { ...c, status: "active", candidatesCount: 15, avgMatchScore: 75, lastUpdated: "همین الان" }
-                : c
-            )
-          );
-
-          try {
-            localStorage.setItem(
-              `campaign_${campaignId}`,
-              JSON.stringify({
-                ...newCampaign,
-                status: "active",
-                candidatesCount: 15,
-                avgMatchScore: 75,
-                lastUpdated: "همین الان",
-                candidates: [],
-                stats: { ...emptyStats, total: 15, avgScore: 75 },
-              })
-            );
-          } catch {
-            // ignore
-          }
-
-          toast.success("کمپین آماده شد!");
-        }, 3000);
+        toast.success("کمپین ایجاد شد. هدهانتینگ خودکار هنوز فعال نیست.");
+        
       } else if (parsedCandidates.length > 0) {
-        // Process with AI
         toast.info("در حال تحلیل کاندیداها با هوش مصنوعی...");
 
         const { data, error } = await supabase.functions.invoke("analyze-candidates", {
@@ -370,85 +299,53 @@ const SmartHeadhunting = () => {
           },
         });
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
-        // Store results in localStorage for campaign detail page
-        localStorage.setItem(
-          `campaign_${campaignId}`,
-          JSON.stringify({
-            ...newCampaign,
-            status: "active",
-            candidatesCount: data.stats.total,
-            avgMatchScore: data.stats.avgScore,
-            lastUpdated: "همین الان",
-            candidates: data.candidates,
-            stats: data.stats,
-          })
-        );
+        // Save analyzed candidates to database
+        const candidatesToInsert = data.candidates.map((c: any) => ({
+          name: c.name || null,
+          email: c.email || null,
+          phone: c.phone || null,
+          skills: c.skills || null,
+          experience: c.experience || null,
+          education: c.education || null,
+          last_company: c.lastCompany || null,
+          location: c.location || null,
+          title: c.title || null,
+          match_score: c.matchScore || 0,
+          candidate_temperature: c.candidateTemperature || "cold",
+          recommendation: c.recommendation || null,
+          green_flags: c.greenFlags || null,
+          red_flags: c.redFlags || null,
+          layer_scores: c.layerScores || null,
+          raw_data: c.rawData || null,
+        }));
 
-        // Update campaign with results
-        setCampaigns((prev) =>
-          prev.map((c) =>
-            c.id === campaignId
-              ? {
-                  ...c,
-                  status: "active",
-                  candidatesCount: data.stats.total,
-                  avgMatchScore: data.stats.avgScore,
-                  lastUpdated: "همین الان",
-                }
-              : c
-          )
-        );
+        await addCandidates(campaign.id, candidatesToInsert);
+
+        // Update campaign status to active
+        await updateCampaign(campaign.id, {
+          status: "active",
+          progress: 100,
+        });
 
         toast.success(`تحلیل ${data.stats.total} کاندیدا با موفقیت انجام شد!`);
+        
       } else if (pdfFiles.length > 0) {
         toast.error("تحلیل رزومه‌های PDF هنوز فعال نیست؛ لطفاً اکسل آپلود کنید.");
-
-        setCampaigns((prev) =>
-          prev.map((c) =>
-            c.id === campaignId ? { ...c, status: "paused", lastUpdated: "نیاز به فایل اکسل" } : c
-          )
-        );
-
-        try {
-          const stored = localStorage.getItem(`campaign_${campaignId}`);
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            localStorage.setItem(
-              `campaign_${campaignId}`,
-              JSON.stringify({ ...parsed, status: "paused", lastUpdated: "نیاز به فایل اکسل" })
-            );
-          }
-        } catch {
-          // ignore
-        }
+        
+        await updateCampaign(campaign.id, {
+          status: "paused",
+          progress: 0,
+        });
       }
+
+      // Refresh campaigns list
+      await fetchCampaigns();
+
     } catch (error: any) {
       console.error("Error processing campaign:", error);
       toast.error(error?.message || "خطا در پردازش کمپین");
-
-      // Update campaign status to error
-      setCampaigns((prev) =>
-        prev.map((c) =>
-          c.id === campaignId ? { ...c, status: "paused", lastUpdated: "خطا در پردازش" } : c
-        )
-      );
-
-      try {
-        const stored = localStorage.getItem(`campaign_${campaignId}`);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          localStorage.setItem(
-            `campaign_${campaignId}`,
-            JSON.stringify({ ...parsed, status: "paused", lastUpdated: "خطا در پردازش" })
-          );
-        }
-      } catch {
-        // ignore
-      }
     } finally {
       setIsProcessing(false);
       setFormData({
@@ -466,6 +363,19 @@ const SmartHeadhunting = () => {
       setAutoHeadhunting(false);
     }
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center" dir="rtl">
+        <div className="text-center">
+          <p className="text-slate-400 mb-4">برای استفاده از این قابلیت ابتدا وارد شوید</p>
+          <Link to="/auth">
+            <Button className="bg-violet-600 hover:bg-violet-500">ورود / ثبت‌نام</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -789,104 +699,74 @@ const SmartHeadhunting = () => {
               </h2>
             </div>
             
-            <Table>
-              <TableHeader>
-                <TableRow className="border-slate-700/50 hover:bg-transparent">
-                  <TableHead className="text-slate-400 text-right">عنوان کمپین</TableHead>
-                  <TableHead className="text-slate-400 text-right">وضعیت</TableHead>
-                  <TableHead className="text-slate-400 text-right">منبع</TableHead>
-                  <TableHead className="text-slate-400 text-right">شهر</TableHead>
-                  <TableHead className="text-slate-400 text-right">تعداد کاندیدا</TableHead>
-                  <TableHead className="text-slate-400 text-right">میانگین امتیاز</TableHead>
-                  <TableHead className="text-slate-400 text-right">عملیات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {campaigns.map((campaign) => (
-                  <TableRow
-                    key={campaign.id}
-                    className="border-slate-700/50 cursor-pointer hover:bg-slate-800/50 transition-colors"
-                    onClick={() => navigate(`/campaign/${campaign.id}`)}
-                  >
-                    <TableCell className="font-medium text-white">
-                      <div className="flex items-center gap-2">
-                        {campaign.name}
-                        <ChevronRight className="w-4 h-4 text-slate-500" />
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(campaign.status)}</TableCell>
-                    <TableCell>{getSourceBadge(campaign.source)}</TableCell>
-                    <TableCell className="text-slate-300">{campaign.city}</TableCell>
-                    <TableCell className="text-slate-300">
-                      {campaign.status === "processing" ? (
-                        <span className="text-violet-400">در حال پردازش...</span>
-                      ) : (
-                        <>
-                          <span className="font-semibold text-white">{campaign.candidatesCount}</span> نفر
-                        </>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {campaign.status === "processing" ? (
-                        <span className="text-slate-500">—</span>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
-                              style={{ width: `${campaign.avgMatchScore}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-slate-300">{campaign.avgMatchScore}%</span>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-slate-900 border-slate-700">
-                          <DropdownMenuItem 
-                            className="text-slate-300 hover:text-white focus:text-white focus:bg-slate-800"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/campaign/${campaign.id}`);
-                            }}
-                          >
-                            <ExternalLink className="w-4 h-4 ml-2" />
-                            مشاهده جزئیات
-                          </DropdownMenuItem>
-                          {campaign.status !== "processing" && (
-                            <DropdownMenuItem className="text-slate-300 hover:text-white focus:text-white focus:bg-slate-800">
-                              {campaign.status === "active" ? (
-                                <>
-                                  <Pause className="w-4 h-4 ml-2" />
-                                  توقف کمپین
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="w-4 h-4 ml-2" />
-                                  فعال‌سازی
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {campaigns.length === 0 && (
+            {loading ? (
               <div className="p-12 text-center">
-                <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <Loader2 className="w-8 h-8 animate-spin text-violet-400 mx-auto mb-4" />
+                <p className="text-slate-400">در حال بارگذاری...</p>
+              </div>
+            ) : campaigns.length === 0 ? (
+              <div className="p-12 text-center">
+                <Users className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                 <p className="text-slate-400">هنوز کمپینی ایجاد نشده است</p>
               </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-slate-700/50 hover:bg-transparent">
+                    <TableHead className="text-slate-400 text-right">عنوان کمپین</TableHead>
+                    <TableHead className="text-slate-400 text-right">وضعیت</TableHead>
+                    <TableHead className="text-slate-400 text-right">منبع</TableHead>
+                    <TableHead className="text-slate-400 text-right">شهر</TableHead>
+                    <TableHead className="text-slate-400 text-right">تعداد کاندیدا</TableHead>
+                    <TableHead className="text-slate-400 text-right">میانگین امتیاز</TableHead>
+                    <TableHead className="text-slate-400 text-right">آخرین تغییر</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {campaigns.map((campaign) => (
+                    <TableRow
+                      key={campaign.id}
+                      className="border-slate-700/50 cursor-pointer hover:bg-slate-800/50 transition-colors"
+                      onClick={() => navigate(`/campaign/${campaign.id}`)}
+                    >
+                      <TableCell className="font-medium text-white">
+                        <div className="flex items-center gap-2">
+                          {campaign.name}
+                          <ChevronRight className="w-4 h-4 text-slate-500" />
+                        </div>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(campaign.status)}</TableCell>
+                      <TableCell>{getSourceBadge(campaign.source || "excel")}</TableCell>
+                      <TableCell className="text-slate-300">{campaign.city}</TableCell>
+                      <TableCell className="text-slate-300">
+                        {campaign.status === "processing" ? (
+                          <span className="text-violet-400">در حال پردازش...</span>
+                        ) : (
+                          <>
+                            <span className="font-semibold text-white">{campaign.candidatesCount || 0}</span> نفر
+                          </>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {campaign.status === "processing" ? (
+                          <span className="text-slate-500">—</span>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
+                                style={{ width: `${campaign.avgMatchScore || 0}%` }}
+                              />
+                            </div>
+                            <span className="text-white font-medium">{campaign.avgMatchScore || 0}%</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-slate-400">{campaign.lastUpdated}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </div>
         </div>
