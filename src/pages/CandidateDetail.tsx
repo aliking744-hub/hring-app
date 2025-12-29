@@ -25,7 +25,8 @@ import {
   Building2,
   Award,
   FileText,
-  User
+  User,
+  Clock
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { Candidate as DBCandidate } from "@/hooks/useCampaigns";
+import { toast } from "@/hooks/use-toast";
 
 interface LayerScores {
   activitySentiment: number;
@@ -49,12 +51,15 @@ interface CampaignInfo {
   city: string;
 }
 
+type CandidateStatus = 'pending' | 'approved' | 'rejected' | 'waiting';
+
 const CandidateDetail = () => {
   const { campaignId, candidateId } = useParams();
   const navigate = useNavigate();
-  const [candidate, setCandidate] = useState<DBCandidate | null>(null);
+  const [candidate, setCandidate] = useState<(DBCandidate & { status?: CandidateStatus }) | null>(null);
   const [campaign, setCampaign] = useState<CampaignInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -98,6 +103,76 @@ const CandidateDetail = () => {
 
     fetchData();
   }, [campaignId, candidateId]);
+
+  const updateCandidateStatus = async (newStatus: CandidateStatus) => {
+    if (!candidateId) return;
+    
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('candidates')
+        .update({ status: newStatus })
+        .eq('id', candidateId);
+
+      if (error) throw error;
+
+      setCandidate(prev => prev ? { ...prev, status: newStatus } : null);
+
+      const statusLabels: Record<CandidateStatus, string> = {
+        approved: 'تأیید شد',
+        rejected: 'رد شد',
+        waiting: 'در لیست انتظار قرار گرفت',
+        pending: 'به حالت بررسی برگشت'
+      };
+
+      toast({
+        title: "وضعیت بروزرسانی شد",
+        description: `کاندیدا ${statusLabels[newStatus]}`,
+      });
+    } catch (err) {
+      console.error('Error updating status:', err);
+      toast({
+        title: "خطا",
+        description: "بروزرسانی وضعیت انجام نشد",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const getStatusBadge = (status?: CandidateStatus) => {
+    switch (status) {
+      case 'approved':
+        return (
+          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-sm px-3 py-1">
+            <Check className="w-4 h-4 ml-1" />
+            تأیید شده
+          </Badge>
+        );
+      case 'rejected':
+        return (
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-sm px-3 py-1">
+            <X className="w-4 h-4 ml-1" />
+            رد شده
+          </Badge>
+        );
+      case 'waiting':
+        return (
+          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-sm px-3 py-1">
+            <Clock className="w-4 h-4 ml-1" />
+            در انتظار
+          </Badge>
+        );
+      default:
+        return (
+          <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30 text-sm px-3 py-1">
+            <Target className="w-4 h-4 ml-1" />
+            در بررسی
+          </Badge>
+        );
+    }
+  };
 
   if (loading) {
     return (
@@ -228,13 +303,32 @@ const CandidateDetail = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Button className="bg-emerald-600 hover:bg-emerald-500 text-white">
+                {getStatusBadge(candidate.status)}
+                <Button 
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50"
+                  onClick={() => updateCandidateStatus('approved')}
+                  disabled={updating || candidate.status === 'approved'}
+                >
                   <Check className="w-4 h-4 ml-2" />
-                  تأیید و ادامه
+                  تأیید
                 </Button>
-                <Button variant="outline" className="border-red-500/30 text-red-400 hover:bg-red-500/10">
+                <Button 
+                  variant="outline" 
+                  className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
+                  onClick={() => updateCandidateStatus('waiting')}
+                  disabled={updating || candidate.status === 'waiting'}
+                >
+                  <Clock className="w-4 h-4 ml-2" />
+                  انتظار
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="border-red-500/30 text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                  onClick={() => updateCandidateStatus('rejected')}
+                  disabled={updating || candidate.status === 'rejected'}
+                >
                   <X className="w-4 h-4 ml-2" />
-                  رد کردن
+                  رد
                 </Button>
               </div>
             </div>
@@ -494,15 +588,29 @@ const CandidateDetail = () => {
 
           {/* Bottom Actions */}
           <div className="flex justify-center gap-4 pt-4 pb-8">
-            <Button className="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-8 py-6">
-              <Check className="w-5 h-5 ml-2" />
+            <Button 
+              className="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-8 py-6 disabled:opacity-50"
+              onClick={() => updateCandidateStatus('approved')}
+              disabled={updating || candidate.status === 'approved'}
+            >
+              {updating ? <Loader2 className="w-5 h-5 ml-2 animate-spin" /> : <Check className="w-5 h-5 ml-2" />}
               تأیید و دعوت به مصاحبه
             </Button>
-            <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-800 text-lg px-8 py-6">
-              <ThermometerSun className="w-5 h-5 ml-2" />
+            <Button 
+              variant="outline" 
+              className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-lg px-8 py-6 disabled:opacity-50"
+              onClick={() => updateCandidateStatus('waiting')}
+              disabled={updating || candidate.status === 'waiting'}
+            >
+              <Clock className="w-5 h-5 ml-2" />
               در لیست انتظار
             </Button>
-            <Button variant="outline" className="border-red-500/30 text-red-400 hover:bg-red-500/10 text-lg px-8 py-6">
+            <Button 
+              variant="outline" 
+              className="border-red-500/30 text-red-400 hover:bg-red-500/10 text-lg px-8 py-6 disabled:opacity-50"
+              onClick={() => updateCandidateStatus('rejected')}
+              disabled={updating || candidate.status === 'rejected'}
+            >
               <X className="w-5 h-5 ml-2" />
               رد کردن
             </Button>

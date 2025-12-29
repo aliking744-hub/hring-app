@@ -85,6 +85,7 @@ export type Database = {
           recommendation: string | null
           red_flags: string[] | null
           skills: string | null
+          status: string
           title: string | null
         }
         Insert: {
@@ -106,6 +107,7 @@ export type Database = {
           recommendation?: string | null
           red_flags?: string[] | null
           skills?: string | null
+          status?: string
           title?: string | null
         }
         Update: {
@@ -127,6 +129,7 @@ export type Database = {
           recommendation?: string | null
           red_flags?: string[] | null
           skills?: string | null
+          status?: string
           title?: string | null
         }
         Relationships: [
