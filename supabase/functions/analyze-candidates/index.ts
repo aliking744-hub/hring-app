@@ -14,6 +14,9 @@ interface CandidateInput {
   education?: string;
   lastCompany?: string;
   location?: string;
+  linkedin?: string;
+  pastCompanies?: string;
+  about?: string;
 }
 
 interface JobRequirements {
@@ -26,6 +29,57 @@ interface JobRequirements {
   seniorityLevel?: string;
 }
 
+// Search for candidate info on the web using Perplexity
+async function searchCandidateOnWeb(candidate: CandidateInput, jobRequirements: JobRequirements): Promise<string> {
+  const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+  
+  if (!PERPLEXITY_API_KEY) {
+    console.log("Perplexity API key not found, skipping web search");
+    return "";
+  }
+
+  try {
+    const searchQuery = `${candidate.name || ''} ${candidate.lastCompany || ''} ${jobRequirements.industry || ''} LinkedIn profile professional background`;
+    
+    console.log(`Searching web for: ${candidate.name}`);
+    
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'sonar',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are a professional headhunter researching candidates. Find relevant professional information about this person including their LinkedIn activity, career history, and any public professional information. Focus on signals that indicate job satisfaction, career growth, and professional activity. Respond in Persian.' 
+          },
+          { 
+            role: 'user', 
+            content: `جستجو کن: ${searchQuery}. اطلاعات حرفه‌ای، فعالیت لینکدین، سابقه کاری و هر اطلاعات عمومی مرتبط را پیدا کن.` 
+          }
+        ],
+        search_recency_filter: 'month',
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Perplexity search failed:", response.status);
+      return "";
+    }
+
+    const data = await response.json();
+    const webInfo = data.choices?.[0]?.message?.content || "";
+    console.log(`Web search completed for: ${candidate.name}`);
+    return webInfo;
+  } catch (error) {
+    console.error("Error searching web:", error);
+    return "";
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -33,7 +87,7 @@ serve(async (req) => {
   }
 
   try {
-    const { candidates, jobRequirements } = await req.json();
+    const { candidates, jobRequirements, enableWebSearch = true } = await req.json();
 
     if (!candidates || !Array.isArray(candidates) || candidates.length === 0) {
       return new Response(
@@ -56,56 +110,111 @@ serve(async (req) => {
 
     console.log(`Processing ${candidates.length} candidates for job: ${jobRequirements.jobTitle}`);
 
-    // Prepare the prompt for AI analysis
-    const systemPrompt = `You are an expert HR recruiter AI assistant. Analyze candidates against job requirements and provide match scores.
+    // Perform web search for each candidate (if enabled)
+    const candidatesWithWebInfo = await Promise.all(
+      candidates.map(async (candidate: CandidateInput) => {
+        let webResearchInfo = "";
+        if (enableWebSearch && candidate.name) {
+          webResearchInfo = await searchCandidateOnWeb(candidate, jobRequirements);
+        }
+        return {
+          ...candidate,
+          webResearchInfo,
+        };
+      })
+    );
 
-For each candidate, calculate scores (0-100) for:
-- skills: How well their skills match the job requirements
-- experience: How relevant their work experience is
-- education: How suitable their education background is
-- culture: Estimated cultural fit based on their profile
+    // Senior Headhunter AI Prompt with 5-Layer Analysis
+    const systemPrompt = `تو یک «استعدادیاب ارشد» (Senior Headhunter) هستی که وظیفه داری با تحلیل عمیق داده‌های افراد از رزومه یا اطلاعات وارد شده و اطلاعات جمع‌آوری شده از وب، بهترین کاندیدا را پیدا کنی.
 
-Also provide:
-- matchScore: Overall match percentage (weighted average)
-- summary: Brief explanation in Persian of why they match or don't match
+مأموریت: برای هر کاندیدا، ۵ لایه تحلیل زیر را انجام بده:
 
-IMPORTANT: Respond ONLY with valid JSON array, no markdown or extra text.`;
+## لایه ۱: تحلیل رفتار و محتوا (Activity & Sentiment Audit)
+- بررسی پروفایل شخص، فعالیت‌ها یا خلاصه About
+- آیا از کلمات منفی (Burnout, Tired, End of chapter) استفاده کرده؟ -> سیگنال نارضایتی
+- آیا گواهینامه (Certificate) جدید گرفته؟ -> سیگنال آمادگی برای ارتقا
+- آیا پست‌های تخصصی می‌گذارد یا فقط اخبار شرکتش را بازنشر می‌کند؟ -> تشخیص سطح تخصص vs کارمند مطیع
+- خروجی: تعیین «دمای کاندیدا» (Warm/Cold) برای تماس
 
-    const userPrompt = `Job Requirements:
+## لایه ۲: تطبیق مهارت سخت (Hard Skill Matching)
+- بررسی مهارت‌هایی که کاربر داده
+- فقط به کلمات کلیدی نگاه نکن؛ به سطح آنها دقت کن
+- اگر دنبال Senior هستیم و او در ۳ شرکت آخرش Junior یا Mid-level بوده -> عدم انطباق
+- اگر تکنولوژی‌هایش قدیمی است (Legacy) و استک مدرن می‌خواهیم -> نمره منفی
+- خروجی: امتیاز ۰-۱۰۰ برای مهارت‌های سخت
+
+## لایه ۳: مسیر شغلی (Career Trajectory)
+- تحلیل لیست شرکت‌های قبلی
+- Job Hopping: آیا هر ۶ ماه شغل عوض کرده؟ -> هشدار ریسک (Red Flag)
+- Growth: آیا در هر جابجایی تایتل بالاتری گرفته؟ -> نیروی با پتانسیل بالا
+- Company Tier: آیا در شرکت‌های هم‌تراز یا بهتر کار کرده؟
+- Industry Match: آیا در صنعت مورد نظر ما کار کرده؟
+- خروجی: امتیاز ۰-۱۰۰ برای مسیر شغلی
+
+## لایه ۴: تحلیل فرهنگی و نرم (Soft Skills & Culture Fit)
+- بررسی نحوه ارتباط و تعامل فرد
+- تحلیل فعالیت‌های اجتماعی و تیمی
+- سازگاری با فرهنگ سازمانی
+- خروجی: امتیاز ۰-۱۰۰ برای تناسب فرهنگی
+
+## لایه ۵: ارزیابی ریسک و فرصت (Risk & Opportunity Assessment)
+- شناسایی Red Flags (Job hopping, گپ‌های شغلی، ناهماهنگی در رزومه)
+- شناسایی Green Flags (رشد پیوسته، گواهینامه‌های جدید، پروژه‌های موفق)
+- احتمال پذیرش پیشنهاد
+- خروجی: ارزیابی ریسک و فرصت
+
+برای هر کاندیدا این اطلاعات را برگردان:
+- matchScore: امتیاز کلی (میانگین وزنی ۵ لایه)
+- candidateTemperature: "hot" | "warm" | "cold" (دمای کاندیدا برای تماس)
+- layerScores: امتیاز هر ۵ لایه
+- redFlags: لیست هشدارها
+- greenFlags: لیست نقاط قوت
+- summary: خلاصه تحلیل به فارسی
+- recommendation: توصیه اقدام ("فوری تماس بگیرید" / "در لیست انتظار" / "رد کنید")
+
+پاسخ را فقط به صورت JSON Array بده، بدون markdown یا متن اضافی.`;
+
+    const userPrompt = `الزامات شغلی:
 - عنوان شغل: ${jobRequirements.jobTitle}
 - شهر: ${jobRequirements.city}
 - مهارت‌های مورد نیاز: ${jobRequirements.skills || 'مشخص نشده'}
-- سابقه کار: ${jobRequirements.experience || 'مشخص نشده'}
+- سابقه کار مورد نیاز: ${jobRequirements.experience || 'مشخص نشده'}
 - صنعت: ${jobRequirements.industry || 'مشخص نشده'}
 - سطح ارشدیت: ${jobRequirements.seniorityLevel || 'مشخص نشده'}
 - توضیحات: ${jobRequirements.description || 'ندارد'}
 
-Candidates to analyze:
-${JSON.stringify(candidates, null, 2)}
+لیست کاندیداها برای تحلیل (شامل اطلاعات جمع‌آوری شده از وب):
+${JSON.stringify(candidatesWithWebInfo, null, 2)}
 
-Analyze each candidate and return a JSON array with this structure for each:
+برای هر کاندیدا، ۵ لایه تحلیل را انجام بده و نتیجه را به این ساختار JSON برگردان:
 {
   "id": "unique_id",
-  "name": "candidate name",
-  "email": "email if available",
-  "phone": "phone if available",
-  "title": "suggested job title based on their experience",
-  "education": "their education",
-  "experience": "years of experience",
-  "lastCompany": "last company",
-  "location": "their location",
-  "skills": ["skill1", "skill2"],
+  "name": "نام کاندیدا",
+  "email": "ایمیل",
+  "phone": "تلفن",
+  "title": "عنوان شغلی پیشنهادی",
+  "education": "تحصیلات",
+  "experience": "سابقه کار",
+  "lastCompany": "آخرین شرکت",
+  "location": "محل",
+  "linkedin": "لینک لینکدین",
+  "skills": ["مهارت۱", "مهارت۲"],
   "matchScore": 85,
-  "scores": {
-    "skills": 90,
-    "experience": 80,
-    "education": 75,
-    "culture": 85
+  "candidateTemperature": "warm",
+  "layerScores": {
+    "activitySentiment": 80,
+    "hardSkillMatch": 90,
+    "careerTrajectory": 75,
+    "cultureFit": 85,
+    "riskOpportunity": 70
   },
-  "summary": "توضیح کوتاه به فارسی"
+  "redFlags": ["هشدار ۱", "هشدار ۲"],
+  "greenFlags": ["نقطه قوت ۱", "نقطه قوت ۲"],
+  "summary": "خلاصه تحلیل ۵ لایه‌ای به فارسی",
+  "recommendation": "فوری تماس بگیرید"
 }
 
-Sort by matchScore descending. Return ONLY the JSON array.`;
+نتایج را بر اساس matchScore از بیشترین به کمترین مرتب کن. فقط JSON Array برگردان.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -114,7 +223,7 @@ Sort by matchScore descending. Return ONLY the JSON array.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -176,15 +285,28 @@ Sort by matchScore descending. Return ONLY the JSON array.`;
       experience: c.experience || 'نامشخص',
       lastCompany: c.lastCompany || 'نامشخص',
       location: c.location || jobRequirements.city,
+      linkedin: c.linkedin || '',
       skills: Array.isArray(c.skills) ? c.skills : [],
       matchScore: typeof c.matchScore === 'number' ? c.matchScore : 50,
-      scores: {
-        skills: c.scores?.skills || 50,
-        experience: c.scores?.experience || 50,
-        education: c.scores?.education || 50,
-        culture: c.scores?.culture || 50,
+      candidateTemperature: c.candidateTemperature || 'cold',
+      layerScores: {
+        activitySentiment: c.layerScores?.activitySentiment || 50,
+        hardSkillMatch: c.layerScores?.hardSkillMatch || 50,
+        careerTrajectory: c.layerScores?.careerTrajectory || 50,
+        cultureFit: c.layerScores?.cultureFit || 50,
+        riskOpportunity: c.layerScores?.riskOpportunity || 50,
       },
+      // Keep old scores format for backward compatibility
+      scores: {
+        skills: c.layerScores?.hardSkillMatch || c.scores?.skills || 50,
+        experience: c.layerScores?.careerTrajectory || c.scores?.experience || 50,
+        education: c.scores?.education || 50,
+        culture: c.layerScores?.cultureFit || c.scores?.culture || 50,
+      },
+      redFlags: Array.isArray(c.redFlags) ? c.redFlags : [],
+      greenFlags: Array.isArray(c.greenFlags) ? c.greenFlags : [],
       summary: c.summary || '',
+      recommendation: c.recommendation || 'در لیست انتظار',
     }));
 
     // Sort by match score
@@ -197,6 +319,9 @@ Sort by matchScore descending. Return ONLY the JSON array.`;
       good: processedCandidates.filter((c: any) => c.matchScore >= 70 && c.matchScore < 85).length,
       average: processedCandidates.filter((c: any) => c.matchScore < 70).length,
       avgScore: Math.round(processedCandidates.reduce((sum: number, c: any) => sum + c.matchScore, 0) / processedCandidates.length),
+      hotCandidates: processedCandidates.filter((c: any) => c.candidateTemperature === 'hot').length,
+      warmCandidates: processedCandidates.filter((c: any) => c.candidateTemperature === 'warm').length,
+      coldCandidates: processedCandidates.filter((c: any) => c.candidateTemperature === 'cold').length,
     };
 
     console.log(`Analysis complete. Stats: ${JSON.stringify(stats)}`);

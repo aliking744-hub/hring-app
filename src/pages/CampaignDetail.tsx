@@ -13,7 +13,17 @@ import {
   Check,
   Target,
   BarChart3,
-  AlertCircle
+  AlertCircle,
+  Flame,
+  ThermometerSun,
+  Snowflake,
+  AlertTriangle,
+  CheckCircle2,
+  Linkedin,
+  TrendingUp,
+  Brain,
+  Heart,
+  Shield
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -31,6 +41,14 @@ import {
   Tooltip,
 } from "recharts";
 
+interface LayerScores {
+  activitySentiment: number;
+  hardSkillMatch: number;
+  careerTrajectory: number;
+  cultureFit: number;
+  riskOpportunity: number;
+}
+
 interface Candidate {
   id: string;
   name: string;
@@ -41,15 +59,32 @@ interface Candidate {
   experience: string;
   lastCompany: string;
   location: string;
+  linkedin?: string;
   skills: string[];
   matchScore: number;
+  candidateTemperature?: "hot" | "warm" | "cold";
+  layerScores?: LayerScores;
   scores: {
     skills: number;
     experience: number;
     education: number;
     culture: number;
   };
+  redFlags?: string[];
+  greenFlags?: string[];
   summary?: string;
+  recommendation?: string;
+}
+
+interface CampaignStats {
+  total: number;
+  excellent: number;
+  good: number;
+  average: number;
+  avgScore: number;
+  hotCandidates?: number;
+  warmCandidates?: number;
+  coldCandidates?: number;
 }
 
 interface CampaignData {
@@ -57,16 +92,10 @@ interface CampaignData {
   name: string;
   city: string;
   candidates: Candidate[];
-  stats: {
-    total: number;
-    excellent: number;
-    good: number;
-    average: number;
-    avgScore: number;
-  };
+  stats: CampaignStats;
 }
 
-// Fallback sample data
+// Fallback sample data with new 5-layer analysis
 const fallbackCampaign: CampaignData = {
   id: "1",
   name: "Senior React Developer",
@@ -77,46 +106,71 @@ const fallbackCampaign: CampaignData = {
       name: "علی محمدی",
       title: "Senior Frontend Developer",
       matchScore: 95,
+      candidateTemperature: "hot",
       education: "کارشناسی ارشد مهندسی نرم‌افزار",
       experience: "۸ سال",
       lastCompany: "دیجی‌کالا",
       phone: "۰۹۱۲۳۴۵۶۷۸۹",
       email: "ali@example.com",
       location: "تهران",
+      linkedin: "https://linkedin.com/in/alimohammadi",
       skills: ["React", "TypeScript", "Node.js", "GraphQL"],
+      layerScores: {
+        activitySentiment: 90,
+        hardSkillMatch: 95,
+        careerTrajectory: 92,
+        cultureFit: 88,
+        riskOpportunity: 85,
+      },
       scores: {
         skills: 95,
         experience: 90,
         education: 85,
         culture: 92,
       },
-      summary: "تطابق بسیار بالا با نیازمندی‌های شغلی",
+      redFlags: [],
+      greenFlags: ["رشد پیوسته در مسیر شغلی", "گواهینامه‌های جدید", "فعالیت تخصصی بالا در لینکدین"],
+      summary: "کاندیدای عالی با تطابق بسیار بالا. رشد شغلی قوی از Junior به Senior در شرکت‌های معتبر.",
+      recommendation: "فوری تماس بگیرید",
     },
     {
       id: "2",
       name: "سارا احمدی",
       title: "Full Stack Developer",
       matchScore: 89,
+      candidateTemperature: "warm",
       education: "کارشناسی مهندسی کامپیوتر",
       experience: "۶ سال",
       lastCompany: "اسنپ",
       phone: "۰۹۱۲۸۷۶۵۴۳۲",
       email: "sara@example.com",
       location: "تهران",
+      linkedin: "https://linkedin.com/in/saraahmadi",
       skills: ["React", "TypeScript", "Python", "PostgreSQL"],
+      layerScores: {
+        activitySentiment: 85,
+        hardSkillMatch: 88,
+        careerTrajectory: 80,
+        cultureFit: 90,
+        riskOpportunity: 82,
+      },
       scores: {
         skills: 88,
         experience: 85,
         education: 80,
         culture: 90,
       },
-      summary: "مهارت‌های قوی و تجربه مرتبط",
+      redFlags: ["یک تغییر شغل در کمتر از یک سال"],
+      greenFlags: ["مهارت‌های قوی فول‌استک", "تجربه در شرکت معتبر"],
+      summary: "کاندیدای مناسب با مهارت‌های قوی. نیاز به بررسی دلیل تغییر شغل سریع.",
+      recommendation: "در لیست انتظار",
     },
     {
       id: "3",
       name: "محمد رضایی",
       title: "Frontend Engineer",
       matchScore: 78,
+      candidateTemperature: "cold",
       education: "کارشناسی علوم کامپیوتر",
       experience: "۵ سال",
       lastCompany: "تپسی",
@@ -124,13 +178,23 @@ const fallbackCampaign: CampaignData = {
       email: "mohammad@example.com",
       location: "مشهد",
       skills: ["React", "JavaScript", "CSS", "REST API"],
+      layerScores: {
+        activitySentiment: 70,
+        hardSkillMatch: 82,
+        careerTrajectory: 75,
+        cultureFit: 80,
+        riskOpportunity: 65,
+      },
       scores: {
         skills: 82,
         experience: 78,
         education: 75,
         culture: 80,
       },
-      summary: "کاندیدای مناسب با پتانسیل رشد",
+      redFlags: ["فعالیت کم در شبکه‌های اجتماعی حرفه‌ای", "عدم TypeScript"],
+      greenFlags: ["کاندیدای مناسب با پتانسیل رشد"],
+      summary: "کاندیدای با پتانسیل ولی نیاز به آموزش TypeScript.",
+      recommendation: "در لیست انتظار",
     },
   ],
   stats: {
@@ -139,6 +203,9 @@ const fallbackCampaign: CampaignData = {
     good: 1,
     average: 1,
     avgScore: 87,
+    hotCandidates: 1,
+    warmCandidates: 1,
+    coldCandidates: 1,
   },
 };
 
@@ -190,11 +257,66 @@ const CampaignDetail = () => {
     return "bg-red-500";
   };
 
+  const getTemperatureIcon = (temp?: string) => {
+    switch (temp) {
+      case "hot":
+        return <Flame className="w-4 h-4 text-red-400" />;
+      case "warm":
+        return <ThermometerSun className="w-4 h-4 text-amber-400" />;
+      case "cold":
+        return <Snowflake className="w-4 h-4 text-blue-400" />;
+      default:
+        return null;
+    }
+  };
+
+  const getTemperatureBadge = (temp?: string) => {
+    switch (temp) {
+      case "hot":
+        return (
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+            <Flame className="w-3 h-3 ml-1" />
+            داغ
+          </Badge>
+        );
+      case "warm":
+        return (
+          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+            <ThermometerSun className="w-3 h-3 ml-1" />
+            گرم
+          </Badge>
+        );
+      case "cold":
+        return (
+          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+            <Snowflake className="w-3 h-3 ml-1" />
+            سرد
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getRecommendationColor = (rec?: string) => {
+    if (rec?.includes("فوری")) return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+    if (rec?.includes("انتظار")) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+    if (rec?.includes("رد")) return "bg-red-500/20 text-red-400 border-red-500/30";
+    return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+  };
+
   // Chart data from actual stats
   const qualityData = [
     { name: "عالی", value: stats.excellent, color: "#10b981" },
     { name: "خوب", value: stats.good, color: "#8b5cf6" },
     { name: "متوسط", value: stats.average, color: "#f59e0b" },
+  ];
+
+  // Temperature distribution data
+  const temperatureData = [
+    { name: "داغ", value: stats.hotCandidates || 0, color: "#ef4444" },
+    { name: "گرم", value: stats.warmCandidates || 0, color: "#f59e0b" },
+    { name: "سرد", value: stats.coldCandidates || 0, color: "#3b82f6" },
   ];
 
   // Calculate education distribution from candidates
@@ -212,6 +334,14 @@ const CampaignDetail = () => {
     experienceMap[exp] = (experienceMap[exp] || 0) + 1;
   });
   const experienceData = Object.entries(experienceMap).map(([name, count]) => ({ name, count }));
+
+  const layerLabels: Record<keyof LayerScores, { label: string; icon: React.ReactNode }> = {
+    activitySentiment: { label: "تحلیل رفتار و محتوا", icon: <Brain className="w-4 h-4" /> },
+    hardSkillMatch: { label: "تطبیق مهارت سخت", icon: <Target className="w-4 h-4" /> },
+    careerTrajectory: { label: "مسیر شغلی", icon: <TrendingUp className="w-4 h-4" /> },
+    cultureFit: { label: "تناسب فرهنگی", icon: <Heart className="w-4 h-4" /> },
+    riskOpportunity: { label: "ریسک و فرصت", icon: <Shield className="w-4 h-4" /> },
+  };
 
   return (
     <>
@@ -236,22 +366,22 @@ const CampaignDetail = () => {
           </div>
 
           {/* Stats Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
             {/* Quality Distribution */}
             <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                 <Target className="w-5 h-5 text-violet-400" />
-                توزیع کیفیت کاندیداها
+                توزیع کیفیت
               </h3>
-              <div className="h-[200px]">
+              <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={qualityData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
+                      innerRadius={40}
+                      outerRadius={70}
                       paddingAngle={5}
                       dataKey="value"
                     >
@@ -270,11 +400,54 @@ const CampaignDetail = () => {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex justify-center gap-4 mt-4">
+              <div className="flex justify-center gap-3 mt-2">
                 {qualityData.map((item) => (
-                  <div key={item.name} className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-sm text-slate-300">{item.name}: {item.value}</span>
+                  <div key={item.name} className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-xs text-slate-300">{item.name}: {item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Temperature Distribution */}
+            <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Flame className="w-5 h-5 text-red-400" />
+                دمای کاندیداها
+              </h3>
+              <div className="h-[180px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={temperatureData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {temperatureData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #334155",
+                        borderRadius: "8px",
+                        color: "#fff",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center gap-3 mt-2">
+                {temperatureData.map((item) => (
+                  <div key={item.name} className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-xs text-slate-300">{item.name}: {item.value}</span>
                   </div>
                 ))}
               </div>
@@ -286,7 +459,7 @@ const CampaignDetail = () => {
                 <GraduationCap className="w-5 h-5 text-violet-400" />
                 مدارک تحصیلی
               </h3>
-              <div className="h-[200px]">
+              <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={educationData} layout="vertical">
                     <XAxis type="number" stroke="#64748b" fontSize={12} />
@@ -311,7 +484,7 @@ const CampaignDetail = () => {
                 <Briefcase className="w-5 h-5 text-violet-400" />
                 سابقه کاری
               </h3>
-              <div className="h-[200px]">
+              <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={experienceData} layout="vertical">
                     <XAxis type="number" stroke="#64748b" fontSize={12} />
@@ -360,7 +533,7 @@ const CampaignDetail = () => {
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="font-medium text-white">{candidate.name}</h4>
                             {candidate.matchScore >= 85 && (
                               <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
@@ -368,6 +541,7 @@ const CampaignDetail = () => {
                                 عالی
                               </Badge>
                             )}
+                            {getTemperatureBadge(candidate.candidateTemperature)}
                           </div>
                           <p className="text-sm text-slate-400">{candidate.title}</p>
                           <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
@@ -377,8 +551,10 @@ const CampaignDetail = () => {
                             <span>•</span>
                             <span>{candidate.location}</span>
                           </div>
-                          {candidate.summary && (
-                            <p className="text-xs text-violet-300 mt-1">{candidate.summary}</p>
+                          {candidate.recommendation && (
+                            <Badge className={`mt-2 ${getRecommendationColor(candidate.recommendation)}`}>
+                              {candidate.recommendation}
+                            </Badge>
                           )}
                         </div>
 
@@ -446,20 +622,26 @@ const CampaignDetail = () => {
                     </Button>
                   </div>
 
-                  <div className="p-6">
+                  <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
                     {/* Basic Info */}
                     <div className="flex items-start gap-4 mb-6">
                       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
                         {selectedCandidate.name.charAt(0)}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h4 className="text-xl font-semibold text-white">{selectedCandidate.name}</h4>
                         <p className="text-slate-400">{selectedCandidate.title}</p>
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
                           <Badge className={`${getScoreBgColor(selectedCandidate.matchScore)}/20 ${getScoreColor(selectedCandidate.matchScore)} border-current/30`}>
                             امتیاز کل: {selectedCandidate.matchScore}%
                           </Badge>
+                          {getTemperatureBadge(selectedCandidate.candidateTemperature)}
                         </div>
+                        {selectedCandidate.recommendation && (
+                          <Badge className={`mt-2 ${getRecommendationColor(selectedCandidate.recommendation)}`}>
+                            {selectedCandidate.recommendation}
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
@@ -469,6 +651,43 @@ const CampaignDetail = () => {
                         <p className="text-sm text-violet-300">{selectedCandidate.summary}</p>
                       </div>
                     )}
+
+                    {/* Red Flags & Green Flags */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      {/* Red Flags */}
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                        <h5 className="text-sm font-medium text-red-400 mb-2 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4" />
+                          هشدارها
+                        </h5>
+                        {selectedCandidate.redFlags && selectedCandidate.redFlags.length > 0 ? (
+                          <ul className="space-y-1">
+                            {selectedCandidate.redFlags.map((flag, idx) => (
+                              <li key={idx} className="text-xs text-red-300">• {flag}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-slate-500">بدون هشدار</p>
+                        )}
+                      </div>
+
+                      {/* Green Flags */}
+                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <h5 className="text-sm font-medium text-emerald-400 mb-2 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4" />
+                          نقاط قوت
+                        </h5>
+                        {selectedCandidate.greenFlags && selectedCandidate.greenFlags.length > 0 ? (
+                          <ul className="space-y-1">
+                            {selectedCandidate.greenFlags.map((flag, idx) => (
+                              <li key={idx} className="text-xs text-emerald-300">• {flag}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-slate-500">-</p>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Contact Info */}
                     <div className="space-y-3 mb-6">
@@ -496,6 +715,17 @@ const CampaignDetail = () => {
                           <span>{selectedCandidate.email}</span>
                         </div>
                       )}
+                      {selectedCandidate.linkedin && (
+                        <a 
+                          href={selectedCandidate.linkedin} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 text-blue-400 hover:text-blue-300"
+                        >
+                          <Linkedin className="w-5 h-5" />
+                          <span>پروفایل لینکدین</span>
+                        </a>
+                      )}
                     </div>
 
                     {/* Skills */}
@@ -516,63 +746,94 @@ const CampaignDetail = () => {
                       </div>
                     )}
 
-                    {/* Score Breakdown */}
-                    <div>
-                      <h5 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4" />
-                        امتیازات جزئی
-                      </h5>
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-300">مهارت‌ها</span>
-                            <span className={getScoreColor(selectedCandidate.scores.skills)}>
-                              {selectedCandidate.scores.skills}%
-                            </span>
-                          </div>
-                          <Progress 
-                            value={selectedCandidate.scores.skills} 
-                            className="h-2 bg-slate-800"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-300">تجربه کاری</span>
-                            <span className={getScoreColor(selectedCandidate.scores.experience)}>
-                              {selectedCandidate.scores.experience}%
-                            </span>
-                          </div>
-                          <Progress 
-                            value={selectedCandidate.scores.experience} 
-                            className="h-2 bg-slate-800"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-300">تحصیلات</span>
-                            <span className={getScoreColor(selectedCandidate.scores.education)}>
-                              {selectedCandidate.scores.education}%
-                            </span>
-                          </div>
-                          <Progress 
-                            value={selectedCandidate.scores.education} 
-                            className="h-2 bg-slate-800"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-300">تناسب فرهنگی</span>
-                            <span className={getScoreColor(selectedCandidate.scores.culture)}>
-                              {selectedCandidate.scores.culture}%
-                            </span>
-                          </div>
-                          <Progress 
-                            value={selectedCandidate.scores.culture} 
-                            className="h-2 bg-slate-800"
-                          />
+                    {/* 5-Layer Score Breakdown */}
+                    {selectedCandidate.layerScores && (
+                      <div className="mb-6">
+                        <h5 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
+                          <BarChart3 className="w-4 h-4" />
+                          تحلیل ۵ لایه‌ای
+                        </h5>
+                        <div className="space-y-4">
+                          {(Object.entries(selectedCandidate.layerScores) as [keyof LayerScores, number][]).map(([key, score]) => (
+                            <div key={key}>
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="text-slate-300 flex items-center gap-2">
+                                  {layerLabels[key].icon}
+                                  {layerLabels[key].label}
+                                </span>
+                                <span className={getScoreColor(score)}>
+                                  {score}%
+                                </span>
+                              </div>
+                              <Progress 
+                                value={score} 
+                                className="h-2 bg-slate-800"
+                              />
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Legacy Score Breakdown (if no layer scores) */}
+                    {!selectedCandidate.layerScores && (
+                      <div>
+                        <h5 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
+                          <BarChart3 className="w-4 h-4" />
+                          امتیازات جزئی
+                        </h5>
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-slate-300">مهارت‌ها</span>
+                              <span className={getScoreColor(selectedCandidate.scores.skills)}>
+                                {selectedCandidate.scores.skills}%
+                              </span>
+                            </div>
+                            <Progress 
+                              value={selectedCandidate.scores.skills} 
+                              className="h-2 bg-slate-800"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-slate-300">تجربه کاری</span>
+                              <span className={getScoreColor(selectedCandidate.scores.experience)}>
+                                {selectedCandidate.scores.experience}%
+                              </span>
+                            </div>
+                            <Progress 
+                              value={selectedCandidate.scores.experience} 
+                              className="h-2 bg-slate-800"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-slate-300">تحصیلات</span>
+                              <span className={getScoreColor(selectedCandidate.scores.education)}>
+                                {selectedCandidate.scores.education}%
+                              </span>
+                            </div>
+                            <Progress 
+                              value={selectedCandidate.scores.education} 
+                              className="h-2 bg-slate-800"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-slate-300">تناسب فرهنگی</span>
+                              <span className={getScoreColor(selectedCandidate.scores.culture)}>
+                                {selectedCandidate.scores.culture}%
+                              </span>
+                            </div>
+                            <Progress 
+                              value={selectedCandidate.scores.culture} 
+                              className="h-2 bg-slate-800"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Actions */}
                     <div className="mt-6 flex gap-3">
