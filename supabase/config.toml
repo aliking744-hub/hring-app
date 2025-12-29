@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.generate-onboarding-plan]
 verify_jwt = false
+
+[functions.analyze-candidates]
+verify_jwt = false
