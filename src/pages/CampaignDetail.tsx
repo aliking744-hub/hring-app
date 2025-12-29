@@ -1,22 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { 
   ArrowLeft, 
   Users, 
-  TrendingUp, 
   GraduationCap, 
   Briefcase,
   Phone,
   Mail,
   MapPin,
   Star,
-  ChevronDown,
-  ChevronUp,
   X,
   Check,
-  Award,
   Target,
-  BarChart3
+  BarChart3,
+  AlertCircle
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -32,143 +29,152 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend
 } from "recharts";
 
-// Sample campaign data
-const campaignData = {
+interface Candidate {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  title: string;
+  education: string;
+  experience: string;
+  lastCompany: string;
+  location: string;
+  skills: string[];
+  matchScore: number;
+  scores: {
+    skills: number;
+    experience: number;
+    education: number;
+    culture: number;
+  };
+  summary?: string;
+}
+
+interface CampaignData {
+  id: string;
+  name: string;
+  city: string;
+  candidates: Candidate[];
+  stats: {
+    total: number;
+    excellent: number;
+    good: number;
+    average: number;
+    avgScore: number;
+  };
+}
+
+// Fallback sample data
+const fallbackCampaign: CampaignData = {
   id: "1",
   name: "Senior React Developer",
   city: "تهران",
-  totalCandidates: 124,
-  excellentCount: 18,
-  goodCount: 45,
-  averageCount: 61,
+  candidates: [
+    {
+      id: "1",
+      name: "علی محمدی",
+      title: "Senior Frontend Developer",
+      matchScore: 95,
+      education: "کارشناسی ارشد مهندسی نرم‌افزار",
+      experience: "۸ سال",
+      lastCompany: "دیجی‌کالا",
+      phone: "۰۹۱۲۳۴۵۶۷۸۹",
+      email: "ali@example.com",
+      location: "تهران",
+      skills: ["React", "TypeScript", "Node.js", "GraphQL"],
+      scores: {
+        skills: 95,
+        experience: 90,
+        education: 85,
+        culture: 92,
+      },
+      summary: "تطابق بسیار بالا با نیازمندی‌های شغلی",
+    },
+    {
+      id: "2",
+      name: "سارا احمدی",
+      title: "Full Stack Developer",
+      matchScore: 89,
+      education: "کارشناسی مهندسی کامپیوتر",
+      experience: "۶ سال",
+      lastCompany: "اسنپ",
+      phone: "۰۹۱۲۸۷۶۵۴۳۲",
+      email: "sara@example.com",
+      location: "تهران",
+      skills: ["React", "TypeScript", "Python", "PostgreSQL"],
+      scores: {
+        skills: 88,
+        experience: 85,
+        education: 80,
+        culture: 90,
+      },
+      summary: "مهارت‌های قوی و تجربه مرتبط",
+    },
+    {
+      id: "3",
+      name: "محمد رضایی",
+      title: "Frontend Engineer",
+      matchScore: 78,
+      education: "کارشناسی علوم کامپیوتر",
+      experience: "۵ سال",
+      lastCompany: "تپسی",
+      phone: "۰۹۱۵۱۲۳۴۵۶۷",
+      email: "mohammad@example.com",
+      location: "مشهد",
+      skills: ["React", "JavaScript", "CSS", "REST API"],
+      scores: {
+        skills: 82,
+        experience: 78,
+        education: 75,
+        culture: 80,
+      },
+      summary: "کاندیدای مناسب با پتانسیل رشد",
+    },
+  ],
+  stats: {
+    total: 3,
+    excellent: 1,
+    good: 1,
+    average: 1,
+    avgScore: 87,
+  },
 };
-
-// Sample candidates sorted by score
-const candidates = [
-  {
-    id: 1,
-    name: "علی محمدی",
-    title: "Senior Frontend Developer",
-    matchScore: 95,
-    education: "کارشناسی ارشد مهندسی نرم‌افزار",
-    experience: "۸ سال",
-    lastCompany: "دیجی‌کالا",
-    phone: "۰۹۱۲۳۴۵۶۷۸۹",
-    email: "ali@example.com",
-    location: "تهران",
-    skills: ["React", "TypeScript", "Node.js", "GraphQL"],
-    scores: {
-      skills: 95,
-      experience: 90,
-      education: 85,
-      culture: 92,
-    },
-  },
-  {
-    id: 2,
-    name: "سارا احمدی",
-    title: "Full Stack Developer",
-    matchScore: 89,
-    education: "کارشناسی مهندسی کامپیوتر",
-    experience: "۶ سال",
-    lastCompany: "اسنپ",
-    phone: "۰۹۱۲۸۷۶۵۴۳۲",
-    email: "sara@example.com",
-    location: "تهران",
-    skills: ["React", "TypeScript", "Python", "PostgreSQL"],
-    scores: {
-      skills: 88,
-      experience: 85,
-      education: 80,
-      culture: 90,
-    },
-  },
-  {
-    id: 3,
-    name: "محمد رضایی",
-    title: "Frontend Engineer",
-    matchScore: 84,
-    education: "کارشناسی علوم کامپیوتر",
-    experience: "۵ سال",
-    lastCompany: "تپسی",
-    phone: "۰۹۱۵۱۲۳۴۵۶۷",
-    email: "mohammad@example.com",
-    location: "مشهد",
-    skills: ["React", "JavaScript", "CSS", "REST API"],
-    scores: {
-      skills: 82,
-      experience: 78,
-      education: 75,
-      culture: 88,
-    },
-  },
-  {
-    id: 4,
-    name: "نگین حسینی",
-    title: "React Developer",
-    matchScore: 78,
-    education: "کارشناسی مهندسی IT",
-    experience: "۴ سال",
-    lastCompany: "کافه‌بازار",
-    phone: "۰۹۱۳۵۶۷۸۹۰۱",
-    email: "negin@example.com",
-    location: "اصفهان",
-    skills: ["React", "Redux", "JavaScript", "HTML/CSS"],
-    scores: {
-      skills: 75,
-      experience: 72,
-      education: 70,
-      culture: 85,
-    },
-  },
-  {
-    id: 5,
-    name: "امیر کریمی",
-    title: "Junior Frontend Developer",
-    matchScore: 65,
-    education: "کارشناسی مهندسی نرم‌افزار",
-    experience: "۲ سال",
-    lastCompany: "استارتاپ",
-    phone: "۰۹۱۷۸۹۰۱۲۳۴",
-    email: "amir@example.com",
-    location: "شیراز",
-    skills: ["React", "JavaScript", "CSS"],
-    scores: {
-      skills: 60,
-      experience: 55,
-      education: 70,
-      culture: 75,
-    },
-  },
-];
-
-// Chart data
-const qualityData = [
-  { name: "عالی", value: 18, color: "#10b981" },
-  { name: "خوب", value: 45, color: "#8b5cf6" },
-  { name: "متوسط", value: 61, color: "#f59e0b" },
-];
-
-const educationData = [
-  { name: "دکتری", count: 5 },
-  { name: "کارشناسی ارشد", count: 28 },
-  { name: "کارشناسی", count: 72 },
-  { name: "کاردانی", count: 19 },
-];
-
-const experienceData = [
-  { name: "۰-۲ سال", count: 25 },
-  { name: "۳-۵ سال", count: 42 },
-  { name: "۶-۱۰ سال", count: 38 },
-  { name: "+۱۰ سال", count: 19 },
-];
 
 const CampaignDetail = () => {
   const { id } = useParams();
-  const [selectedCandidate, setSelectedCandidate] = useState<typeof candidates[0] | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [campaignData, setCampaignData] = useState<CampaignData | null>(null);
+
+  useEffect(() => {
+    // Try to load from localStorage
+    const stored = localStorage.getItem(`campaign_${id}`);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setCampaignData(parsed);
+      } catch {
+        setCampaignData(fallbackCampaign);
+      }
+    } else {
+      // Use fallback for demo campaigns
+      setCampaignData(fallbackCampaign);
+    }
+  }, [id]);
+
+  if (!campaignData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+          <p className="text-slate-400">در حال بارگذاری...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { candidates, stats } = campaignData;
 
   const getScoreColor = (score: number) => {
     if (score >= 85) return "text-emerald-400";
@@ -183,6 +189,29 @@ const CampaignDetail = () => {
     if (score >= 50) return "bg-amber-500";
     return "bg-red-500";
   };
+
+  // Chart data from actual stats
+  const qualityData = [
+    { name: "عالی", value: stats.excellent, color: "#10b981" },
+    { name: "خوب", value: stats.good, color: "#8b5cf6" },
+    { name: "متوسط", value: stats.average, color: "#f59e0b" },
+  ];
+
+  // Calculate education distribution from candidates
+  const educationMap: Record<string, number> = {};
+  candidates.forEach(c => {
+    const edu = c.education || "نامشخص";
+    educationMap[edu] = (educationMap[edu] || 0) + 1;
+  });
+  const educationData = Object.entries(educationMap).map(([name, count]) => ({ name, count }));
+
+  // Calculate experience distribution
+  const experienceMap: Record<string, number> = {};
+  candidates.forEach(c => {
+    const exp = c.experience || "نامشخص";
+    experienceMap[exp] = (experienceMap[exp] || 0) + 1;
+  });
+  const experienceData = Object.entries(experienceMap).map(([name, count]) => ({ name, count }));
 
   return (
     <>
@@ -202,7 +231,7 @@ const CampaignDetail = () => {
             </Link>
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-white">{campaignData.name}</h1>
-              <p className="text-slate-400 text-sm mt-1">{campaignData.city} • {campaignData.totalCandidates} کاندیدا</p>
+              <p className="text-slate-400 text-sm mt-1">{campaignData.city} • {stats.total} کاندیدا • میانگین امتیاز: {stats.avgScore}%</p>
             </div>
           </div>
 
@@ -261,7 +290,7 @@ const CampaignDetail = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={educationData} layout="vertical">
                     <XAxis type="number" stroke="#64748b" fontSize={12} />
-                    <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={12} width={100} />
+                    <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={10} width={100} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#1e293b",
@@ -286,7 +315,7 @@ const CampaignDetail = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={experienceData} layout="vertical">
                     <XAxis type="number" stroke="#64748b" fontSize={12} />
-                    <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={12} width={80} />
+                    <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={10} width={80} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#1e293b",
@@ -348,6 +377,9 @@ const CampaignDetail = () => {
                             <span>•</span>
                             <span>{candidate.location}</span>
                           </div>
+                          {candidate.summary && (
+                            <p className="text-xs text-violet-300 mt-1">{candidate.summary}</p>
+                          )}
                         </div>
 
                         <div className="flex-shrink-0 text-left">
@@ -388,6 +420,13 @@ const CampaignDetail = () => {
                     </div>
                   ))}
                 </div>
+
+                {candidates.length === 0 && (
+                  <div className="p-12 text-center">
+                    <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                    <p className="text-slate-400">هنوز کاندیدایی تحلیل نشده است</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -424,6 +463,13 @@ const CampaignDetail = () => {
                       </div>
                     </div>
 
+                    {/* Summary */}
+                    {selectedCandidate.summary && (
+                      <div className="mb-6 p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                        <p className="text-sm text-violet-300">{selectedCandidate.summary}</p>
+                      </div>
+                    )}
+
                     {/* Contact Info */}
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center gap-3 text-slate-300">
@@ -438,31 +484,37 @@ const CampaignDetail = () => {
                         <MapPin className="w-5 h-5 text-violet-400" />
                         <span>{selectedCandidate.location}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-slate-300">
-                        <Phone className="w-5 h-5 text-violet-400" />
-                        <span dir="ltr">{selectedCandidate.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-slate-300">
-                        <Mail className="w-5 h-5 text-violet-400" />
-                        <span>{selectedCandidate.email}</span>
-                      </div>
+                      {selectedCandidate.phone && (
+                        <div className="flex items-center gap-3 text-slate-300">
+                          <Phone className="w-5 h-5 text-violet-400" />
+                          <span dir="ltr">{selectedCandidate.phone}</span>
+                        </div>
+                      )}
+                      {selectedCandidate.email && (
+                        <div className="flex items-center gap-3 text-slate-300">
+                          <Mail className="w-5 h-5 text-violet-400" />
+                          <span>{selectedCandidate.email}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Skills */}
-                    <div className="mb-6">
-                      <h5 className="text-sm font-medium text-slate-400 mb-3">مهارت‌ها</h5>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedCandidate.skills.map((skill, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="outline"
-                            className="border-violet-500/30 text-violet-300 bg-violet-500/10"
-                          >
-                            {skill}
-                          </Badge>
-                        ))}
+                    {selectedCandidate.skills.length > 0 && (
+                      <div className="mb-6">
+                        <h5 className="text-sm font-medium text-slate-400 mb-3">مهارت‌ها</h5>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedCandidate.skills.map((skill, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="outline"
+                              className="border-violet-500/30 text-violet-300 bg-violet-500/10"
+                            >
+                              {skill}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Score Breakdown */}
                     <div>

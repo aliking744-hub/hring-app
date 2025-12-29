@@ -17,7 +17,8 @@ import {
   ExternalLink,
   Check,
   X,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from "xlsx";
 
 // Initial sample campaign data
 const initialCampaigns = [
@@ -88,6 +91,7 @@ const SmartHeadhunting = () => {
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [showNewCampaignForm, setShowNewCampaignForm] = useState(false);
   const [autoHeadhunting, setAutoHeadhunting] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Form states
   const [formData, setFormData] = useState({
@@ -103,6 +107,7 @@ const SmartHeadhunting = () => {
   // File upload states
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
+  const [parsedCandidates, setParsedCandidates] = useState<any[]>([]);
 
   const getSourceBadge = (source: string) => {
     switch (source) {
@@ -157,11 +162,40 @@ const SmartHeadhunting = () => {
     );
   };
 
-  const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+    
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      
+      if (jsonData.length > 100) {
+        toast.error("حداکثر ۱۰۰ ردیف قابل پردازش است");
+        return;
+      }
+      
+      // Map common column names to our structure
+      const candidates = jsonData.map((row: any) => ({
+        name: row['نام'] || row['Name'] || row['name'] || row['نام و نام خانوادگی'] || '',
+        email: row['ایمیل'] || row['Email'] || row['email'] || '',
+        phone: row['تلفن'] || row['Phone'] || row['phone'] || row['موبایل'] || '',
+        skills: row['مهارت‌ها'] || row['Skills'] || row['skills'] || '',
+        experience: row['سابقه کار'] || row['Experience'] || row['experience'] || '',
+        education: row['تحصیلات'] || row['Education'] || row['education'] || row['مدرک تحصیلی'] || '',
+        lastCompany: row['شرکت'] || row['Company'] || row['company'] || row['آخرین شرکت'] || '',
+        location: row['شهر'] || row['City'] || row['city'] || row['محل زندگی'] || '',
+      }));
+      
+      setParsedCandidates(candidates);
       setExcelFile(file);
-      toast.success(`فایل ${file.name} آپلود شد`);
+      toast.success(`${candidates.length} کاندیدا از فایل استخراج شد`);
+    } catch (error) {
+      console.error("Error parsing Excel:", error);
+      toast.error("خطا در خواندن فایل اکسل");
     }
   };
 
@@ -175,20 +209,22 @@ const SmartHeadhunting = () => {
     toast.success(`${files.length} فایل رزومه آپلود شد`);
   };
 
-  const handleCreateCampaign = () => {
+  const handleCreateCampaign = async () => {
     if (!formData.jobTitle || !formData.city) {
       toast.error("لطفاً عنوان شغل و نام شهر را وارد کنید");
       return;
     }
 
-    if (!autoHeadhunting && !excelFile && pdfFiles.length === 0) {
+    if (!autoHeadhunting && parsedCandidates.length === 0 && pdfFiles.length === 0) {
       toast.error("لطفاً فایل آپلود کنید یا گزینه هدهانتینگ خودکار را فعال کنید");
       return;
     }
 
-    // Create new campaign
+    const campaignId = Date.now().toString();
+    
+    // Create new campaign with processing status
     const newCampaign = {
-      id: Date.now().toString(),
+      id: campaignId,
       name: formData.jobTitle,
       status: "processing",
       source: autoHeadhunting ? "auto" : excelFile ? "excel" : "api",
@@ -198,23 +234,95 @@ const SmartHeadhunting = () => {
       city: formData.city,
     };
 
-    // Add to campaigns list
     setCampaigns(prev => [newCampaign, ...prev]);
-
-    toast.success("کمپین جدید ایجاد شد و در حال پردازش است...");
     setShowNewCampaignForm(false);
-    setFormData({
-      jobTitle: "",
-      seniorityLevel: "",
-      city: "",
-      skills: "",
-      experience: "",
-      industry: "",
-      description: "",
-    });
-    setExcelFile(null);
-    setPdfFiles([]);
-    setAutoHeadhunting(false);
+    setIsProcessing(true);
+
+    try {
+      if (autoHeadhunting) {
+        // For auto headhunting, we'll connect to Make.com later
+        toast.info("هدهانتینگ خودکار در حال آماده‌سازی...");
+        
+        // Simulate processing for now
+        setTimeout(() => {
+          setCampaigns(prev => prev.map(c => 
+            c.id === campaignId 
+              ? { ...c, status: "active", candidatesCount: 15, avgMatchScore: 75, lastUpdated: "همین الان" }
+              : c
+          ));
+          toast.success("کمپین آماده شد!");
+        }, 3000);
+      } else if (parsedCandidates.length > 0) {
+        // Process with AI
+        toast.info("در حال تحلیل کاندیداها با هوش مصنوعی...");
+        
+        const { data, error } = await supabase.functions.invoke('analyze-candidates', {
+          body: {
+            candidates: parsedCandidates,
+            jobRequirements: {
+              jobTitle: formData.jobTitle,
+              city: formData.city,
+              skills: formData.skills,
+              experience: formData.experience,
+              industry: formData.industry,
+              description: formData.description,
+              seniorityLevel: formData.seniorityLevel,
+            },
+          },
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        // Store results in localStorage for campaign detail page
+        localStorage.setItem(`campaign_${campaignId}`, JSON.stringify({
+          ...newCampaign,
+          candidates: data.candidates,
+          stats: data.stats,
+        }));
+
+        // Update campaign with results
+        setCampaigns(prev => prev.map(c => 
+          c.id === campaignId 
+            ? { 
+                ...c, 
+                status: "active", 
+                candidatesCount: data.stats.total, 
+                avgMatchScore: data.stats.avgScore,
+                lastUpdated: "همین الان" 
+              }
+            : c
+        ));
+
+        toast.success(`تحلیل ${data.stats.total} کاندیدا با موفقیت انجام شد!`);
+      }
+    } catch (error: any) {
+      console.error("Error processing campaign:", error);
+      toast.error(error.message || "خطا در پردازش کمپین");
+      
+      // Update campaign status to error
+      setCampaigns(prev => prev.map(c => 
+        c.id === campaignId 
+          ? { ...c, status: "paused", lastUpdated: "خطا در پردازش" }
+          : c
+      ));
+    } finally {
+      setIsProcessing(false);
+      setFormData({
+        jobTitle: "",
+        seniorityLevel: "",
+        city: "",
+        skills: "",
+        experience: "",
+        industry: "",
+        description: "",
+      });
+      setExcelFile(null);
+      setPdfFiles([]);
+      setParsedCandidates([]);
+      setAutoHeadhunting(false);
+    }
   };
 
   return (
@@ -510,10 +618,20 @@ const SmartHeadhunting = () => {
                   </Button>
                   <Button 
                     onClick={handleCreateCampaign}
+                    disabled={isProcessing}
                     className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white"
                   >
-                    <Check className="w-4 h-4 ml-2" />
-                    ایجاد کمپین
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                        در حال پردازش...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 ml-2" />
+                        ایجاد کمپین
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
