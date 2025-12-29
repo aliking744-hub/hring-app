@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { 
   ArrowLeft, 
@@ -25,7 +25,7 @@ import {
   Shield,
   Loader2
 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -80,6 +80,24 @@ interface UICandidate {
 
 const CampaignDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+
+  // Redirect legacy numeric ids (old localStorage campaigns) to their migrated DB uuid if available
+  useEffect(() => {
+    if (!id) return;
+    try {
+      const mapStr = localStorage.getItem("smart_headhunting_legacy_id_map");
+      if (!mapStr) return;
+      const map = JSON.parse(mapStr) as Record<string, string>;
+      const migratedId = map?.[id];
+      if (migratedId && migratedId !== id) {
+        navigate(`/campaign/${migratedId}`, { replace: true });
+      }
+    } catch {
+      // ignore
+    }
+  }, [id, navigate]);
+
   const { campaign, candidates: dbCandidates, stats, loading, error } = useCampaignDetail(id);
   const [selectedCandidate, setSelectedCandidate] = useState<UICandidate | null>(null);
 
