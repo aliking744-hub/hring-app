@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { 
   Crosshair, 
@@ -68,6 +68,149 @@ const SmartHeadhunting = () => {
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
   const [parsedCandidates, setParsedCandidates] = useState<any[]>([]);
+
+  // One-time migration from legacy localStorage to database (if old data still exists in this browser)
+  useEffect(() => {
+    if (!user || loading) return;
+
+    const LEGACY_CAMPAIGNS_STORAGE_KEY = "smart_headhunting_campaigns";
+    const LEGACY_ID_MAP_KEY = "smart_headhunting_legacy_id_map";
+    const MIGRATED_KEY = `smart_headhunting_db_migrated_${user.id}`;
+
+    // Avoid duplicates: if user already has DB campaigns, we skip auto-migration.
+    if (campaigns.length > 0) {
+      localStorage.setItem(MIGRATED_KEY, "1");
+      return;
+    }
+
+    if (localStorage.getItem(MIGRATED_KEY) === "1") return;
+
+    const legacyListStr = localStorage.getItem(LEGACY_CAMPAIGNS_STORAGE_KEY);
+    if (!legacyListStr) {
+      localStorage.setItem(MIGRATED_KEY, "1");
+      return;
+    }
+
+    let legacyList: any[] = [];
+    try {
+      const parsed = JSON.parse(legacyListStr);
+      legacyList = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      legacyList = [];
+    }
+
+    if (legacyList.length === 0) {
+      localStorage.setItem(MIGRATED_KEY, "1");
+      return;
+    }
+
+    const normalizeSkillsToString = (skills: any): string => {
+      if (Array.isArray(skills)) return skills.map(String).join(", ");
+      if (typeof skills === "string") return skills;
+      return "";
+    };
+
+    const run = async () => {
+      try {
+        toast.info("در حال انتقال کمپین‌های قبلی به دیتابیس...");
+
+        let legacyMap: Record<string, string> = {};
+        try {
+          const storedMap = localStorage.getItem(LEGACY_ID_MAP_KEY);
+          legacyMap = storedMap ? JSON.parse(storedMap) : {};
+        } catch {
+          legacyMap = {};
+        }
+
+        let migratedCount = 0;
+
+        for (const legacyCampaign of legacyList) {
+          const legacyId = String(legacyCampaign?.id ?? "").trim();
+          if (!legacyId) continue;
+          if (legacyMap[legacyId]) continue;
+
+          let detail: any = null;
+          try {
+            const detailStr = localStorage.getItem(`campaign_${legacyId}`);
+            detail = detailStr ? JSON.parse(detailStr) : null;
+          } catch {
+            detail = null;
+          }
+
+          const name = String(detail?.name ?? legacyCampaign?.name ?? "").trim();
+          const city = String(detail?.city ?? legacyCampaign?.city ?? "").trim();
+          if (!name || !city) continue;
+
+          const skillsArr = (() => {
+            const s = detail?.skills ?? legacyCampaign?.skills;
+            if (Array.isArray(s)) return s.map((x: any) => String(x).trim()).filter(Boolean);
+            if (typeof s === "string") return s.split(",").map((x) => x.trim()).filter(Boolean);
+            return undefined;
+          })();
+
+          const dbCampaign = await createCampaign({
+            name,
+            city,
+            job_title: String(detail?.job_title ?? detail?.jobTitle ?? name),
+            industry: detail?.industry ?? legacyCampaign?.industry,
+            experience_range: detail?.experience_range ?? legacyCampaign?.experience,
+            skills: skillsArr,
+            auto_headhunting: legacyCampaign?.source === "auto" || !!detail?.auto_headhunting,
+          });
+
+          const legacyCandidates = Array.isArray(detail?.candidates) ? detail.candidates : [];
+          if (legacyCandidates.length > 0) {
+            const mapped = legacyCandidates.map((c: any) => ({
+              name: c?.name ?? null,
+              email: c?.email ?? null,
+              phone: c?.phone ?? null,
+              skills: normalizeSkillsToString(c?.skills ?? ""),
+              experience: c?.experience ?? null,
+              education: c?.education ?? null,
+              last_company: c?.lastCompany ?? c?.last_company ?? null,
+              location: c?.location ?? null,
+              title: c?.title ?? null,
+              match_score: Number(c?.matchScore ?? c?.match_score ?? 0) || 0,
+              candidate_temperature: c?.candidateTemperature ?? c?.candidate_temperature ?? "cold",
+              recommendation: c?.recommendation ?? null,
+              green_flags: c?.greenFlags ?? c?.green_flags ?? null,
+              red_flags: c?.redFlags ?? c?.red_flags ?? null,
+              layer_scores: c?.layerScores ?? c?.layer_scores ?? null,
+              raw_data: c?.rawData ?? c?.raw_data ?? null,
+            }));
+
+            await addCandidates(dbCampaign.id, mapped);
+          }
+
+          const status = String(detail?.status ?? legacyCampaign?.status ?? "active");
+          await updateCampaign(dbCampaign.id, {
+            status,
+            progress: status === "active" ? 100 : 0,
+          });
+
+          legacyMap[legacyId] = dbCampaign.id;
+          migratedCount++;
+        }
+
+        localStorage.setItem(LEGACY_ID_MAP_KEY, JSON.stringify(legacyMap));
+        localStorage.setItem(MIGRATED_KEY, "1");
+        localStorage.removeItem(LEGACY_CAMPAIGNS_STORAGE_KEY);
+
+        await fetchCampaigns();
+
+        if (migratedCount > 0) {
+          toast.success(`${migratedCount} کمپین منتقل شد`);
+        } else {
+          toast.info("کمپین قابل انتقالی پیدا نشد");
+        }
+      } catch (e: any) {
+        console.error("Legacy migration failed:", e);
+        localStorage.setItem(MIGRATED_KEY, "1");
+      }
+    };
+
+    void run();
+  }, [user, loading, campaigns.length, createCampaign, addCandidates, updateCampaign, fetchCampaigns]);
 
   const getSourceBadge = (source: string) => {
     switch (source) {
