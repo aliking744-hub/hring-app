@@ -10,9 +10,10 @@ interface AdminRouteProps {
 }
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
   const location = useLocation();
 
+  // Show loading while auth is being checked
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -22,7 +23,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   }
 
   // Not logged in -> redirect to auth
-  if (!user) {
+  if (!session || !user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
