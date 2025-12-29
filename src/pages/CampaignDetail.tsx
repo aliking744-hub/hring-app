@@ -518,6 +518,40 @@ const CampaignDetail = () => {
 
                       {/* Content */}
                       <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {/* Basic Info */}
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-400 mb-3">اطلاعات پایه</h4>
+                          <div className="space-y-3">
+                            {selectedCandidate.education && (
+                              <div className="flex items-start gap-3">
+                                <GraduationCap className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <span className="text-xs text-slate-500">تحصیلات</span>
+                                  <p className="text-sm text-slate-200">{selectedCandidate.education}</p>
+                                </div>
+                              </div>
+                            )}
+                            {selectedCandidate.experience && (
+                              <div className="flex items-start gap-3">
+                                <Briefcase className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <span className="text-xs text-slate-500">سابقه کار</span>
+                                  <p className="text-sm text-slate-200">{selectedCandidate.experience}</p>
+                                </div>
+                              </div>
+                            )}
+                            {selectedCandidate.lastCompany && (
+                              <div className="flex items-start gap-3">
+                                <Briefcase className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <span className="text-xs text-slate-500">آخرین محل کار</span>
+                                  <p className="text-sm text-slate-200">{selectedCandidate.lastCompany}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         {/* Contact Info */}
                         <div>
                           <h4 className="text-sm font-medium text-slate-400 mb-3">اطلاعات تماس</h4>
