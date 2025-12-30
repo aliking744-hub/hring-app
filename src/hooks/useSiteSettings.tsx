@@ -41,10 +41,12 @@ const DEFAULT_FONTS: FontSettings = {
   nav: 'IRANSans',
 };
 
+// Note: These are empty strings because we use ES6 imports for fallbacks in components
+// This allows Vite to properly bundle the assets
 const DEFAULT_LOGOS: LogoSettings = {
-  main: '/assets/logo.png',
-  footer: '/assets/logo_zir_white.png',
-  auth: '/assets/logo.png',
+  main: '',
+  footer: '',
+  auth: '',
   favicon: '/favicon.ico',
 };
 
