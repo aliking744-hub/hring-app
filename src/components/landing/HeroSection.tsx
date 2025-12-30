@@ -2,8 +2,15 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const HeroSection = () => {
+  const { fonts, getSetting } = useSiteSettings();
+  
+  // Get dynamic texts or use defaults
+  const heroTitle = getSetting('hero_title', 'سیستم مدیریت منابع انسانی');
+  const heroSubtitle = getSetting('hero_subtitle', 'قدرت گرفته از هوش مصنوعی. استخدام، مصاحبه و آنبوردینگ را به صورت خودکار و هوشمند مدیریت کنید.');
+
   return (
     <section className="min-h-screen flex items-center justify-center pt-24 pb-16 px-4" dir="rtl">
       <div className="container mx-auto text-center">
@@ -13,9 +20,10 @@ const HeroSection = () => {
           transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="space-y-6"
         >
-          {/* Main Title */}
+          {/* Main Title - Using Dynamic Heading Font */}
           <motion.h1
-            className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-relaxed md:leading-loose"
+            className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-relaxed md:leading-loose font-heading"
+            style={{ fontFamily: fonts.heading }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8 }}
@@ -23,22 +31,21 @@ const HeroSection = () => {
             <span className="text-foreground">hring:</span>
             <br />
             <span className="gradient-text-primary">
-              سیستم مدیریت منابع انسانی
+              {heroTitle}
             </span>
             <br />
             <span className="text-foreground">نسل جدید</span>
           </motion.h1>
 
-          {/* Subtitle */}
+          {/* Subtitle - Using Dynamic Body Font */}
           <motion.p
             className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
+            style={{ fontFamily: fonts.body }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
           >
-            قدرت گرفته از هوش مصنوعی. استخدام، مصاحبه و آنبوردینگ را
-            <br className="hidden md:block" />
-            به صورت خودکار و هوشمند مدیریت کنید.
+            {heroSubtitle}
           </motion.p>
 
           {/* CTA Buttons */}
@@ -52,6 +59,7 @@ const HeroSection = () => {
               <Button 
                 size="lg" 
                 className="glow-button text-foreground font-semibold px-8 py-6 text-lg gap-2"
+                style={{ fontFamily: fonts.button }}
               >
                 شروع کنید
                 <ArrowLeft className="w-5 h-5" />
