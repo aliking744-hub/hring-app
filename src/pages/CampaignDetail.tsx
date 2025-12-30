@@ -25,6 +25,7 @@ import {
   Shield,
   Loader2,
   Clock,
+  Printer,
   Filter
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -320,16 +321,26 @@ const CampaignDetail = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 lg:p-8" dir="rtl">
         <div className="max-w-[1600px] mx-auto">
           {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <Link to="/smart-headhunting">
-              <Button variant="outline" size="icon" className="border-slate-700 bg-slate-800/50 hover:bg-slate-700">
-                <ArrowLeft className="w-5 h-5 text-slate-300" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-white">{campaign.name}</h1>
-              <p className="text-slate-400 text-sm mt-1">{campaign.city} • {stats.total} کاندیدا • میانگین امتیاز: {stats.avgScore}%</p>
+          <div className="flex items-center justify-between mb-8 print:mb-4">
+            <div className="flex items-center gap-4">
+              <Link to="/smart-headhunting" className="print:hidden">
+                <Button variant="outline" size="icon" className="border-slate-700 bg-slate-800/50 hover:bg-slate-700">
+                  <ArrowLeft className="w-5 h-5 text-slate-300" />
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-bold text-white print:text-black">{campaign.name}</h1>
+                <p className="text-slate-400 text-sm mt-1 print:text-gray-600">{campaign.city} • {stats.total} کاندیدا • میانگین امتیاز: {stats.avgScore}%</p>
+              </div>
             </div>
+            <Button 
+              variant="outline" 
+              onClick={() => window.print()}
+              className="border-slate-700 bg-slate-800/50 hover:bg-slate-700 print:hidden"
+            >
+              <Printer className="w-4 h-4 ml-2" />
+              پرینت
+            </Button>
           </div>
 
           {candidates.length === 0 ? (

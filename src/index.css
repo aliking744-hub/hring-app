@@ -328,16 +328,79 @@
     backdrop-filter: none !important;
   }
   
-  * {
-    color: black !important;
-    background: transparent !important;
-  }
-  
   .bg-destructive {
     background: #ef4444 !important;
   }
   
   .text-destructive-foreground {
+    color: white !important;
+  }
+
+  /* Campaign Detail Print Styles */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:text-black {
+    color: black !important;
+  }
+
+  .print\:text-gray-600 {
+    color: #4b5563 !important;
+  }
+
+  .print\:mb-4 {
+    margin-bottom: 1rem !important;
+  }
+
+  .print\:bg-white {
+    background: white !important;
+  }
+
+  .print\:border-gray-300 {
+    border-color: #d1d5db !important;
+  }
+
+  /* Make cards visible in print */
+  [class*="bg-slate-900"],
+  [class*="bg-slate-800"] {
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  [class*="text-white"],
+  [class*="text-slate-"] {
+    color: black !important;
+  }
+
+  [class*="border-slate-"] {
+    border-color: #d1d5db !important;
+  }
+
+  /* Hide charts in print for cleaner output */
+  .recharts-wrapper {
+    display: none !important;
+  }
+
+  /* Badge styles for print */
+  [class*="bg-emerald-500"] {
+    background: #10b981 !important;
+    color: white !important;
+  }
+
+  [class*="bg-red-500"] {
+    background: #ef4444 !important;
+    color: white !important;
+  }
+
+  [class*="bg-amber-500"] {
+    background: #f59e0b !important;
+    color: white !important;
+  }
+
+  [class*="bg-violet-500"],
+  [class*="bg-purple-"] {
+    background: #8b5cf6 !important;
     color: white !important;
   }
 }
