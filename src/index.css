@@ -306,11 +306,16 @@
 
 /* Print Styles */
 @media print {
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
   body {
     background: white !important;
     color: black !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   
   .aurora-blob,
@@ -341,12 +346,21 @@
     display: none !important;
   }
 
-  .print\:text-black {
+  .print\:flex {
+    display: flex !important;
+  }
+
+  .print\:\!text-black {
     color: black !important;
   }
 
-  .print\:text-gray-600 {
+  .print\:\!text-gray-600 {
     color: #4b5563 !important;
+  }
+
+  .print\:\!text-3xl {
+    font-size: 1.875rem !important;
+    line-height: 2.25rem !important;
   }
 
   .print\:mb-4 {
@@ -357,50 +371,105 @@
     background: white !important;
   }
 
-  .print\:border-gray-300 {
-    border-color: #d1d5db !important;
+  .print\:p-4 {
+    padding: 1rem !important;
   }
 
   /* Make cards visible in print */
   [class*="bg-slate-900"],
   [class*="bg-slate-800"] {
-    background: white !important;
-    border: 1px solid #e5e7eb !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
   }
 
-  [class*="text-white"],
-  [class*="text-slate-"] {
+  [class*="from-slate-950"],
+  [class*="via-slate-900"],
+  [class*="to-slate-950"] {
+    background: white !important;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
     color: black !important;
   }
 
-  [class*="border-slate-"] {
-    border-color: #d1d5db !important;
+  p, span, div {
+    color: #1e293b !important;
   }
 
-  /* Hide charts in print for cleaner output */
+  [class*="border-slate-"] {
+    border-color: #e2e8f0 !important;
+  }
+
+  /* Charts should display in print */
   .recharts-wrapper {
-    display: none !important;
+    display: block !important;
+  }
+
+  .recharts-surface {
+    overflow: visible !important;
   }
 
   /* Badge styles for print */
-  [class*="bg-emerald-500"] {
+  [class*="bg-emerald-500"],
+  [class*="bg-emerald-400"] {
     background: #10b981 !important;
     color: white !important;
   }
 
-  [class*="bg-red-500"] {
+  [class*="bg-red-500"],
+  [class*="bg-red-400"] {
     background: #ef4444 !important;
     color: white !important;
   }
 
-  [class*="bg-amber-500"] {
+  [class*="bg-amber-500"],
+  [class*="bg-amber-400"] {
     background: #f59e0b !important;
     color: white !important;
   }
 
   [class*="bg-violet-500"],
+  [class*="bg-violet-400"],
   [class*="bg-purple-"] {
     background: #8b5cf6 !important;
     color: white !important;
+  }
+
+  [class*="bg-blue-500"],
+  [class*="bg-blue-400"] {
+    background: #3b82f6 !important;
+    color: white !important;
+  }
+
+  /* Gradient backgrounds for avatars */
+  [class*="from-violet-500"][class*="to-purple-600"] {
+    background: linear-gradient(to bottom right, #8b5cf6, #9333ea) !important;
+  }
+
+  /* Text colors for scores */
+  [class*="text-emerald-"] {
+    color: #10b981 !important;
+  }
+
+  [class*="text-violet-"] {
+    color: #8b5cf6 !important;
+  }
+
+  [class*="text-amber-"] {
+    color: #f59e0b !important;
+  }
+
+  [class*="text-red-"] {
+    color: #ef4444 !important;
+  }
+
+  [class*="text-blue-"] {
+    color: #3b82f6 !important;
+  }
+
+  /* Logo in print */
+  .print\:flex img {
+    filter: none !important;
+    opacity: 1 !important;
   }
 }
