@@ -14,7 +14,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['IRANSans', 'BNazanin', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-body)', 'IRANSans', 'BNazanin', 'Inter', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'Afarin', 'IRANSans', 'sans-serif'],
+        button: ['var(--font-button)', 'IRANSans', 'sans-serif'],
+        nav: ['var(--font-nav)', 'IRANSans', 'sans-serif'],
         afarin: ['Afarin', 'sans-serif'],
         nazanin: ['BNazanin', 'serif'],
         iransans: ['IRANSans', 'sans-serif'],
