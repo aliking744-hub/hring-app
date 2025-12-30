@@ -62,11 +62,12 @@ export const useCampaigns = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch campaigns with candidate counts
+      // Fetch campaigns (newest / most recently updated first)
       const { data: campaignsData, error: campaignsError } = await supabase
         .from("campaigns")
         .select("*")
         .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
         .order("created_at", { ascending: false });
 
       if (campaignsError) throw campaignsError;
@@ -157,15 +158,21 @@ export const useCampaigns = () => {
     campaignId: string,
     updates: Partial<Campaign>
   ) => {
+    const safeUpdates: Partial<Campaign> = {
+      ...updates,
+      // Ensure "آخرین تغییر" is meaningful even without a DB trigger
+      updated_at: new Date().toISOString(),
+    };
+
     const { data, error } = await supabase
       .from("campaigns")
-      .update(updates)
+      .update(safeUpdates)
       .eq("id", campaignId)
       .select()
       .single();
 
     if (error) throw error;
-    
+
     // Refresh campaigns list
     await fetchCampaigns();
     return data;

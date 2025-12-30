@@ -277,13 +277,17 @@ const SmartHeadhunting = () => {
     );
   };
 
-  // Filter campaigns by search query and sort by created_at (newest first)
+  // Filter campaigns by search query and sort (newest/last-updated first)
   const filteredCampaigns = campaigns
-    .filter(c => 
+    .filter((c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.city?.toLowerCase().includes(searchQuery.toLowerCase()))
     )
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    .sort((a, b) => {
+      const byUpdated = b.updated_at.localeCompare(a.updated_at);
+      if (byUpdated !== 0) return byUpdated;
+      return b.created_at.localeCompare(a.created_at);
+    });
 
   const handleDeleteCampaign = async (campaignId: string, e: React.MouseEvent) => {
     e.stopPropagation();
