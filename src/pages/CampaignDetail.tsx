@@ -318,8 +318,16 @@ const CampaignDetail = () => {
         <meta name="description" content={`جزئیات کمپین ${campaign.name}`} />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 lg:p-8" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 lg:p-8 print:bg-white print:p-4" dir="rtl">
         <div className="max-w-[1600px] mx-auto">
+          {/* Print Header with Logo */}
+          <div className="hidden print:flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-300">
+            <img src="/src/assets/logo.png" alt="Logo" className="h-12" />
+            <div className="text-left">
+              <p className="text-sm text-gray-500">تاریخ چاپ: {new Date().toLocaleDateString('fa-IR')}</p>
+            </div>
+          </div>
+
           {/* Header */}
           <div className="flex items-center justify-between mb-8 print:mb-4">
             <div className="flex items-center gap-4">
@@ -329,8 +337,8 @@ const CampaignDetail = () => {
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-white print:text-black">{campaign.name}</h1>
-                <p className="text-slate-400 text-sm mt-1 print:text-gray-600">{campaign.city} • {stats.total} کاندیدا • میانگین امتیاز: {stats.avgScore}%</p>
+                <h1 className="text-2xl lg:text-3xl font-bold text-white print:!text-black print:!text-3xl">{campaign.name}</h1>
+                <p className="text-slate-400 text-sm mt-1 print:!text-gray-600">{campaign.city} • {stats.total} کاندیدا • میانگین امتیاز: {stats.avgScore}%</p>
               </div>
             </div>
             <Button 
