@@ -36,11 +36,11 @@ import { useCredits } from "@/hooks/useCredits";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "نمای کلی", path: "/dashboard", external: false },
-  { icon: Calculator, label: "محاسبه بهای تمام شده", path: "/cost-calculator", external: false },
-  { icon: Grid3X3, label: "ابزارهای مدیریتی", path: "/hr-dashboard", external: false },
-  { icon: Boxes, label: "ماژولها", path: "/modules", external: false },
+  { icon: Boxes, label: "ماژول‌ها", path: "/modules", external: false },
   { icon: UserPlus, label: "آنبوردینگ", path: "/onboarding", external: false },
-  { icon: Crosshair, label: "هدهانتینگ هوشمند", path: "/smart-headhunting", external: false },
+  { icon: Calculator, label: "بهای تمام شده", path: "/cost-calculator", external: false },
+  { icon: Crosshair, label: "هدهانتینگ", path: "/smart-headhunting", external: false },
+  { icon: Grid3X3, label: "ابزارهای مدیریتی", path: "/hr-dashboard", external: false },
   { icon: FileText, label: "فروشگاه", path: "/shop", external: false },
   { icon: Settings, label: "تنظیمات", path: "/dashboard", external: false },
 ];
