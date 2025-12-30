@@ -16,8 +16,13 @@ interface SiteSetting {
   label: string | null;
 }
 
-// Available fonts in the system
-const AVAILABLE_FONTS = [
+interface CustomFont {
+  name: string;
+  url: string;
+}
+
+// Default available fonts in the system
+const DEFAULT_FONTS = [
   { value: 'IRANSans', label: 'ایران سنس (پیش‌فرض)' },
   { value: 'BNazanin', label: 'بی نازنین' },
   { value: 'Afarin', label: 'آفرین' },
@@ -46,17 +51,52 @@ const SiteSettingsManager = () => {
   const [saving, setSaving] = useState(false);
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [uploadingLogo, setUploadingLogo] = useState<string | null>(null);
+  const [uploadingFont, setUploadingFont] = useState(false);
   const [activeTab, setActiveTab] = useState('texts');
+  const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
   
   // New setting form
   const [showNewForm, setShowNewForm] = useState(false);
   const [newKey, setNewKey] = useState('');
   const [newLabel, setNewLabel] = useState('');
   const [newValue, setNewValue] = useState('');
+  
+  // New font form
+  const [showNewFontForm, setShowNewFontForm] = useState(false);
+  const [newFontName, setNewFontName] = useState('');
 
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  // Load custom fonts from settings
+  useEffect(() => {
+    const fontsJson = settings.find(s => s.key === 'custom_fonts')?.value;
+    if (fontsJson) {
+      try {
+        const fonts = JSON.parse(fontsJson) as CustomFont[];
+        setCustomFonts(fonts);
+        // Load fonts dynamically
+        fonts.forEach(font => loadFontFace(font.name, font.url));
+      } catch {
+        setCustomFonts([]);
+      }
+    }
+  }, [settings]);
+
+  const loadFontFace = (name: string, url: string) => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @font-face {
+        font-family: '${name}';
+        src: url('${url}') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+    `;
+    document.head.appendChild(style);
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -171,6 +211,82 @@ const SiteSettingsManager = () => {
     setUploadingLogo(null);
   };
 
+  const handleFontUpload = async (file: File) => {
+    if (!newFontName.trim()) {
+      toast.error('لطفاً نام فونت را وارد کنید');
+      return;
+    }
+
+    setUploadingFont(true);
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `font_${newFontName.replace(/\s+/g, '_')}_${Date.now()}.${fileExt}`;
+    const filePath = `fonts/${fileName}`;
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('products')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast.error('خطا در آپلود فونت');
+      console.error(uploadError);
+      setUploadingFont(false);
+      return;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('products')
+      .getPublicUrl(filePath);
+
+    // Add to custom fonts
+    const newFont: CustomFont = { name: newFontName.trim(), url: publicUrl };
+    const updatedFonts = [...customFonts, newFont];
+    
+    // Save to settings
+    const existing = getSettingByKey('custom_fonts');
+    const fontsJson = JSON.stringify(updatedFonts);
+    
+    if (existing) {
+      await supabase
+        .from('site_settings')
+        .update({ value: fontsJson })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('site_settings')
+        .insert({ key: 'custom_fonts', label: 'فونت‌های سفارشی', value: fontsJson });
+    }
+
+    // Load the font immediately
+    loadFontFace(newFont.name, newFont.url);
+
+    toast.success('فونت آپلود شد');
+    setNewFontName('');
+    setShowNewFontForm(false);
+    fetchSettings();
+    setUploadingFont(false);
+  };
+
+  const handleDeleteFont = async (fontName: string) => {
+    if (!confirm(`آیا از حذف فونت "${fontName}" مطمئن هستید؟`)) return;
+
+    const updatedFonts = customFonts.filter(f => f.name !== fontName);
+    const fontsJson = JSON.stringify(updatedFonts);
+    
+    const existing = getSettingByKey('custom_fonts');
+    if (existing) {
+      await supabase
+        .from('site_settings')
+        .update({ value: fontsJson })
+        .eq('id', existing.id);
+    }
+
+    toast.success('فونت حذف شد');
+    fetchSettings();
+  };
+
   const handleSaveAll = async () => {
     setSaving(true);
     
@@ -251,10 +367,17 @@ const SiteSettingsManager = () => {
     }
   };
 
+  // Combine default and custom fonts
+  const allFonts = [
+    ...DEFAULT_FONTS,
+    ...customFonts.map(f => ({ value: f.name, label: `${f.name} (سفارشی)` }))
+  ];
+
   // Filter out font and logo settings from text settings
   const textSettings = settings.filter(s => 
     !FONT_SETTINGS.some(f => f.key === s.key) && 
-    !LOGO_SETTINGS.some(l => l.key === s.key)
+    !LOGO_SETTINGS.some(l => l.key === s.key) &&
+    s.key !== 'custom_fonts'
   );
 
   if (loading) {
@@ -407,68 +530,179 @@ const SiteSettingsManager = () => {
 
         {/* Fonts Tab */}
         <TabsContent value="fonts">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Type className="w-5 h-5" />
-                تنظیمات فونت
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <p className="text-sm text-muted-foreground">
-                با تغییر این تنظیمات، فونت بخش‌های مختلف سایت تغییر خواهد کرد.
-              </p>
-              
-              <div className="grid gap-6 sm:grid-cols-2">
-                {FONT_SETTINGS.map((fontSetting) => {
-                  const currentValue = editedValues[fontSetting.key] || 'IRANSans';
-                  return (
-                    <div key={fontSetting.key} className="space-y-3 p-4 rounded-lg border border-border bg-card">
-                      <div>
-                        <Label className="text-base font-medium">{fontSetting.label}</Label>
-                        <p className="text-xs text-muted-foreground mt-1">{fontSetting.description}</p>
-                      </div>
-                      <Select
-                        value={currentValue}
-                        onValueChange={(value) => handleValueChange(fontSetting.key, value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="انتخاب فونت" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {AVAILABLE_FONTS.map((font) => (
-                            <SelectItem key={font.value} value={font.value}>
-                              <span style={{ fontFamily: font.value }}>{font.label}</span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      {/* Preview */}
-                      <div 
-                        className="p-3 rounded bg-muted text-center"
-                        style={{ fontFamily: currentValue }}
-                      >
-                        <span className="text-lg">نمونه متن فارسی</span>
-                        <span className="text-sm block text-muted-foreground">Sample English Text</span>
-                      </div>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSaveSetting(fontSetting.key, fontSetting.label)}
-                        disabled={saving}
-                        className="w-full"
-                      >
-                        <Save className="w-4 h-4 ml-2" />
-                        ذخیره
-                      </Button>
+          <div className="space-y-6">
+            {/* Custom Fonts Section */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Upload className="w-5 h-5" />
+                    فونت‌های سفارشی
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowNewFontForm(!showNewFontForm)}
+                    className="gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    افزودن فونت
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  فایل‌های فونت (TTF, OTF, WOFF) خود را آپلود کنید تا در سایت استفاده شوند.
+                </p>
+
+                {/* New Font Form */}
+                {showNewFontForm && (
+                  <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-4">
+                    <div className="space-y-2">
+                      <Label>نام فونت</Label>
+                      <Input
+                        value={newFontName}
+                        onChange={(e) => setNewFontName(e.target.value)}
+                        placeholder="مثال: یکان"
+                      />
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                    <div className="space-y-2">
+                      <Label>فایل فونت</Label>
+                      <label className="block">
+                        <input
+                          type="file"
+                          accept=".ttf,.otf,.woff,.woff2"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFontUpload(file);
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2"
+                          disabled={uploadingFont || !newFontName.trim()}
+                          asChild
+                        >
+                          <span>
+                            {uploadingFont ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Upload className="w-4 h-4" />
+                            )}
+                            انتخاب فایل فونت
+                          </span>
+                        </Button>
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        فرمت‌های مجاز: TTF, OTF, WOFF, WOFF2
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom Fonts List */}
+                {customFonts.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-6 border border-dashed border-border rounded-lg">
+                    هنوز فونت سفارشی اضافه نشده
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {customFonts.map((font) => (
+                      <div 
+                        key={font.name} 
+                        className="p-4 rounded-lg border border-border bg-card flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-medium" style={{ fontFamily: font.name }}>
+                            {font.name}
+                          </p>
+                          <p 
+                            className="text-sm text-muted-foreground mt-1"
+                            style={{ fontFamily: font.name }}
+                          >
+                            نمونه متن فارسی
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteFont(font.name)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Font Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Type className="w-5 h-5" />
+                  تنظیمات فونت بخش‌ها
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-sm text-muted-foreground">
+                  فونت هر بخش از سایت را از لیست فونت‌های موجود انتخاب کنید.
+                </p>
+                
+                <div className="grid gap-6 sm:grid-cols-2">
+                  {FONT_SETTINGS.map((fontSetting) => {
+                    const currentValue = editedValues[fontSetting.key] || 'IRANSans';
+                    return (
+                      <div key={fontSetting.key} className="space-y-3 p-4 rounded-lg border border-border bg-card">
+                        <div>
+                          <Label className="text-base font-medium">{fontSetting.label}</Label>
+                          <p className="text-xs text-muted-foreground mt-1">{fontSetting.description}</p>
+                        </div>
+                        <Select
+                          value={currentValue}
+                          onValueChange={(value) => handleValueChange(fontSetting.key, value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="انتخاب فونت" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allFonts.map((font) => (
+                              <SelectItem key={font.value} value={font.value}>
+                                <span style={{ fontFamily: font.value }}>{font.label}</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        {/* Preview */}
+                        <div 
+                          className="p-3 rounded bg-muted text-center"
+                          style={{ fontFamily: currentValue }}
+                        >
+                          <span className="text-lg">نمونه متن فارسی</span>
+                          <span className="text-sm block text-muted-foreground">Sample English Text</span>
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSaveSetting(fontSetting.key, fontSetting.label)}
+                          disabled={saving}
+                          className="w-full"
+                        >
+                          <Save className="w-4 h-4 ml-2" />
+                          ذخیره
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Logos Tab */}
@@ -598,8 +832,8 @@ const SiteSettingsManager = () => {
             </code>
             <code className="text-sm text-muted-foreground block bg-background p-3 rounded">
               {`// استفاده از فونت`}<br/>
-              {`const headingFont = getSetting('font_heading') || 'IRANSans';`}<br/>
-              {`<h1 style={{ fontFamily: headingFont }}>عنوان</h1>`}
+              {`const { fonts } = useSiteSettings();`}<br/>
+              {`<h1 style={{ fontFamily: fonts.heading }}>عنوان</h1>`}
             </code>
           </div>
         </CardContent>

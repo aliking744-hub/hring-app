@@ -19,12 +19,18 @@ interface LogoSettings {
   favicon: string;
 }
 
+interface CustomFont {
+  name: string;
+  url: string;
+}
+
 interface SiteSettingsContextType {
   settings: SiteSettings;
   loading: boolean;
   getSetting: (key: string, fallback?: string) => string;
   fonts: FontSettings;
   logos: LogoSettings;
+  customFonts: CustomFont[];
   refetch: () => Promise<void>;
 }
 
@@ -43,6 +49,26 @@ const DEFAULT_LOGOS: LogoSettings = {
 };
 
 const SiteSettingsContext = createContext<SiteSettingsContextType | null>(null);
+
+// Load custom font dynamically
+const loadFontFace = (name: string, url: string) => {
+  // Check if font is already loaded
+  const existingStyle = document.querySelector(`style[data-font="${name}"]`);
+  if (existingStyle) return;
+
+  const style = document.createElement('style');
+  style.setAttribute('data-font', name);
+  style.textContent = `
+    @font-face {
+      font-family: '${name}';
+      src: url('${url}') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+  `;
+  document.head.appendChild(style);
+};
 
 // Apply fonts to CSS variables dynamically
 const applyFontsToDocument = (fonts: FontSettings) => {
@@ -76,6 +102,7 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [fonts, setFonts] = useState<FontSettings>(DEFAULT_FONTS);
   const [logos, setLogos] = useState<LogoSettings>(DEFAULT_LOGOS);
+  const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
 
   const fetchSettings = async () => {
     const { data, error } = await supabase
@@ -95,6 +122,17 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     setSettings(settingsMap);
+
+    // Load custom fonts first
+    if (settingsMap['custom_fonts']) {
+      try {
+        const fonts = JSON.parse(settingsMap['custom_fonts']) as CustomFont[];
+        setCustomFonts(fonts);
+        fonts.forEach(font => loadFontFace(font.name, font.url));
+      } catch {
+        setCustomFonts([]);
+      }
+    }
 
     // Extract font settings
     const newFonts: FontSettings = {
@@ -138,6 +176,7 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
       getSetting, 
       fonts, 
       logos,
+      customFonts,
       refetch: fetchSettings 
     }}>
       {children}
@@ -157,6 +196,7 @@ export const useSiteSettings = (): SiteSettingsContextType => {
       getSetting: (key: string, fallback: string = '') => fallback,
       fonts: DEFAULT_FONTS,
       logos: DEFAULT_LOGOS,
+      customFonts: [],
       refetch: async () => {},
     };
   }
