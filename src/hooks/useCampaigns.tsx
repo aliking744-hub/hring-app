@@ -62,12 +62,11 @@ export const useCampaigns = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch campaigns (newest / most recently updated first)
+      // Fetch campaigns (newest created first)
       const { data: campaignsData, error: campaignsError } = await supabase
         .from("campaigns")
         .select("*")
         .eq("user_id", user.id)
-        .order("updated_at", { ascending: false })
         .order("created_at", { ascending: false });
 
       if (campaignsError) throw campaignsError;
@@ -340,7 +339,11 @@ function formatDate(dateStr: string): string {
 
   if (diffMins < 1) return "همین الان";
   if (diffMins < 60) return `${diffMins} دقیقه پیش`;
-  if (diffHours < 24) return `${diffHours} ساعت پیش`;
+  if (diffHours < 24) {
+    const mins = diffMins % 60;
+    if (mins === 0) return `${diffHours} ساعت پیش`;
+    return `${diffHours} ساعت و ${mins} دقیقه پیش`;
+  }
   if (diffDays < 7) return `${diffDays} روز پیش`;
   return date.toLocaleDateString("fa-IR");
 }
