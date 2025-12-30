@@ -104,7 +104,7 @@ const CampaignDetail = () => {
   }, [id, navigate]);
 
   const { campaign, candidates: dbCandidates, stats, loading, error } = useCampaignDetail(id);
-  const [selectedCandidate, setSelectedCandidate] = useState<UICandidate | null>(null);
+  
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   // Transform DB candidates to UI format
@@ -522,10 +522,8 @@ const CampaignDetail = () => {
                 </div>
               </div>
 
-              {/* Main Content Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Candidates List */}
-                <div className="lg:col-span-2 rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+              {/* Candidates List - Full Width */}
+              <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
                   <div className="p-6 border-b border-slate-700/50">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-xl font-semibold text-white flex items-center gap-3">
@@ -594,33 +592,31 @@ const CampaignDetail = () => {
                     </div>
                   </div>
                   
-                  <div className="divide-y divide-slate-700/50 max-h-[600px] overflow-y-auto">
-                    {candidates.length === 0 ? (
-                      <div className="p-8 text-center">
-                        <Target className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                        <p className="text-slate-400">کاندیدایی با این وضعیت یافت نشد</p>
-                      </div>
-                    ) : (
-                      candidates.map((candidate) => (
+                  {candidates.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Target className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                      <p className="text-slate-400">کاندیدایی با این وضعیت یافت نشد</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 max-h-[700px] overflow-y-auto">
+                      {[...candidates].sort((a, b) => b.matchScore - a.matchScore).map((candidate) => (
                         <Link
                           key={candidate.id}
                           to={`/campaign/${id}/candidate/${candidate.id}`}
-                          className={`p-4 block cursor-pointer transition-colors hover:bg-slate-800/50 ${
-                            selectedCandidate?.id === candidate.id ? "bg-slate-800/70" : ""
-                          }`}
+                          className="p-4 rounded-xl border border-slate-700/50 bg-slate-800/50 cursor-pointer transition-all hover:bg-slate-800 hover:border-violet-500/30"
                         >
                           <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                               {candidate.name.charAt(0)}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <h3 className="font-semibold text-white truncate">{candidate.name}</h3>
                                 {getTemperatureIcon(candidate.candidateTemperature)}
                                 {getStatusBadge(candidate.status)}
                               </div>
                               <p className="text-sm text-slate-400 truncate">{candidate.title || candidate.lastCompany || "—"}</p>
-                              <div className="flex items-center gap-2 mt-2">
+                              <div className="flex items-center gap-2 mt-2 flex-wrap">
                                 <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
                                   {candidate.experience || "—"}
                                 </Badge>
@@ -629,7 +625,7 @@ const CampaignDetail = () => {
                                 </Badge>
                               </div>
                             </div>
-                            <div className="text-left">
+                            <div className="text-left flex-shrink-0">
                               <div className={`text-2xl font-bold ${getScoreColor(candidate.matchScore)}`}>
                                 {candidate.matchScore}%
                               </div>
@@ -642,226 +638,10 @@ const CampaignDetail = () => {
                             </div>
                           </div>
                         </Link>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Candidate Detail Panel */}
-                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
-                  {selectedCandidate ? (
-                    <div className="h-full flex flex-col">
-                      {/* Header */}
-                      <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-violet-500/10 to-purple-500/10">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
-                              {selectedCandidate.name.charAt(0)}
-                            </div>
-                            <div>
-                              <h3 className="text-xl font-bold text-white">{selectedCandidate.name}</h3>
-                              <p className="text-slate-400">{selectedCandidate.title}</p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setSelectedCandidate(null)}
-                            className="text-slate-400 hover:text-white"
-                          >
-                            <X className="w-5 h-5" />
-                          </Button>
-                        </div>
-                        
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {getTemperatureBadge(selectedCandidate.candidateTemperature)}
-                          {selectedCandidate.recommendation && (
-                            <Badge className={getRecommendationColor(selectedCandidate.recommendation)}>
-                              {selectedCandidate.recommendation}
-                            </Badge>
-                          )}
-                          <div className={`text-lg font-bold ${getScoreColor(selectedCandidate.matchScore)}`}>
-                            امتیاز: {selectedCandidate.matchScore}%
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                        {/* Basic Info */}
-                        <div>
-                          <h4 className="text-sm font-medium text-slate-400 mb-3">اطلاعات پایه</h4>
-                          <div className="space-y-3">
-                            {selectedCandidate.education && (
-                              <div className="flex items-start gap-3">
-                                <GraduationCap className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <span className="text-xs text-slate-500">تحصیلات</span>
-                                  <p className="text-sm text-slate-200">{selectedCandidate.education}</p>
-                                </div>
-                              </div>
-                            )}
-                            {selectedCandidate.experience && (
-                              <div className="flex items-start gap-3">
-                                <Briefcase className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <span className="text-xs text-slate-500">سابقه کار</span>
-                                  <p className="text-sm text-slate-200">{selectedCandidate.experience}</p>
-                                </div>
-                              </div>
-                            )}
-                            {selectedCandidate.lastCompany && (
-                              <div className="flex items-start gap-3">
-                                <Briefcase className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <span className="text-xs text-slate-500">آخرین محل کار</span>
-                                  <p className="text-sm text-slate-200">{selectedCandidate.lastCompany}</p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Contact Info */}
-                        <div>
-                          <h4 className="text-sm font-medium text-slate-400 mb-3">اطلاعات تماس</h4>
-                          <div className="space-y-2">
-                            {selectedCandidate.email && (
-                              <div className="flex items-center gap-2 text-slate-300">
-                                <Mail className="w-4 h-4 text-slate-500" />
-                                <span className="text-sm">{selectedCandidate.email}</span>
-                              </div>
-                            )}
-                            {selectedCandidate.phone && (
-                              <div className="flex items-center gap-2 text-slate-300">
-                                <Phone className="w-4 h-4 text-slate-500" />
-                                <span className="text-sm">{selectedCandidate.phone}</span>
-                              </div>
-                            )}
-                            {selectedCandidate.location && (
-                              <div className="flex items-center gap-2 text-slate-300">
-                                <MapPin className="w-4 h-4 text-slate-500" />
-                                <span className="text-sm">{selectedCandidate.location}</span>
-                              </div>
-                            )}
-                            {selectedCandidate.linkedin && (
-                              <a
-                                href={selectedCandidate.linkedin}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-blue-400 hover:text-blue-300"
-                              >
-                                <Linkedin className="w-4 h-4" />
-                                <span className="text-sm">پروفایل لینکدین</span>
-                              </a>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Skills */}
-                        {selectedCandidate.skills.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium text-slate-400 mb-3">مهارت‌ها</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {selectedCandidate.skills.map((skill, index) => (
-                                <Badge
-                                  key={index}
-                                  variant="outline"
-                                  className="border-violet-500/30 text-violet-300"
-                                >
-                                  {skill}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Layer Scores */}
-                        {selectedCandidate.layerScores && (
-                          <div>
-                            <h4 className="text-sm font-medium text-slate-400 mb-3">تحلیل ۵ لایه‌ای</h4>
-                            <div className="space-y-3">
-                              {(Object.keys(selectedCandidate.layerScores) as Array<keyof LayerScores>).map((key) => {
-                                const score = selectedCandidate.layerScores![key];
-                                const label = layerLabels[key];
-                                return (
-                                  <div key={key}>
-                                    <div className="flex items-center justify-between mb-1">
-                                      <div className="flex items-center gap-2 text-sm text-slate-300">
-                                        {label.icon}
-                                        {label.label}
-                                      </div>
-                                      <span className={`text-sm font-medium ${getScoreColor(score)}`}>
-                                        {score}%
-                                      </span>
-                                    </div>
-                                    <Progress value={score} className="h-2" />
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Green Flags */}
-                        {selectedCandidate.greenFlags && selectedCandidate.greenFlags.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium text-emerald-400 mb-3 flex items-center gap-2">
-                              <CheckCircle2 className="w-4 h-4" />
-                              نقاط قوت
-                            </h4>
-                            <ul className="space-y-2">
-                              {selectedCandidate.greenFlags.map((flag, index) => (
-                                <li key={index} className="flex items-start gap-2 text-sm text-slate-300">
-                                  <Check className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                                  {flag}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Red Flags */}
-                        {selectedCandidate.redFlags && selectedCandidate.redFlags.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium text-red-400 mb-3 flex items-center gap-2">
-                              <AlertTriangle className="w-4 h-4" />
-                              نکات هشدار
-                            </h4>
-                            <ul className="space-y-2">
-                              {selectedCandidate.redFlags.map((flag, index) => (
-                                <li key={index} className="flex items-start gap-2 text-sm text-slate-300">
-                                  <X className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                                  {flag}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="p-4 border-t border-slate-700/50 flex gap-3">
-                        <Button className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white">
-                          <Check className="w-4 h-4 ml-2" />
-                          تأیید
-                        </Button>
-                        <Button variant="outline" className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10">
-                          <X className="w-4 h-4 ml-2" />
-                          رد
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center p-6">
-                      <div className="text-center">
-                        <Star className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                        <p className="text-slate-400">یک کاندیدا را انتخاب کنید</p>
-                      </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              </div>
             </>
           )}
         </div>
