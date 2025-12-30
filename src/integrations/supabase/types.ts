@@ -142,6 +142,48 @@ export type Database = {
           },
         ]
       }
+      digital_products: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          download_count: number
+          file_path: string | null
+          id: string
+          is_active: boolean
+          name: string
+          payment_link: string | null
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          download_count?: number
+          file_path?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          payment_link?: string | null
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          download_count?: number
+          file_path?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          payment_link?: string | null
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           author_id: string | null
@@ -246,6 +288,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_purchases: {
+        Row: {
+          id: string
+          product_id: string
+          purchased_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          purchased_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          purchased_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_purchases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "digital_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
