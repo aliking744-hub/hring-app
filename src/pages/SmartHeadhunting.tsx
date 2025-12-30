@@ -14,7 +14,9 @@ import {
   Users,
   Check,
   X,
-  Loader2
+  Loader2,
+  Trash2,
+  Search
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -47,11 +49,13 @@ import * as XLSX from "xlsx";
 const SmartHeadhunting = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { campaigns, loading, fetchCampaigns, createCampaign, updateCampaign, addCandidates } = useCampaigns();
+  const { campaigns, loading, fetchCampaigns, createCampaign, updateCampaign, deleteCampaign, addCandidates } = useCampaigns();
   
   const [showNewCampaignForm, setShowNewCampaignForm] = useState(false);
   const [autoHeadhunting, setAutoHeadhunting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [deletingCampaignId, setDeletingCampaignId] = useState<string | null>(null);
   
   // Form states
   const [formData, setFormData] = useState({
@@ -272,7 +276,30 @@ const SmartHeadhunting = () => {
     );
   };
 
-  // Smart column name detection - finds columns regardless of position
+  // Filter campaigns by search query and sort by created_at (newest first)
+  const filteredCampaigns = campaigns
+    .filter(c => 
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.city?.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const handleDeleteCampaign = async (campaignId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("آیا از حذف این کمپین مطمئن هستید؟")) return;
+    
+    try {
+      setDeletingCampaignId(campaignId);
+      await deleteCampaign(campaignId);
+      toast.success("کمپین با موفقیت حذف شد");
+    } catch (error) {
+      console.error("Error deleting campaign:", error);
+      toast.error("خطا در حذف کمپین");
+    } finally {
+      setDeletingCampaignId(null);
+    }
+  };
+
   const findColumnValue = (row: any, patterns: string[]): string => {
     // First try exact key match (case insensitive)
     for (const key of Object.keys(row)) {
@@ -836,10 +863,21 @@ const SmartHeadhunting = () => {
           {/* Active Campaigns Table */}
           <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
             <div className="p-6 border-b border-slate-700/50">
-              <h2 className="text-xl font-semibold text-white flex items-center gap-3">
-                <Users className="w-5 h-5 text-violet-400" />
-                کمپین‌های فعال
-              </h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-xl font-semibold text-white flex items-center gap-3">
+                  <Users className="w-5 h-5 text-violet-400" />
+                  کمپین‌های فعال ({filteredCampaigns.length})
+                </h2>
+                <div className="relative max-w-xs">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Input
+                    placeholder="جستجو بر اساس عنوان..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pr-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
+                  />
+                </div>
+              </div>
             </div>
             
             {loading ? (
@@ -852,6 +890,11 @@ const SmartHeadhunting = () => {
                 <Users className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                 <p className="text-slate-400">هنوز کمپینی ایجاد نشده است</p>
               </div>
+            ) : filteredCampaigns.length === 0 ? (
+              <div className="p-12 text-center">
+                <Search className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">کمپینی با این عنوان یافت نشد</p>
+              </div>
             ) : (
               <Table>
                 <TableHeader>
@@ -863,10 +906,11 @@ const SmartHeadhunting = () => {
                     <TableHead className="text-slate-400 text-right">تعداد کاندیدا</TableHead>
                     <TableHead className="text-slate-400 text-right">میانگین امتیاز</TableHead>
                     <TableHead className="text-slate-400 text-right">آخرین تغییر</TableHead>
+                    <TableHead className="text-slate-400 text-right w-16">عملیات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {campaigns.map((campaign) => (
+                  {filteredCampaigns.map((campaign) => (
                     <TableRow
                       key={campaign.id}
                       className="border-slate-700/50 cursor-pointer hover:bg-slate-800/50 transition-colors"
@@ -906,6 +950,21 @@ const SmartHeadhunting = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-slate-400">{campaign.lastUpdated}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => handleDeleteCampaign(campaign.id, e)}
+                          disabled={deletingCampaignId === campaign.id}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          {deletingCampaignId === campaign.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
