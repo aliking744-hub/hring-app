@@ -565,7 +565,7 @@ const SmartHeadhunting = () => {
             <img 
               src={logoWhite} 
               alt="HRing Logo" 
-              className="h-10 lg:h-12 animate-pulse opacity-80 hover:opacity-100 transition-opacity duration-300"
+              className="h-[100px] lg:h-[120px] animate-pulse opacity-80 hover:opacity-100 transition-opacity duration-300"
               style={{ animationDuration: '3s' }}
             />
           </div>
