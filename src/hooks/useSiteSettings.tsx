@@ -52,16 +52,29 @@ const SiteSettingsContext = createContext<SiteSettingsContextType | null>(null);
 
 // Load custom font dynamically
 const loadFontFace = (name: string, url: string) => {
-  // Check if font is already loaded
+  // If font already exists, refresh it (URL may have changed)
   const existingStyle = document.querySelector(`style[data-font="${name}"]`);
-  if (existingStyle) return;
+  if (existingStyle) existingStyle.remove();
+
+  const cleanUrl = url.split('#')[0];
+  const ext = cleanUrl.split('?')[0]?.split('.').pop()?.toLowerCase();
+  const format =
+    ext === 'woff2'
+      ? 'woff2'
+      : ext === 'woff'
+        ? 'woff'
+        : ext === 'otf'
+          ? 'opentype'
+          : ext === 'ttf'
+            ? 'truetype'
+            : undefined;
 
   const style = document.createElement('style');
   style.setAttribute('data-font', name);
   style.textContent = `
     @font-face {
       font-family: '${name}';
-      src: url('${url}') format('truetype');
+      src: url('${url}')${format ? ` format('${format}')` : ''};
       font-weight: normal;
       font-style: normal;
       font-display: swap;
@@ -69,7 +82,6 @@ const loadFontFace = (name: string, url: string) => {
   `;
   document.head.appendChild(style);
 };
-
 // Apply fonts to CSS variables dynamically
 const applyFontsToDocument = (fonts: FontSettings) => {
   const root = document.documentElement;

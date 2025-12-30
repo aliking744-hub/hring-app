@@ -85,11 +85,29 @@ const SiteSettingsManager = () => {
   }, [settings]);
 
   const loadFontFace = (name: string, url: string) => {
+    // Avoid duplicating styles for the same font
+    const existingStyle = document.querySelector(`style[data-font="${name}"]`);
+    if (existingStyle) existingStyle.remove();
+
+    const cleanUrl = url.split('#')[0];
+    const ext = cleanUrl.split('?')[0]?.split('.').pop()?.toLowerCase();
+    const format =
+      ext === 'woff2'
+        ? 'woff2'
+        : ext === 'woff'
+          ? 'woff'
+          : ext === 'otf'
+            ? 'opentype'
+            : ext === 'ttf'
+              ? 'truetype'
+              : undefined;
+
     const style = document.createElement('style');
+    style.setAttribute('data-font', name);
     style.textContent = `
       @font-face {
         font-family: '${name}';
-        src: url('${url}') format('truetype');
+        src: url('${url}')${format ? ` format('${format}')` : ''};
         font-weight: normal;
         font-style: normal;
         font-display: swap;
@@ -97,7 +115,6 @@ const SiteSettingsManager = () => {
     `;
     document.head.appendChild(style);
   };
-
   const fetchSettings = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -219,11 +236,19 @@ const SiteSettingsManager = () => {
 
     setUploadingFont(true);
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `font_${newFontName.replace(/\s+/g, '_')}_${Date.now()}.${fileExt}`;
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'ttf';
+
+    // IMPORTANT: Storage keys cannot contain many unicode characters.
+    // So we generate a safe, ASCII-only filename and keep the original font name only for display.
+    const id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+    const fileName = `font_${id}.${fileExt}`;
     const filePath = `fonts/${fileName}`;
 
-    // Upload to Supabase Storage
+    // Upload to Storage
     const { error: uploadError } = await supabase.storage
       .from('products')
       .upload(filePath, file, { upsert: true });
@@ -236,18 +261,18 @@ const SiteSettingsManager = () => {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('products')
-      .getPublicUrl(filePath);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('products').getPublicUrl(filePath);
 
     // Add to custom fonts
     const newFont: CustomFont = { name: newFontName.trim(), url: publicUrl };
     const updatedFonts = [...customFonts, newFont];
-    
+
     // Save to settings
     const existing = getSettingByKey('custom_fonts');
     const fontsJson = JSON.stringify(updatedFonts);
-    
+
     if (existing) {
       await supabase
         .from('site_settings')
@@ -268,7 +293,6 @@ const SiteSettingsManager = () => {
     fetchSettings();
     setUploadingFont(false);
   };
-
   const handleDeleteFont = async (fontName: string) => {
     if (!confirm(`آیا از حذف فونت "${fontName}" مطمئن هستید؟`)) return;
 
