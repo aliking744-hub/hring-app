@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import logo from "@/assets/logo.png";
+import { useLogos, useFonts } from "@/hooks/useSiteSettings";
+import defaultLogo from "@/assets/logo.png";
 
 const ADMIN_EMAIL = "ali_king744@yahoo.com";
 
@@ -18,6 +19,11 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
   const isAdmin = user?.email === ADMIN_EMAIL;
+  const logos = useLogos();
+  const fonts = useFonts();
+  
+  // Use dynamic logo or fallback to default
+  const logo = logos.main || defaultLogo;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50" dir="rtl">
@@ -28,11 +34,12 @@ const Navbar = () => {
             <motion.img
               src={logo}
               alt="HRing - سیستم مدیریت منابع انسانی"
-              className="h-8 w-8"
+              className="h-8 w-8 object-contain"
               whileHover={{ scale: 1.05 }}
             />
             <motion.div
-              className="text-2xl font-bold gradient-text-primary font-afarin"
+              className="text-2xl font-bold gradient-text-primary"
+              style={{ fontFamily: fonts.heading }}
               whileHover={{ scale: 1.05 }}
             >
               hring
@@ -46,6 +53,7 @@ const Navbar = () => {
                 key={link.href}
                 to={link.href}
                 className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm font-medium"
+                style={{ fontFamily: fonts.nav }}
               >
                 {link.label}
               </Link>
@@ -100,8 +108,13 @@ const Navbar = () => {
             >
               <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-2">
-                  <img src={logo} alt="HRing - سیستم مدیریت منابع انسانی" className="h-6 w-6" />
-                  <span className="text-xl font-bold gradient-text-primary font-afarin">hring</span>
+                  <img src={logo} alt="HRing - سیستم مدیریت منابع انسانی" className="h-6 w-6 object-contain" />
+                  <span 
+                    className="text-xl font-bold gradient-text-primary"
+                    style={{ fontFamily: fonts.heading }}
+                  >
+                    hring
+                  </span>
                 </div>
                 <button onClick={() => setIsOpen(false)}>
                   <X size={24} />

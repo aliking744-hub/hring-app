@@ -1,17 +1,38 @@
 import { Link } from "react-router-dom";
+import { useLogos, useFonts } from "@/hooks/useSiteSettings";
+import defaultLogo from "@/assets/logo_zir_white.png";
 
 const Footer = () => {
+  const logos = useLogos();
+  const fonts = useFonts();
+  
+  // Use dynamic footer logo or fallback
+  const footerLogo = logos.footer || defaultLogo;
+
   return (
     <footer className="py-12 px-4 border-t border-border" dir="rtl">
       <div className="container mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo */}
-          <Link to="/" className="text-xl font-bold gradient-text-primary">
-            hring
+          <Link to="/" className="flex items-center gap-3">
+            <img 
+              src={footerLogo} 
+              alt="HRing" 
+              className="h-10 object-contain"
+            />
+            <span 
+              className="text-xl font-bold gradient-text-primary"
+              style={{ fontFamily: fonts.heading }}
+            >
+              hring
+            </span>
           </Link>
 
           {/* Links */}
-          <div className="flex items-center gap-8 text-sm text-muted-foreground">
+          <div 
+            className="flex items-center gap-8 text-sm text-muted-foreground"
+            style={{ fontFamily: fonts.nav }}
+          >
             <Link to="/" className="hover:text-foreground transition-colors">
               خانه
             </Link>
