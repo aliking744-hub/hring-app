@@ -307,41 +307,22 @@
 /* Print Styles */
 @media print {
   @page {
-    size: A4;
-    margin: 1cm;
+    size: A4 landscape;
+    margin: 0.5cm;
   }
 
   body {
     background: white !important;
-    color: black !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  
+
+  /* Hide non-essential elements */
   .aurora-blob,
   .aurora-blob-1,
   .aurora-blob-2,
   .aurora-blob-3,
-  .aurora-blob-4 {
-    display: none !important;
-  }
-  
-  .glass-card {
-    background: white !important;
-    border: 1px solid #ddd !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-  }
-  
-  .bg-destructive {
-    background: #ef4444 !important;
-  }
-  
-  .text-destructive-foreground {
-    color: white !important;
-  }
-
-  /* Campaign Detail Print Styles */
+  .aurora-blob-4,
   .print\:hidden {
     display: none !important;
   }
@@ -350,21 +331,11 @@
     display: flex !important;
   }
 
-  .print\:\!text-black {
-    color: black !important;
-  }
-
-  .print\:\!text-gray-600 {
-    color: #4b5563 !important;
-  }
-
-  .print\:\!text-3xl {
-    font-size: 1.875rem !important;
-    line-height: 2.25rem !important;
-  }
-
-  .print\:mb-4 {
-    margin-bottom: 1rem !important;
+  /* Main container */
+  [class*="from-slate-950"],
+  [class*="via-slate-900"],
+  [class*="to-slate-950"] {
+    background: white !important;
   }
 
   .print\:bg-white {
@@ -372,35 +343,118 @@
   }
 
   .print\:p-4 {
-    padding: 1rem !important;
+    padding: 0.5rem !important;
   }
 
-  /* Make cards visible in print */
+  /* Title styles */
+  .print\:\!text-black {
+    color: #0f172a !important;
+  }
+
+  .print\:\!text-gray-600 {
+    color: #4b5563 !important;
+  }
+
+  .print\:\!text-3xl {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+
+  .print\:mb-4 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Grid layout - maintain 2 columns for candidates */
+  .grid.md\:grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Charts grid - smaller */
+  .lg\:grid-cols-5 {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Chart containers - smaller */
+  .lg\:grid-cols-5 > div {
+    padding: 0.5rem !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .lg\:grid-cols-5 h3 {
+    font-size: 0.7rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .lg\:grid-cols-5 .h-\[180px\] {
+    height: 100px !important;
+  }
+
+  /* Card backgrounds */
   [class*="bg-slate-900"],
   [class*="bg-slate-800"] {
     background: #f8fafc !important;
     border: 1px solid #e2e8f0 !important;
   }
 
-  [class*="from-slate-950"],
-  [class*="via-slate-900"],
-  [class*="to-slate-950"] {
-    background: white !important;
+  /* Candidate cards */
+  .grid.md\:grid-cols-2 > a {
+    padding: 0.5rem !important;
+    border-radius: 0.5rem !important;
+    page-break-inside: avoid !important;
   }
 
+  .grid.md\:grid-cols-2 .w-12.h-12 {
+    width: 2rem !important;
+    height: 2rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .grid.md\:grid-cols-2 h3 {
+    font-size: 0.8rem !important;
+  }
+
+  .grid.md\:grid-cols-2 .text-2xl {
+    font-size: 1rem !important;
+  }
+
+  .grid.md\:grid-cols-2 .text-sm {
+    font-size: 0.65rem !important;
+  }
+
+  .grid.md\:grid-cols-2 .text-xs {
+    font-size: 0.6rem !important;
+  }
+
+  /* Max height removal for print */
+  .max-h-\[700px\] {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Text colors */
   h1, h2, h3, h4, h5, h6 {
-    color: black !important;
+    color: #0f172a !important;
   }
 
-  p, span, div {
-    color: #1e293b !important;
+  [class*="text-white"] {
+    color: #0f172a !important;
+  }
+
+  [class*="text-slate-300"],
+  [class*="text-slate-400"] {
+    color: #475569 !important;
   }
 
   [class*="border-slate-"] {
     border-color: #e2e8f0 !important;
   }
 
-  /* Charts should display in print */
+  /* Charts display */
   .recharts-wrapper {
     display: block !important;
   }
@@ -409,44 +463,7 @@
     overflow: visible !important;
   }
 
-  /* Badge styles for print */
-  [class*="bg-emerald-500"],
-  [class*="bg-emerald-400"] {
-    background: #10b981 !important;
-    color: white !important;
-  }
-
-  [class*="bg-red-500"],
-  [class*="bg-red-400"] {
-    background: #ef4444 !important;
-    color: white !important;
-  }
-
-  [class*="bg-amber-500"],
-  [class*="bg-amber-400"] {
-    background: #f59e0b !important;
-    color: white !important;
-  }
-
-  [class*="bg-violet-500"],
-  [class*="bg-violet-400"],
-  [class*="bg-purple-"] {
-    background: #8b5cf6 !important;
-    color: white !important;
-  }
-
-  [class*="bg-blue-500"],
-  [class*="bg-blue-400"] {
-    background: #3b82f6 !important;
-    color: white !important;
-  }
-
-  /* Gradient backgrounds for avatars */
-  [class*="from-violet-500"][class*="to-purple-600"] {
-    background: linear-gradient(to bottom right, #8b5cf6, #9333ea) !important;
-  }
-
-  /* Text colors for scores */
+  /* Score colors */
   [class*="text-emerald-"] {
     color: #10b981 !important;
   }
@@ -467,9 +484,53 @@
     color: #3b82f6 !important;
   }
 
-  /* Logo in print */
+  /* Progress bars */
+  [class*="bg-emerald-500"] {
+    background: #10b981 !important;
+  }
+
+  [class*="bg-violet-500"] {
+    background: #8b5cf6 !important;
+  }
+
+  [class*="bg-amber-500"] {
+    background: #f59e0b !important;
+  }
+
+  [class*="bg-red-500"] {
+    background: #ef4444 !important;
+  }
+
+  /* Avatar gradient */
+  [class*="from-violet-500"][class*="to-purple-600"] {
+    background: linear-gradient(to bottom right, #8b5cf6, #9333ea) !important;
+    color: white !important;
+  }
+
+  /* Badges */
+  .border-emerald-500\/30 {
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+  }
+
+  .border-red-500\/30 {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+  }
+
+  .border-amber-500\/30 {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+  }
+
+  /* Logo */
   .print\:flex img {
     filter: none !important;
     opacity: 1 !important;
+  }
+
+  /* Filter section - hide in print */
+  .flex.items-center.gap-2.flex-wrap:has(.lucide-filter) {
+    display: none !important;
   }
 }
