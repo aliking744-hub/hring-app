@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import logoWhite from "@/assets/logo_zir_white.png";
 import { Helmet } from "react-helmet-async";
 import { 
   Crosshair, 
@@ -559,6 +560,16 @@ const SmartHeadhunting = () => {
 
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 lg:p-8" dir="rtl">
         <div className="max-w-[1400px] mx-auto">
+          {/* Logo - Top Left */}
+          <div className="fixed top-6 left-6 z-50">
+            <img 
+              src={logoWhite} 
+              alt="HRing Logo" 
+              className="h-10 lg:h-12 animate-pulse opacity-80 hover:opacity-100 transition-opacity duration-300"
+              style={{ animationDuration: '3s' }}
+            />
+          </div>
+
           {/* Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
