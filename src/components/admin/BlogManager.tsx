@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, X, Upload, ImageIcon } from 'lucide-react';
 
 interface Post {
   id: string;
@@ -26,6 +26,8 @@ const BlogManager = () => {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -71,6 +73,58 @@ const BlogManager = () => {
     setImageUrl(post.image_url || '');
     setPublished(post.published);
     setShowForm(true);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('فقط فرمت‌های JPG، PNG، WebP و GIF مجاز است');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('حداکثر حجم فایل ۲ مگابایت است');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Generate unique filename with UUID
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `blog-${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `blog/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('products')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('products')
+        .getPublicUrl(filePath);
+
+      setImageUrl(publicUrl);
+      toast.success('تصویر با موفقیت آپلود شد');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('خطا در آپلود تصویر');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -201,14 +255,64 @@ const BlogManager = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">آدرس تصویر</Label>
-                <Input
-                  id="imageUrl"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  dir="ltr"
-                />
+                <Label>تصویر شاخص</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  ابعاد پیشنهادی: ۱۲۰۰×۶۳۰ پیکسل (نسبت ۱.۹:۱) | حداکثر حجم: ۲ مگابایت | فرمت: JPG، PNG، WebP
+                </p>
+                
+                <div className="flex gap-2">
+                  <Input
+                    id="imageUrl"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="آدرس تصویر یا از دکمه آپلود استفاده کنید"
+                    dir="ltr"
+                    className="flex-1"
+                  />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="gap-2"
+                  >
+                    {uploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    آپلود
+                  </Button>
+                </div>
+
+                {imageUrl && (
+                  <div className="mt-3 relative inline-block">
+                    <img 
+                      src={imageUrl} 
+                      alt="پیش‌نمایش" 
+                      className="h-32 w-auto rounded-lg border border-border object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 w-6 h-6"
+                      onClick={() => setImageUrl('')}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
