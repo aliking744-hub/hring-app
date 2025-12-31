@@ -12,7 +12,8 @@ import {
   Gauge,
   Users,
   UserPlus,
-  FlaskConical
+  FlaskConical,
+  Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,8 @@ const IntentModule = () => {
     tolerance_zone: 5,
   });
   const [createSelectedUsers, setCreateSelectedUsers] = useState<string[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<'all' | 'deputy' | 'manager'>('all');
   const { user } = useAuth();
   const { toast } = useToast();
   const { isDemoMode } = useDemoMode();
@@ -421,8 +424,59 @@ const IntentModule = () => {
               <p className="text-xs text-muted-foreground mb-3">
                 افرادی که باید در اجرای این فرمان مشارکت داشته باشند را انتخاب کنید
               </p>
+              
+              {/* Search and Filter */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-3">
+                <div className="relative flex-1">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="جستجوی نام یا عنوان..."
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    className="pr-10 bg-secondary/50 border-border"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={roleFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setRoleFilter('all')}
+                    className={roleFilter === 'all' ? 'glow-button text-foreground' : 'border-border'}
+                  >
+                    همه
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={roleFilter === 'deputy' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setRoleFilter('deputy')}
+                    className={roleFilter === 'deputy' ? 'glow-button text-foreground' : 'border-border'}
+                  >
+                    معاونین
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={roleFilter === 'manager' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setRoleFilter('manager')}
+                    className={roleFilter === 'manager' ? 'glow-button text-foreground' : 'border-border'}
+                  >
+                    مدیران
+                  </Button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
-                {compassUsers.map(compassUser => (
+                {compassUsers
+                  .filter(u => {
+                    const matchesSearch = userSearchQuery === '' || 
+                      (u.full_name?.toLowerCase().includes(userSearchQuery.toLowerCase())) ||
+                      (u.title?.toLowerCase().includes(userSearchQuery.toLowerCase()));
+                    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+                    return matchesSearch && matchesRole;
+                  })
+                  .map(compassUser => (
                   <div
                     key={compassUser.id}
                     className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
@@ -458,9 +512,15 @@ const IntentModule = () => {
                     </div>
                   </div>
                 ))}
-                {compassUsers.length === 0 && (
+                {compassUsers.filter(u => {
+                  const matchesSearch = userSearchQuery === '' || 
+                    (u.full_name?.toLowerCase().includes(userSearchQuery.toLowerCase())) ||
+                    (u.title?.toLowerCase().includes(userSearchQuery.toLowerCase()));
+                  const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+                  return matchesSearch && matchesRole;
+                }).length === 0 && (
                   <p className="col-span-full text-center text-muted-foreground py-4">
-                    هنوز کاربری تعریف نشده است
+                    {compassUsers.length === 0 ? 'هنوز کاربری تعریف نشده است' : 'کاربری یافت نشد'}
                   </p>
                 )}
               </div>
