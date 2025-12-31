@@ -22,7 +22,8 @@ import {
   UserCheck,
   Radar,
   Flame,
-  Lightbulb
+  Lightbulb,
+  Sparkles
 } from "lucide-react";
 import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ import PrismResponse from "@/components/strategic-compass/PrismResponse";
 import StrategicBetting from "@/components/strategic-compass/StrategicBetting";
 import DecisionJournal from "@/components/strategic-compass/DecisionJournal";
 import UserManagement from "@/components/strategic-compass/UserManagement";
+import DreamManifestation from "@/components/strategic-compass/DreamManifestation";
 
 type CompassRole = 'ceo' | 'deputy' | 'manager' | null;
 
@@ -159,6 +161,7 @@ const StrategicCompass = () => {
       // ترتیب از راست به چپ: اولین آیتم سمت راست نمایش داده می‌شود
       baseTabs.push(
         { id: "users", label: "مدیریت کاربران", icon: Users },
+        { id: "dream", label: "تجلی رویا", icon: Sparkles, isGolden: true },
         { id: "betting", label: "بازی استراتژیک", icon: Coins },
         { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
         { id: "ceo-dashboard", label: "داشبورد مدیرعامل", icon: BarChart3 },
@@ -254,9 +257,13 @@ const StrategicCompass = () => {
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="flex items-center gap-2 px-4 py-2.5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                    className={`flex items-center gap-2 px-4 py-2.5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary ${
+                      tab.isGolden 
+                        ? 'border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.5)] animate-golden-pulse bg-gradient-to-r from-[#D4AF37]/10 to-[#B8860B]/10 text-[#D4AF37] data-[state=active]:border-[#D4AF37] data-[state=active]:bg-[#D4AF37]/20 data-[state=active]:text-[#D4AF37]' 
+                        : ''
+                    }`}
                   >
-                    <tab.icon className="w-4 h-4" />
+                    <tab.icon className={`w-4 h-4 ${tab.isGolden ? 'text-[#D4AF37]' : ''}`} />
                     <span className="hidden sm:inline">{tab.label}</span>
                   </TabsTrigger>
                 ))}
@@ -282,6 +289,9 @@ const StrategicCompass = () => {
                   </TabsContent>
                   <TabsContent value="betting">
                     <StrategicBetting userRole={compassRole} />
+                  </TabsContent>
+                  <TabsContent value="dream">
+                    <DreamManifestation />
                   </TabsContent>
                   <TabsContent value="users">
                     <UserManagement />
