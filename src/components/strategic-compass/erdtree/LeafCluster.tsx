@@ -4,9 +4,10 @@ import { Task } from "./types";
 
 interface LeafClusterProps {
   tasks: Task[];
+  newTaskIds?: string[];
 }
 
-const LeafCluster = ({ tasks }: LeafClusterProps) => {
+const LeafCluster = ({ tasks, newTaskIds = [] }: LeafClusterProps) => {
   const leafPositions = useMemo(() => {
     return tasks.map((task, index) => {
       // Strategic placement based on importance
@@ -35,14 +36,18 @@ const LeafCluster = ({ tasks }: LeafClusterProps) => {
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
 
-      return { task, position: [x, y, z] as [number, number, number] };
+      return { 
+        task, 
+        position: [x, y, z] as [number, number, number],
+        isNew: newTaskIds.includes(task.id)
+      };
     });
-  }, [tasks]);
+  }, [tasks, newTaskIds]);
 
   return (
     <group>
-      {leafPositions.map(({ task, position }) => (
-        <Leaf key={task.id} task={task} position={position} />
+      {leafPositions.map(({ task, position, isNew }) => (
+        <Leaf key={task.id} task={task} position={position} isNew={isNew} />
       ))}
     </group>
   );

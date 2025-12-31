@@ -5,10 +5,13 @@ import DepartmentLegend from "./DepartmentLegend";
 import StrategicLegend from "./StrategicLegend";
 import ControlsHint from "./ControlsHint";
 import FilterControls, { STRATEGIC_LEVELS } from "./FilterControls";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { DEPARTMENTS, SAMPLE_TASKS } from "./types";
+import { useStrategicAchievements } from "@/hooks/useStrategicAchievements";
 
 const StrategicErdtree = () => {
+  const { tasks, newTaskIds, loading } = useStrategicAchievements();
+  
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>(
     DEPARTMENTS.map((d) => d.id)
   );
@@ -17,7 +20,7 @@ const StrategicErdtree = () => {
   );
 
   const filteredTasks = useMemo(() => {
-    return SAMPLE_TASKS.filter((task) => {
+    return tasks.filter((task) => {
       // Check department filter
       if (!selectedDepartments.includes(task.departmentId)) {
         return false;
@@ -33,7 +36,7 @@ const StrategicErdtree = () => {
 
       return matchesLevel;
     });
-  }, [selectedDepartments, selectedLevels]);
+  }, [tasks, selectedDepartments, selectedLevels]);
 
   return (
     <motion.div
@@ -56,7 +59,16 @@ const StrategicErdtree = () => {
 
       {/* 3D Scene Container */}
       <div className="relative h-[600px] rounded-xl overflow-hidden border border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.15)]">
-        <ErdtreeScene tasks={filteredTasks} />
+        {loading ? (
+          <div className="w-full h-full flex items-center justify-center bg-[#0a0a12]">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37] mx-auto mb-3" />
+              <p className="text-muted-foreground text-sm" dir="rtl">در حال بارگذاری داده‌ها...</p>
+            </div>
+          </div>
+        ) : (
+          <ErdtreeScene tasks={filteredTasks} newTaskIds={newTaskIds} />
+        )}
         <FilterControls
           selectedDepartments={selectedDepartments}
           selectedLevels={selectedLevels}
@@ -73,7 +85,7 @@ const StrategicErdtree = () => {
             نمایش{" "}
             <span className="text-[#D4AF37] font-bold">{filteredTasks.length}</span>
             {" "}از{" "}
-            <span className="text-foreground">{SAMPLE_TASKS.length}</span>
+            <span className="text-foreground">{tasks.length}</span>
             {" "}وظیفه
           </span>
         </div>
