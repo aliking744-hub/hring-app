@@ -42,7 +42,7 @@ const sidebarItems = [
   { icon: Calculator, label: "بهای تمام شده", path: "/cost-calculator", external: false },
   { icon: Crosshair, label: "هدهانتینگ", path: "/smart-headhunting", external: false },
   { icon: Grid3X3, label: "ابزارهای مدیریتی", path: "/hr-dashboard", external: false },
-  { icon: Compass, label: "قطب نمای استراتژی", path: "https://github.com/aliking744-hub/strategic-compass", external: true },
+  { icon: Compass, label: "قطب نمای استراتژی", path: "/strategic-compass", external: false },
   { icon: FileText, label: "فروشگاه", path: "/shop", external: false },
   { icon: Settings, label: "تنظیمات", path: "/dashboard", external: false },
 ];
