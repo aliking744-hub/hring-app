@@ -18,6 +18,7 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
@@ -122,7 +123,7 @@ const Auth = () => {
     }
   };
 
-  const renderLoginForm = () => (
+  const renderLoginForm = (showCompanyField: boolean = false) => (
     <>
       {/* Google Sign In */}
       <Button 
@@ -164,6 +165,22 @@ const Auth = () => {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Company Name Field - Only for company tab */}
+        {showCompanyField && (
+          <div className="relative">
+            <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="نام شرکت"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className="pr-10 bg-secondary/50 border-border focus:border-primary"
+              required={!isLogin}
+              disabled={isLoading}
+            />
+          </div>
+        )}
+
         <div className="relative">
           <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
@@ -297,11 +314,11 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="person" className="mt-6">
-              {renderLoginForm()}
+              {renderLoginForm(false)}
             </TabsContent>
             
             <TabsContent value="company" className="mt-6">
-              {renderLoginForm()}
+              {renderLoginForm(true)}
             </TabsContent>
           </Tabs>
 
