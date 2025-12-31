@@ -40,7 +40,7 @@ interface Intent {
 interface CompassUser {
   id: string;
   user_id: string;
-  role: 'ceo' | 'deputy' | 'manager';
+  role: 'ceo' | 'deputy' | 'manager' | 'expert';
   full_name: string | null;
   title: string | null;
 }
