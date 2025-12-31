@@ -63,8 +63,8 @@ const LivingLeaf = ({ task, position, isNew = false, isExpired = false }: Living
       const material = meshRef.current.material as THREE.MeshStandardMaterial;
       
       if (isExpired) {
-        // Dim, faded appearance for expired
-        material.emissiveIntensity = 0.15;
+        // Static dim appearance for expired - no animation, keep department color but muted
+        material.emissiveIntensity = 0.3;
       } else {
         // Calculate pulse based on position (energy flows upward)
         const flowPhase = (position[1] * 0.15 - time * 0.08) % 1;
@@ -82,10 +82,10 @@ const LivingLeaf = ({ task, position, isNew = false, isExpired = false }: Living
     }
     
     if (glowRef.current) {
-      // Outer glow pulse - no glow for expired
+      // Outer glow pulse - reduced glow for expired
       const material = glowRef.current.material as THREE.MeshBasicMaterial;
       if (isExpired) {
-        material.opacity = 0.05;
+        material.opacity = 0.1;
       } else {
         const flowPhase = (position[1] * 0.15 - time * 0.08) % 1;
         const energyPulse = Math.max(0, Math.sin(flowPhase * Math.PI * 2)) * 0.3;
@@ -107,13 +107,13 @@ const LivingLeaf = ({ task, position, isNew = false, isExpired = false }: Living
       >
         <sphereGeometry args={[1, 20, 20]} />
         <meshStandardMaterial
-          color={isExpired ? "#555555" : color}
-          emissive={isExpired ? "#333333" : color}
-          emissiveIntensity={isExpired ? 0.15 : 1.2}
+          color={color}
+          emissive={color}
+          emissiveIntensity={isExpired ? 0.3 : 1.2}
           transparent
-          opacity={(isExpired ? 0.5 : 0.95) * growthProgress}
+          opacity={(isExpired ? 0.6 : 0.95) * growthProgress}
           metalness={isExpired ? 0.1 : 0.3}
-          roughness={isExpired ? 0.8 : 0.4}
+          roughness={isExpired ? 0.7 : 0.4}
         />
       </mesh>
       

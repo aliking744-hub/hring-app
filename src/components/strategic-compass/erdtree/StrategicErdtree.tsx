@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 const StrategicErdtree = () => {
   const { tasks, newTaskIds, loading } = useStrategicAchievements();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showExpired, setShowExpired] = useState(true);
   
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>(
     DEPARTMENTS.map((d) => d.id)
@@ -22,7 +23,18 @@ const StrategicErdtree = () => {
   );
 
   const filteredTasks = useMemo(() => {
+    const now = new Date();
+    
     return tasks.filter((task) => {
+      // Check if task is expired
+      const daysSinceCompletion = Math.floor((now.getTime() - task.completedAt.getTime()) / (1000 * 60 * 60 * 24));
+      const isExpired = daysSinceCompletion > 30;
+      
+      // Filter expired tasks if toggle is off
+      if (isExpired && !showExpired) {
+        return false;
+      }
+      
       // Check department filter
       if (!selectedDepartments.includes(task.departmentId)) {
         return false;
@@ -38,7 +50,7 @@ const StrategicErdtree = () => {
 
       return matchesLevel;
     });
-  }, [tasks, selectedDepartments, selectedLevels]);
+  }, [tasks, selectedDepartments, selectedLevels, showExpired]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -92,8 +104,10 @@ const StrategicErdtree = () => {
             <FilterControls
               selectedDepartments={selectedDepartments}
               selectedLevels={selectedLevels}
+              showExpired={showExpired}
               onDepartmentChange={setSelectedDepartments}
               onLevelChange={setSelectedLevels}
+              onExpiredChange={setShowExpired}
             />
             <DepartmentLegend />
             <StrategicLegend />
@@ -193,8 +207,10 @@ const StrategicErdtree = () => {
               <FilterControls
                 selectedDepartments={selectedDepartments}
                 selectedLevels={selectedLevels}
+                showExpired={showExpired}
                 onDepartmentChange={setSelectedDepartments}
                 onLevelChange={setSelectedLevels}
+                onExpiredChange={setShowExpired}
               />
             </div>
             
