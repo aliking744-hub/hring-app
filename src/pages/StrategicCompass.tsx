@@ -32,7 +32,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 // Import compass components
-import CompassLogin from "@/components/strategic-compass/CompassLogin";
 import CommandDashboard from "@/components/strategic-compass/CommandDashboard";
 import IntentModule from "@/components/strategic-compass/IntentModule";
 import BehaviorModule from "@/components/strategic-compass/BehaviorModule";
@@ -91,15 +90,15 @@ const StrategicCompass = () => {
     navigate('/dashboard');
   };
 
-  const handleLoginSuccess = (role: CompassRole) => {
-    setCompassRole(role);
-    toast({
-      title: "ورود موفق",
-      description: `به سیستم قطب نمای استراتژی خوش آمدید (${role === 'ceo' ? 'مدیرعامل' : role === 'deputy' ? 'معاون' : 'مدیرکل'})`,
-    });
-  };
 
-  if (isLoading) {
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate('/auth');
+    }
+  }, [isLoading, user, navigate]);
+
+  if (isLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center" dir="rtl">
         <AuroraBackground />
@@ -115,9 +114,37 @@ const StrategicCompass = () => {
     );
   }
 
-  // Show login if no compass role
+  // Show no access message if user has no compass role
   if (!compassRole) {
-    return <CompassLogin onSuccess={handleLoginSuccess} />;
+    return (
+      <div className="min-h-screen flex items-center justify-center" dir="rtl">
+        <AuroraBackground />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-card p-8 flex flex-col items-center gap-6 max-w-md text-center"
+        >
+          <div className="w-20 h-20 rounded-full bg-destructive/20 flex items-center justify-center">
+            <Shield className="w-10 h-10 text-destructive" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground mb-2">دسترسی محدود</h2>
+            <p className="text-muted-foreground">
+              شما هنوز نقشی در قطب نمای استراتژی ندارید. لطفاً با مدیر سیستم تماس بگیرید.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard')}
+              className="border-border"
+            >
+              بازگشت به داشبورد
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
   }
 
   const isCEO = compassRole === 'ceo';
