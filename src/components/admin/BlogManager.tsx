@@ -8,7 +8,8 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, X, Upload, ImageIcon } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, X, Upload, Crop } from 'lucide-react';
+import ImageCropper from './ImageCropper';
 
 interface Post {
   id: string;
@@ -28,6 +29,10 @@ const BlogManager = () => {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Cropper state
+  const [showCropper, setShowCropper] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState('');
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -120,7 +125,7 @@ const BlogManager = () => {
     });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -131,26 +136,34 @@ const BlogManager = () => {
       return;
     }
 
-    // Validate file size (max 5MB before resize)
-    const maxSize = 5 * 1024 * 1024;
+    // Validate file size (max 10MB before crop)
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error('حداکثر حجم فایل ۵ مگابایت است');
+      toast.error('حداکثر حجم فایل ۱۰ مگابایت است');
       return;
     }
 
+    // Create object URL and open cropper
+    const imageUrl = URL.createObjectURL(file);
+    setCropImageSrc(imageUrl);
+    setShowCropper(true);
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
     setUploading(true);
 
     try {
-      // Resize image to 1200x630
-      const resizedBlob = await resizeImage(file, 1200, 630);
-      
       // Generate unique filename with UUID
       const fileName = `blog-${crypto.randomUUID()}.jpg`;
       const filePath = `blog/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('products')
-        .upload(filePath, resizedBlob, {
+        .upload(filePath, croppedBlob, {
           cacheControl: '3600',
           upsert: false,
           contentType: 'image/jpeg',
@@ -163,14 +176,16 @@ const BlogManager = () => {
         .getPublicUrl(filePath);
 
       setImageUrl(publicUrl);
-      toast.success('تصویر ریسایز و آپلود شد (۱۲۰۰×۶۳۰)');
+      toast.success('تصویر با موفقیت آپلود شد');
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('خطا در آپلود تصویر');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      // Clean up object URL
+      if (cropImageSrc) {
+        URL.revokeObjectURL(cropImageSrc);
+        setCropImageSrc('');
       }
     }
   };
@@ -320,7 +335,7 @@ const BlogManager = () => {
                   <input
                     type="file"
                     ref={fileInputRef}
-                    onChange={handleImageUpload}
+                    onChange={handleFileSelect}
                     accept="image/jpeg,image/png,image/webp,image/gif"
                     className="hidden"
                   />
@@ -460,6 +475,22 @@ const BlogManager = () => {
           </Table>
         </CardContent>
       </Card>
+      {/* Image Cropper Modal */}
+      <ImageCropper
+        open={showCropper}
+        onClose={() => {
+          setShowCropper(false);
+          if (cropImageSrc) {
+            URL.revokeObjectURL(cropImageSrc);
+            setCropImageSrc('');
+          }
+        }}
+        imageSrc={cropImageSrc}
+        onCropComplete={handleCropComplete}
+        aspectRatio={1200 / 630}
+        targetWidth={1200}
+        targetHeight={630}
+      />
     </div>
   );
 };
