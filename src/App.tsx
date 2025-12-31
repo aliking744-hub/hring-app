@@ -28,6 +28,7 @@ import SmartHeadhunting from "./pages/SmartHeadhunting";
 import CampaignDetail from "./pages/CampaignDetail";
 import CandidateDetail from "./pages/CandidateDetail";
 import Admin from "./pages/Admin";
+import StrategicCompass from "./pages/StrategicCompass";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -163,6 +164,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <CandidateDetail />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/strategic-compass" 
+                element={
+                  <ProtectedRoute>
+                    <StrategicCompass />
                   </ProtectedRoute>
                 } 
               />
