@@ -11,9 +11,15 @@ import {
   Brain,
   AlertTriangle,
   CheckCircle2,
-  Zap
+  Zap,
+  Sparkles,
+  RefreshCw,
+  ShieldAlert,
+  Languages
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { 
   LineChart, 
   Line, 
@@ -80,6 +86,12 @@ const CEODashboard = () => {
   const [responses, setResponses] = useState<ScenarioResponse[]>([]);
   const [compassUsers, setCompassUsers] = useState<CompassUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // AI Analysis States
+  const [smartWarningAnalysis, setSmartWarningAnalysis] = useState<string>("");
+  const [translationRiskAnalysis, setTranslationRiskAnalysis] = useState<string>("");
+  const [isAnalyzingWarning, setIsAnalyzingWarning] = useState(false);
+  const [isAnalyzingRisk, setIsAnalyzingRisk] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -104,6 +116,91 @@ const CEODashboard = () => {
       console.error('Error fetching data:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // AI Analysis Functions
+  const analyzeSmartWarning = async () => {
+    setIsAnalyzingWarning(true);
+    try {
+      const stats = calculateStats();
+      const userComparison = calculateUserComparison();
+      const alignmentByIntent = calculateAlignmentByIntent();
+      
+      const lowPerformers = userComparison.filter(u => u.alignment < 60);
+      const criticalIntents = alignmentByIntent.filter(i => i.alignment < 50);
+      
+      const prompt = `به عنوان یک تحلیلگر سازمانی، بر اساس داده‌های زیر از سیستم منشور ذهنی سازمان، هشدارهای هوشمند ارائه بده:
+
+وضعیت کلی:
+- همسویی کل سازمان: ${stats.overallAlignment}%
+- تعداد پاسخ‌ها: ${stats.totalResponses}
+- کاربران فعال: ${stats.uniqueRespondents} از ${stats.totalUsers}
+
+کاربران با همسویی پایین:
+${lowPerformers.map(u => `- ${u.name}: ${u.alignment}%`).join('\n') || 'هیچ‌کدام'}
+
+دستورات استراتژیک بحرانی:
+${criticalIntents.map(i => `- ${i.fullName}: ${i.alignment}%`).join('\n') || 'هیچ‌کدام'}
+
+لطفاً:
+1. مهم‌ترین هشدارها را فهرست کن
+2. علل احتمالی را تحلیل کن
+3. اقدامات پیشنهادی فوری ارائه بده
+
+پاسخ را به صورت خلاصه و کاربردی بنویس.`;
+
+      const response = await supabase.functions.invoke('generate-mental-prism', {
+        body: { prompt }
+      });
+
+      if (response.error) throw response.error;
+      setSmartWarningAnalysis(response.data.analysis || response.data.text || "تحلیل انجام شد.");
+      toast.success("تحلیل هشدار هوشمند انجام شد");
+    } catch (error: any) {
+      console.error('Error analyzing:', error);
+      toast.error("خطا در تحلیل: " + (error.message || "لطفاً دوباره تلاش کنید"));
+    } finally {
+      setIsAnalyzingWarning(false);
+    }
+  };
+
+  const analyzeTranslationRisk = async () => {
+    setIsAnalyzingRisk(true);
+    try {
+      const alignmentByIntent = calculateAlignmentByIntent();
+      const userComparison = calculateUserComparison();
+      
+      const prompt = `به عنوان متخصص استراتژی سازمانی، ریسک‌های "ترجمه استراتژی" را تحلیل کن.
+
+ترجمه استراتژی یعنی چگونه نیت‌های مدیرعامل توسط معاونین و مدیران درک و اجرا می‌شود.
+
+داده‌های همسویی بر اساس دستورات استراتژیک:
+${alignmentByIntent.map(i => `- ${i.fullName}: ${i.alignment}% همسویی (${i.responses} پاسخ)`).join('\n') || 'داده‌ای موجود نیست'}
+
+همسویی کاربران:
+${userComparison.map(u => `- ${u.name} (${u.role === 'deputy' ? 'معاون' : 'مدیرکل'}): ${u.alignment}%`).join('\n') || 'داده‌ای موجود نیست'}
+
+لطفاً:
+1. ریسک‌های ترجمه استراتژی را شناسایی کن
+2. کدام دستورات بیشترین سوءتفاهم را دارند؟
+3. تفاوت درک بین معاونین و مدیران را تحلیل کن
+4. پیشنهادات عملی برای کاهش ریسک ترجمه ارائه بده
+
+پاسخ را مختصر و کاربردی بنویس.`;
+
+      const response = await supabase.functions.invoke('generate-mental-prism', {
+        body: { prompt }
+      });
+
+      if (response.error) throw response.error;
+      setTranslationRiskAnalysis(response.data.analysis || response.data.text || "تحلیل انجام شد.");
+      toast.success("تحلیل ریسک ترجمه انجام شد");
+    } catch (error: any) {
+      console.error('Error analyzing:', error);
+      toast.error("خطا در تحلیل: " + (error.message || "لطفاً دوباره تلاش کنید"));
+    } finally {
+      setIsAnalyzingRisk(false);
     }
   };
 
@@ -582,6 +679,95 @@ const CEODashboard = () => {
           )}
         </div>
       </motion.div>
+
+      {/* AI Analysis Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Smart Warning System */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="glass-card p-6"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-orange-500" />
+              سیستم هشدار هوشمند
+            </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={analyzeSmartWarning}
+              disabled={isAnalyzingWarning}
+              className="flex items-center gap-2"
+            >
+              {isAnalyzingWarning ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              تحلیل جدید
+            </Button>
+          </div>
+          
+          <div className="min-h-[200px] p-4 rounded-xl bg-secondary/20 border border-border">
+            {smartWarningAnalysis ? (
+              <div className="prose prose-sm prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
+                {smartWarningAnalysis}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[180px] text-muted-foreground">
+                <ShieldAlert className="w-12 h-12 mb-3 opacity-30" />
+                <p className="text-sm">برای دریافت هشدارهای هوشمند، روی دکمه "تحلیل جدید" کلیک کنید</p>
+                <p className="text-xs mt-1 text-muted-foreground/70">این تحلیل با هوش مصنوعی انجام می‌شود</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Translation Risk Warning */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.0 }}
+          className="glass-card p-6"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Languages className="w-5 h-5 text-purple-500" />
+              هشدار ریسک ترجمه
+            </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={analyzeTranslationRisk}
+              disabled={isAnalyzingRisk}
+              className="flex items-center gap-2"
+            >
+              {isAnalyzingRisk ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              تحلیل جدید
+            </Button>
+          </div>
+          
+          <div className="min-h-[200px] p-4 rounded-xl bg-secondary/20 border border-border">
+            {translationRiskAnalysis ? (
+              <div className="prose prose-sm prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
+                {translationRiskAnalysis}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[180px] text-muted-foreground">
+                <Languages className="w-12 h-12 mb-3 opacity-30" />
+                <p className="text-sm">برای تحلیل ریسک ترجمه استراتژی، روی دکمه "تحلیل جدید" کلیک کنید</p>
+                <p className="text-xs mt-1 text-muted-foreground/70">این تحلیل با هوش مصنوعی انجام می‌شود</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };

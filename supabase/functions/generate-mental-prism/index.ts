@@ -11,12 +11,61 @@ serve(async (req) => {
   }
 
   try {
-    const { intentTitle, intentDescription, strategicWeight, toleranceZone } = await req.json();
-
+    const body = await req.json();
+    
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
+
+    // Check if this is a free-form analysis request or question generation
+    if (body.prompt) {
+      // Free-form AI analysis (for CEO Dashboard)
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: 'شما یک تحلیلگر استراتژیک هوشمند سازمانی هستید. پاسخ‌های خود را به فارسی و به صورت مختصر، کاربردی و ساختارمند ارائه دهید.' },
+            { role: 'user', content: body.prompt }
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('AI gateway error:', response.status, errorText);
+        
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: 'تعداد درخواست‌ها بیش از حد مجاز است. لطفاً چند دقیقه صبر کنید.' }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: 'اعتبار کافی نیست. لطفاً اعتبار خود را شارژ کنید.' }), {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        throw new Error(`AI gateway error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      return new Response(JSON.stringify({ analysis: content || 'تحلیل انجام شد.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Original question generation logic
+    const { intentTitle, intentDescription, strategicWeight, toleranceZone } = body;
 
     const systemPrompt = `شما یک دستیار هوشمند برای طراحی تست‌های قضاوت موقعیتی (Situational Judgment Test) هستید.
 بر اساس دستور استراتژیک داده شده، سه سوال موقعیتی طراحی کنید که میزان درک و همسویی معاونین با ذهنیت مدیرعامل را بسنجد.
