@@ -3,146 +3,48 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { createLivingLightMaterial } from "./shaders/LivingLightShader";
 
-// Bonsai-style curved trunk path points (S-curve like the reference image)
-const TRUNK_CURVE_POINTS = [
-  new THREE.Vector3(0, -0.5, 0),
-  new THREE.Vector3(0.4, 0.5, 0.1),
-  new THREE.Vector3(-0.3, 1.5, -0.15),
-  new THREE.Vector3(0.5, 2.5, 0.2),
-  new THREE.Vector3(0.1, 3.5, 0.05),
-  new THREE.Vector3(-0.4, 4.3, 0.15),
-  new THREE.Vector3(0.1, 5.2, 0),
+// Branch configuration - represents major projects
+const MAIN_BRANCHES = [
+  { angle: 0, height: 2.5, length: 2.0, thickness: 0.12, tilt: 0.6 },
+  { angle: 72, height: 3.2, length: 2.2, thickness: 0.10, tilt: 0.5 },
+  { angle: 144, height: 3.8, length: 1.8, thickness: 0.11, tilt: 0.55 },
+  { angle: 216, height: 4.3, length: 2.1, thickness: 0.09, tilt: 0.45 },
+  { angle: 288, height: 4.8, length: 1.9, thickness: 0.10, tilt: 0.5 },
+  { angle: 36, height: 5.2, length: 1.6, thickness: 0.08, tilt: 0.4 },
+  { angle: 108, height: 5.6, length: 1.5, thickness: 0.07, tilt: 0.35 },
+  { angle: 180, height: 1.8, length: 1.7, thickness: 0.11, tilt: 0.65 },
+  { angle: 252, height: 2.0, length: 1.5, thickness: 0.10, tilt: 0.6 },
+  { angle: 324, height: 2.8, length: 1.4, thickness: 0.09, tilt: 0.55 },
 ];
 
-// Organic branch configurations - positioned along the curved trunk
-const BRANCHES = [
-  { t: 0.35, angle: Math.PI * 0.2, length: 2.2, thickness: 0.11, curve: 0.7 },
-  { t: 0.42, angle: -Math.PI * 0.35, length: 2.5, thickness: 0.12, curve: 0.8 },
-  { t: 0.52, angle: Math.PI * 0.55, length: 2.0, thickness: 0.10, curve: 0.6 },
-  { t: 0.58, angle: -Math.PI * 0.15, length: 1.8, thickness: 0.09, curve: 0.5 },
-  { t: 0.68, angle: Math.PI * 0.4, length: 2.3, thickness: 0.10, curve: 0.75 },
-  { t: 0.75, angle: -Math.PI * 0.5, length: 1.6, thickness: 0.08, curve: 0.55 },
-  { t: 0.82, angle: Math.PI * 0.1, length: 1.4, thickness: 0.07, curve: 0.4 },
-  { t: 0.88, angle: -Math.PI * 0.25, length: 1.2, thickness: 0.06, curve: 0.35 },
-  { t: 0.94, angle: Math.PI * 0.05, length: 0.8, thickness: 0.05, curve: 0.2 },
-];
-
-// Root configurations - spreading organically
-const ROOTS = [
-  { angle: 0, length: 2.0, depth: -0.35, twist: 0.3 },
-  { angle: Math.PI * 0.25, length: 2.4, depth: -0.25, twist: 0.5 },
-  { angle: Math.PI * 0.5, length: 1.6, depth: -0.4, twist: 0.25 },
-  { angle: Math.PI * 0.75, length: 2.1, depth: -0.3, twist: 0.4 },
-  { angle: Math.PI, length: 1.9, depth: -0.28, twist: 0.55 },
-  { angle: -Math.PI * 0.75, length: 2.3, depth: -0.32, twist: 0.35 },
-  { angle: -Math.PI * 0.5, length: 1.7, depth: -0.38, twist: 0.45 },
-  { angle: -Math.PI * 0.25, length: 2.2, depth: -0.22, twist: 0.6 },
-];
-
-// Export branch end positions for floating leaves
+// Export branch positions for tendril connections
 export const getBranchEndPositions = () => {
-  const trunkCurve = new THREE.CatmullRomCurve3(TRUNK_CURVE_POINTS);
-  
-  return BRANCHES.map((branch) => {
-    const startPoint = trunkCurve.getPoint(branch.t);
-    
-    // Calculate end position with organic curve
-    const x = startPoint.x + Math.cos(branch.angle) * branch.length;
-    const y = startPoint.y + branch.curve * 1.2;
-    const z = startPoint.z + Math.sin(branch.angle) * branch.length;
-    
-    return { x, y, z, angle: branch.angle * (180 / Math.PI), height: y };
+  return MAIN_BRANCHES.map((branch) => {
+    const angleRad = (branch.angle * Math.PI) / 180;
+    const x = Math.cos(angleRad) * branch.length * 0.9;
+    const z = Math.sin(angleRad) * branch.length * 0.9;
+    const y = branch.height + Math.sin(branch.tilt) * branch.length * 0.3;
+    return { x, y, z, angle: branch.angle, height: branch.height };
   });
-};
-
-// Create tube geometry from curve
-const createTubeFromCurve = (points: THREE.Vector3[], radius: number, segments = 32, radialSegments = 12) => {
-  const curve = new THREE.CatmullRomCurve3(points);
-  return new THREE.TubeGeometry(curve, segments, radius, radialSegments, false);
 };
 
 const LivingTrunk = () => {
   const trunkMaterialRef = useRef<THREE.ShaderMaterial>(null);
+  const branchMaterialRefs = useRef<THREE.ShaderMaterial[]>([]);
+  const rootMaterialRef = useRef<THREE.ShaderMaterial>(null);
   const glowRef = useRef<THREE.Mesh>(null);
-  const foliageRefs = useRef<THREE.Mesh[]>([]);
-
-  // Create main trunk curve
-  const trunkCurve = useMemo(() => new THREE.CatmullRomCurve3(TRUNK_CURVE_POINTS), []);
-
-  // Create trunk geometry - organic tube
-  const trunkGeometry = useMemo(() => {
-    return new THREE.TubeGeometry(trunkCurve, 64, 0.22, 16, false);
-  }, [trunkCurve]);
-
-  // Create branch geometries with organic curves
-  const branchData = useMemo(() => {
-    return BRANCHES.map((branch, idx) => {
-      const startPoint = trunkCurve.getPoint(branch.t);
-      
-      // Create curved branch path
-      const midPoint = new THREE.Vector3(
-        startPoint.x + Math.cos(branch.angle) * branch.length * 0.5,
-        startPoint.y + branch.curve * 0.6,
-        startPoint.z + Math.sin(branch.angle) * branch.length * 0.5
-      );
-      
-      const endPoint = new THREE.Vector3(
-        startPoint.x + Math.cos(branch.angle) * branch.length,
-        startPoint.y + branch.curve * 1.2,
-        startPoint.z + Math.sin(branch.angle) * branch.length
-      );
-      
-      // Add slight organic variation
-      midPoint.x += (Math.sin(idx * 1.5) * 0.15);
-      midPoint.z += (Math.cos(idx * 1.5) * 0.15);
-      
-      const geometry = createTubeFromCurve(
-        [startPoint, midPoint, endPoint],
-        branch.thickness,
-        20,
-        8
-      );
-      
-      return { geometry, endPoint, branch };
-    });
-  }, [trunkCurve]);
-
-  // Create root geometries
-  const rootGeometries = useMemo(() => {
-    return ROOTS.map((root, idx) => {
-      const startPoint = new THREE.Vector3(0, 0, 0);
-      
-      const midPoint = new THREE.Vector3(
-        Math.cos(root.angle) * root.length * 0.4,
-        root.depth * 0.4,
-        Math.sin(root.angle) * root.length * 0.4
-      );
-      
-      // Add twist variation
-      midPoint.x += root.twist * 0.2 * Math.sin(idx);
-      midPoint.z += root.twist * 0.2 * Math.cos(idx);
-      
-      const endPoint = new THREE.Vector3(
-        Math.cos(root.angle) * root.length,
-        root.depth,
-        Math.sin(root.angle) * root.length
-      );
-      
-      return createTubeFromCurve([startPoint, midPoint, endPoint], 0.06, 16, 6);
-    });
-  }, []);
 
   // Create shader materials
   const trunkMaterial = useMemo(() => 
-    createLivingLightMaterial("#5D4E37", "#FFD700", 0.08, 1.5), []
+    createLivingLightMaterial("#5D4E37", "#FFD700", 0.06, 1.8), []
   );
   
   const branchMaterial = useMemo(() => 
-    createLivingLightMaterial("#6B5B3D", "#FFD700", 0.12, 1.8), []
+    createLivingLightMaterial("#6B5B3D", "#FFD700", 0.1, 2.0), []
   );
   
   const rootMaterial = useMemo(() => 
-    createLivingLightMaterial("#4A3F2A", "#B8860B", 0.05, 1.0), []
+    createLivingLightMaterial("#4A3F2A", "#B8860B", 0.04, 1.2), []
   );
 
   useFrame((state) => {
@@ -153,125 +55,158 @@ const LivingTrunk = () => {
       trunkMaterialRef.current.uniforms.uTime.value = time;
     }
     
+    // Update branch shaders
+    branchMaterialRefs.current.forEach((mat) => {
+      if (mat) {
+        mat.uniforms.uTime.value = time;
+      }
+    });
+    
+    // Update root shader
+    if (rootMaterialRef.current) {
+      rootMaterialRef.current.uniforms.uTime.value = time;
+    }
+    
     // Outer glow pulse
     if (glowRef.current) {
       const material = glowRef.current.material as THREE.MeshBasicMaterial;
-      material.opacity = 0.12 + Math.sin(time * 0.8) * 0.05;
+      material.opacity = 0.15 + Math.sin(time * 1.5) * 0.08;
     }
-    
-    // Animate foliage glow
-    foliageRefs.current.forEach((mesh, i) => {
-      if (mesh) {
-        const mat = mesh.material as THREE.MeshBasicMaterial;
-        mat.opacity = 0.6 + Math.sin(time * 1.2 + i * 0.5) * 0.15;
-      }
-    });
   });
 
   return (
     <group>
-      {/* Root system - organic curves spreading outward */}
-      {rootGeometries.map((geometry, i) => (
-        <mesh key={`root-${i}`} geometry={geometry}>
-          <primitive object={rootMaterial.clone()} />
+      {/* Root system - spreading base */}
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+        <mesh
+          key={`root-${i}`}
+          position={[
+            Math.cos((angle * Math.PI) / 180) * 0.6,
+            -0.8,
+            Math.sin((angle * Math.PI) / 180) * 0.6,
+          ]}
+          rotation={[0.8, (angle * Math.PI) / 180, 0.3]}
+        >
+          <cylinderGeometry args={[0.05, 0.12, 1.2, 8]} />
+          <primitive 
+            object={rootMaterial.clone()} 
+            ref={(ref: THREE.ShaderMaterial) => {
+              if (ref) rootMaterialRef.current = ref;
+            }}
+          />
         </mesh>
       ))}
 
-      {/* Root base mound */}
-      <mesh position={[0, -0.2, 0]}>
-        <sphereGeometry args={[0.5, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+      {/* Root base cone */}
+      <mesh position={[0, -0.5, 0]}>
+        <coneGeometry args={[0.8, 1.2, 12]} />
         <primitive object={rootMaterial.clone()} />
       </mesh>
 
-      {/* Main curved trunk */}
-      <mesh geometry={trunkGeometry}>
-        <primitive object={trunkMaterial} ref={trunkMaterialRef} />
+      {/* Main Trunk - with living light shader */}
+      <mesh position={[0, 2.5, 0]}>
+        <cylinderGeometry args={[0.25, 0.45, 7, 24]} />
+        <primitive 
+          object={trunkMaterial} 
+          ref={trunkMaterialRef}
+        />
       </mesh>
 
-      {/* Trunk inner glow */}
-      <mesh>
-        <tubeGeometry args={[trunkCurve, 32, 0.15, 12, false]} />
-        <meshBasicMaterial color="#FFD700" transparent opacity={0.1} />
+      {/* Inner energy core */}
+      <mesh position={[0, 2.5, 0]}>
+        <cylinderGeometry args={[0.18, 0.35, 6.8, 16]} />
+        <meshBasicMaterial
+          color="#FFD700"
+          transparent
+          opacity={0.15}
+        />
       </mesh>
 
-      {/* Trunk outer glow envelope */}
-      <mesh ref={glowRef}>
-        <tubeGeometry args={[trunkCurve, 32, 0.35, 12, false]} />
-        <meshBasicMaterial color="#FFD700" transparent opacity={0.08} side={THREE.BackSide} />
+      {/* Outer glow envelope */}
+      <mesh ref={glowRef} position={[0, 2.5, 0]}>
+        <cylinderGeometry args={[0.35, 0.55, 7.2, 24]} />
+        <meshBasicMaterial
+          color="#FFD700"
+          transparent
+          opacity={0.12}
+          side={THREE.BackSide}
+        />
       </mesh>
 
-      {/* Organic branches */}
-      {branchData.map(({ geometry, endPoint, branch }, i) => (
-        <group key={`branch-${i}`}>
-          {/* Main branch */}
-          <mesh geometry={geometry}>
-            <primitive object={branchMaterial.clone()} />
-          </mesh>
-          
-          {/* Branch glow */}
-          <mesh geometry={geometry}>
-            <meshBasicMaterial color="#FFD700" transparent opacity={0.06} side={THREE.BackSide} />
-          </mesh>
-          
-          {/* Foliage cluster at branch end */}
-          <group position={[endPoint.x, endPoint.y, endPoint.z]}>
-            {/* Main foliage sphere - golden orange */}
-            <mesh
-              ref={(el) => { if (el) foliageRefs.current[i] = el; }}
-            >
-              <sphereGeometry args={[0.55 + (i % 3) * 0.15, 16, 16]} />
-              <meshBasicMaterial color="#FFB347" transparent opacity={0.75} />
+      {/* Main structural branches - representing major projects */}
+      {MAIN_BRANCHES.map((branch, i) => {
+        const angleRad = (branch.angle * Math.PI) / 180;
+        
+        return (
+          <group 
+            key={`branch-${i}`} 
+            position={[0, branch.height, 0]}
+            rotation={[branch.tilt, angleRad, 0]}
+          >
+            {/* Main branch segment */}
+            <mesh position={[branch.length / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[branch.thickness * 0.6, branch.thickness, branch.length, 12]} />
+              <primitive 
+                object={branchMaterial.clone()}
+                ref={(ref: THREE.ShaderMaterial) => {
+                  if (ref) branchMaterialRefs.current[i] = ref;
+                }}
+              />
             </mesh>
             
-            {/* Outer glow */}
-            <mesh>
-              <sphereGeometry args={[0.8 + (i % 3) * 0.2, 12, 12]} />
-              <meshBasicMaterial color="#FFA500" transparent opacity={0.2} side={THREE.BackSide} />
+            {/* Branch glow */}
+            <mesh position={[branch.length / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[branch.thickness * 0.8, branch.thickness * 1.2, branch.length * 1.02, 12]} />
+              <meshBasicMaterial
+                color="#FFD700"
+                transparent
+                opacity={0.08}
+                side={THREE.BackSide}
+              />
             </mesh>
             
-            {/* Inner bright core */}
-            <mesh>
-              <sphereGeometry args={[0.25, 12, 12]} />
-              <meshBasicMaterial color="#FFD700" />
-            </mesh>
-            
-            {/* Secondary smaller foliage nearby */}
+            {/* Secondary branch splits */}
             {i % 2 === 0 && (
               <>
-                <mesh position={[0.4, 0.3, 0.2]}>
-                  <sphereGeometry args={[0.35, 12, 12]} />
-                  <meshBasicMaterial color="#FFCC66" transparent opacity={0.7} />
+                <mesh 
+                  position={[branch.length * 0.7, 0.1, 0.1]} 
+                  rotation={[0.3, 0.5, Math.PI / 2]}
+                >
+                  <cylinderGeometry args={[branch.thickness * 0.3, branch.thickness * 0.5, branch.length * 0.4, 8]} />
+                  <primitive object={branchMaterial.clone()} />
                 </mesh>
-                <mesh position={[-0.3, 0.2, -0.35]}>
-                  <sphereGeometry args={[0.3, 12, 12]} />
-                  <meshBasicMaterial color="#FFB366" transparent opacity={0.65} />
+                <mesh 
+                  position={[branch.length * 0.5, -0.1, -0.1]} 
+                  rotation={[-0.3, -0.4, Math.PI / 2]}
+                >
+                  <cylinderGeometry args={[branch.thickness * 0.25, branch.thickness * 0.4, branch.length * 0.35, 8]} />
+                  <primitive object={branchMaterial.clone()} />
                 </mesh>
               </>
             )}
           </group>
-        </group>
-      ))}
+        );
+      })}
 
       {/* Crown - top energy bloom */}
-      <group position={[TRUNK_CURVE_POINTS[TRUNK_CURVE_POINTS.length - 1].x, TRUNK_CURVE_POINTS[TRUNK_CURVE_POINTS.length - 1].y + 0.3, TRUNK_CURVE_POINTS[TRUNK_CURVE_POINTS.length - 1].z]}>
-        <mesh>
-          <sphereGeometry args={[0.5, 16, 16]} />
-          <meshBasicMaterial color="#FFB347" transparent opacity={0.8} />
-        </mesh>
-        <mesh>
-          <sphereGeometry args={[0.75, 16, 16]} />
-          <meshBasicMaterial color="#FFA500" transparent opacity={0.25} side={THREE.BackSide} />
-        </mesh>
-        <mesh>
-          <sphereGeometry args={[0.2, 12, 12]} />
-          <meshBasicMaterial color="#FFD700" />
-        </mesh>
-      </group>
-
-      {/* Ground shadow/glow */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]}>
-        <circleGeometry args={[3.5, 32]} />
-        <meshBasicMaterial color="#4A3F2A" transparent opacity={0.25} />
+      <mesh position={[0, 6.2, 0]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshBasicMaterial
+          color="#FFD700"
+          transparent
+          opacity={0.3}
+        />
+      </mesh>
+      
+      {/* Crown glow halo */}
+      <mesh position={[0, 6.2, 0]}>
+        <sphereGeometry args={[0.5, 16, 16]} />
+        <meshBasicMaterial
+          color="#FFD700"
+          transparent
+          opacity={0.1}
+          side={THREE.BackSide}
+        />
       </mesh>
     </group>
   );
