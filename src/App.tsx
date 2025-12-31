@@ -12,6 +12,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Shop from "./pages/Shop";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import JobDescriptionGenerator from "./pages/JobDescriptionGenerator";
 import SmartAdGenerator from "./pages/SmartAdGenerator";
 import InterviewAssistant from "./pages/InterviewAssistant";
@@ -42,6 +44,8 @@ const App = () => (
               <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
               <Route 
                 path="/dashboard" 
                 element={
