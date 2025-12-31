@@ -24,7 +24,8 @@ import {
   Flame,
   Lightbulb,
   Sparkles,
-  FlaskConical
+  FlaskConical,
+  Cog
 } from "lucide-react";
 import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DemoModeProvider, useDemoMode } from "@/contexts/DemoModeContext";
@@ -48,8 +50,9 @@ import StrategicBetting from "@/components/strategic-compass/StrategicBetting";
 import DecisionJournal from "@/components/strategic-compass/DecisionJournal";
 import UserManagement from "@/components/strategic-compass/UserManagement";
 import DreamManifestation from "@/components/strategic-compass/DreamManifestation";
+import CompassAdminSettings from "@/components/strategic-compass/CompassAdminSettings";
 
-type CompassRole = 'ceo' | 'deputy' | 'manager' | null;
+type CompassRole = 'ceo' | 'deputy' | 'manager' | 'expert' | null;
 
 const StrategicCompassContent = () => {
   const { isDemoMode, setIsDemoMode } = useDemoMode();
@@ -57,6 +60,7 @@ const StrategicCompassContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("command");
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -158,9 +162,15 @@ const StrategicCompassContent = () => {
   const isCEO = compassRole === 'ceo';
   const isDeputy = compassRole === 'deputy';
   const isManager = compassRole === 'manager';
+  const isExpert = compassRole === 'expert';
 
   const getTabs = () => {
     const baseTabs = [];
+    
+    // Add admin settings tab if user is admin
+    if (isAdmin) {
+      baseTabs.push({ id: "admin-settings", label: "تنظیمات", icon: Cog, isAdmin: true });
+    }
     
     if (isCEO) {
       // ترتیب از راست به چپ: اولین آیتم سمت راست نمایش داده می‌شود
@@ -174,7 +184,7 @@ const StrategicCompassContent = () => {
         { id: "intent", label: "ماژول فرمان", icon: Zap },
         { id: "command", label: "داشبورد فرمان", icon: Target },
       );
-    } else if (isDeputy || isManager) {
+    } else if (isDeputy || isManager || isExpert) {
       baseTabs.push(
         { id: "betting", label: "بازی استراتژیک", icon: Coins },
         { id: "journal", label: "ژورنال تصمیم", icon: FileText },
@@ -279,10 +289,12 @@ const StrategicCompassContent = () => {
                     className={`flex items-center gap-2 px-4 py-2.5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary ${
                       tab.isGolden 
                         ? 'border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.5)] animate-golden-pulse bg-gradient-to-r from-[#D4AF37]/10 to-[#B8860B]/10 text-[#D4AF37] data-[state=active]:border-[#D4AF37] data-[state=active]:bg-[#D4AF37]/20 data-[state=active]:text-[#D4AF37]' 
-                        : ''
+                        : tab.isAdmin
+                          ? 'border border-red-500/30 bg-red-500/10 text-red-400 data-[state=active]:border-red-500 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-300'
+                          : ''
                     }`}
                   >
-                    <tab.icon className={`w-4 h-4 ${tab.isGolden ? 'text-[#D4AF37]' : ''}`} />
+                    <tab.icon className={`w-4 h-4 ${tab.isGolden ? 'text-[#D4AF37]' : tab.isAdmin ? 'text-red-400' : ''}`} />
                     <span className="hidden sm:inline">{tab.label}</span>
                   </TabsTrigger>
                 ))}
@@ -318,8 +330,8 @@ const StrategicCompassContent = () => {
                 </>
               )}
 
-              {/* Deputy/Manager Tabs */}
-              {(isDeputy || isManager) && (
+              {/* Deputy/Manager/Expert Tabs */}
+              {(isDeputy || isManager || isExpert) && (
                 <>
                   <TabsContent value="behavior">
                     <BehaviorModule />
@@ -334,6 +346,13 @@ const StrategicCompassContent = () => {
                     <StrategicBetting userRole={compassRole} />
                   </TabsContent>
                 </>
+              )}
+
+              {/* Admin Settings Tab */}
+              {isAdmin && (
+                <TabsContent value="admin-settings">
+                  <CompassAdminSettings />
+                </TabsContent>
               )}
             </Tabs>
           </motion.div>

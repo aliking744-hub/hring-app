@@ -223,7 +223,10 @@ export type Database = {
       }
       compass_user_roles: {
         Row: {
+          accessible_sections: string[] | null
+          can_edit: boolean
           created_at: string
+          diamonds: number
           full_name: string | null
           id: string
           role: Database["public"]["Enums"]["compass_role"]
@@ -231,7 +234,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accessible_sections?: string[] | null
+          can_edit?: boolean
           created_at?: string
+          diamonds?: number
           full_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["compass_role"]
@@ -239,7 +245,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accessible_sections?: string[] | null
+          can_edit?: boolean
           created_at?: string
+          diamonds?: number
           full_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["compass_role"]
@@ -724,7 +733,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      compass_role: "ceo" | "deputy" | "manager"
+      compass_role: "ceo" | "deputy" | "manager" | "expert"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -853,7 +862,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      compass_role: ["ceo", "deputy", "manager"],
+      compass_role: ["ceo", "deputy", "manager", "expert"],
     },
   },
 } as const

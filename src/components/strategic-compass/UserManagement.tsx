@@ -44,7 +44,7 @@ import {
 interface CompassUser {
   id: string;
   user_id: string;
-  role: 'ceo' | 'deputy' | 'manager';
+  role: 'ceo' | 'deputy' | 'manager' | 'expert';
   full_name: string | null;
   title: string | null;
   created_at: string;
@@ -60,12 +60,12 @@ const UserManagement = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role: "deputy" as 'ceo' | 'deputy' | 'manager',
+    role: "deputy" as 'ceo' | 'deputy' | 'manager' | 'expert',
     full_name: "",
     title: "",
   });
   const [editFormData, setEditFormData] = useState({
-    role: "deputy" as 'ceo' | 'deputy' | 'manager',
+    role: "deputy" as 'ceo' | 'deputy' | 'manager' | 'expert',
     full_name: "",
     title: "",
     newPassword: "",

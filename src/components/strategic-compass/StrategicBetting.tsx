@@ -31,7 +31,7 @@ import {
 } from "recharts";
 
 interface Props {
-  userRole: 'ceo' | 'deputy' | 'manager' | null;
+  userRole: 'ceo' | 'deputy' | 'manager' | 'expert' | null;
 }
 
 interface StrategicBet {
