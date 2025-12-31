@@ -162,7 +162,7 @@ const StrategicCompass = () => {
         { id: "analysis", label: "موتور تحلیل", icon: Brain },
         { id: "ceo-dashboard", label: "داشبورد مدیرعامل", icon: BarChart3 },
         { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
-        { id: "betting", label: "شرط‌بندی استراتژیک", icon: Coins },
+        { id: "betting", label: "بازی استراتژیک", icon: Coins },
         { id: "users", label: "مدیریت کاربران", icon: Users },
       );
     } else if (isDeputy || isManager) {
@@ -170,7 +170,7 @@ const StrategicCompass = () => {
         { id: "behavior", label: "ماژول رفتار", icon: Activity },
         { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
         { id: "journal", label: "ژورنال تصمیم", icon: FileText },
-        { id: "betting", label: "شرط‌بندی استراتژیک", icon: Coins },
+        { id: "betting", label: "بازی استراتژیک", icon: Coins },
       );
     }
     
@@ -248,7 +248,7 @@ const StrategicCompass = () => {
             transition={{ delay: 0.1 }}
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="glass-card w-full flex flex-wrap justify-start gap-1 p-2 mb-6 h-auto">
+              <TabsList className="glass-card w-full flex flex-wrap justify-end gap-1 p-2 mb-6 h-auto">
                 {tabs.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
