@@ -11,9 +11,10 @@ interface LivingErdtreeSceneProps {
   tasks: Task[];
   newTaskIds?: string[];
   isFullscreen?: boolean;
+  onTaskClick?: (task: Task) => void;
 }
 
-const LivingErdtreeScene = ({ tasks, newTaskIds = [], isFullscreen = false }: LivingErdtreeSceneProps) => {
+const LivingErdtreeScene = ({ tasks, newTaskIds = [], isFullscreen = false, onTaskClick }: LivingErdtreeSceneProps) => {
   // Handle ESC key for fullscreen exit
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -73,7 +74,7 @@ const LivingErdtreeScene = ({ tasks, newTaskIds = [], isFullscreen = false }: Li
           {/* The Living Erdtree */}
           <group position={[0, -2, 0]}>
             <LivingTrunk />
-            <LivingLeafCluster tasks={tasks} newTaskIds={newTaskIds} />
+            <LivingLeafCluster tasks={tasks} newTaskIds={newTaskIds} onTaskClick={onTaskClick} />
           </group>
           
           {/* Ground plane with subtle glow */}
