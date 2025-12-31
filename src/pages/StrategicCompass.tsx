@@ -54,11 +54,19 @@ import CompassAdminSettings from "@/components/strategic-compass/CompassAdminSet
 
 type CompassRole = 'ceo' | 'deputy' | 'manager' | 'expert' | null;
 
+interface UserPermissions {
+  role: CompassRole;
+  accessibleSections: string[];
+  canEdit: boolean;
+  diamonds: number;
+}
+
 const StrategicCompassContent = () => {
   const { isDemoMode, setIsDemoMode } = useDemoMode();
   const [compassRole, setCompassRole] = useState<CompassRole>(null);
+  const [userPermissions, setUserPermissions] = useState<UserPermissions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("command");
+  const [activeTab, setActiveTab] = useState("");
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const navigate = useNavigate();
@@ -78,7 +86,7 @@ const StrategicCompassContent = () => {
     try {
       const { data, error } = await supabase
         .from('compass_user_roles')
-        .select('role')
+        .select('role, accessible_sections, can_edit, diamonds')
         .eq('user_id', user.id)
         .single();
 
@@ -88,6 +96,12 @@ const StrategicCompassContent = () => {
 
       if (data) {
         setCompassRole(data.role as CompassRole);
+        setUserPermissions({
+          role: data.role as CompassRole,
+          accessibleSections: data.accessible_sections || [],
+          canEdit: data.can_edit ?? true,
+          diamonds: data.diamonds ?? 100
+        });
       }
     } catch (err) {
       console.error('Error:', err);
@@ -164,8 +178,20 @@ const StrategicCompassContent = () => {
   const isManager = compassRole === 'manager';
   const isExpert = compassRole === 'expert';
 
+  // Map section IDs to tab configurations
+  const sectionToTabMap: Record<string, { id: string; label: string; icon: any; isGolden?: boolean }> = {
+    'intent': { id: "intent", label: "ماژول فرمان", icon: Zap },
+    'behavior': { id: "behavior", label: "ماژول رفتار", icon: Activity },
+    'betting': { id: "betting", label: "بازی استراتژیک", icon: Coins },
+    'erdtree': { id: "dream", label: "تجلی رویا", icon: Sparkles, isGolden: true },
+    'analysis': { id: "analysis", label: "موتور تحلیل", icon: Brain },
+    'dream': { id: "dream", label: "تجلی رویا", icon: Sparkles, isGolden: true },
+    'prism': { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
+    'journal': { id: "journal", label: "ژورنال تصمیم", icon: FileText },
+  };
+
   const getTabs = () => {
-    const baseTabs = [];
+    const baseTabs: { id: string; label: string; icon: any; isGolden?: boolean; isAdmin?: boolean }[] = [];
     
     // Add admin settings tab if user is admin
     if (isAdmin) {
@@ -173,7 +199,7 @@ const StrategicCompassContent = () => {
     }
     
     if (isCEO) {
-      // ترتیب از راست به چپ: اولین آیتم سمت راست نمایش داده می‌شود
+      // CEO has full access - ترتیب از راست به چپ
       baseTabs.push(
         { id: "users", label: "مدیریت کاربران", icon: Users },
         { id: "dream", label: "تجلی رویا", icon: Sparkles, isGolden: true },
@@ -185,18 +211,40 @@ const StrategicCompassContent = () => {
         { id: "command", label: "داشبورد فرمان", icon: Target },
       );
     } else if (isDeputy || isManager || isExpert) {
-      baseTabs.push(
-        { id: "betting", label: "بازی استراتژیک", icon: Coins },
-        { id: "journal", label: "ژورنال تصمیم", icon: FileText },
-        { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
-        { id: "behavior", label: "ماژول رفتار", icon: Activity },
-      );
+      // Filter tabs based on user's accessible sections
+      const accessibleSections = userPermissions?.accessibleSections || [];
+      
+      // Define available tabs for non-CEO users
+      const availableTabs = [
+        { section: 'betting', tab: { id: "betting", label: "بازی استراتژیک", icon: Coins } },
+        { section: 'journal', tab: { id: "journal", label: "ژورنال تصمیم", icon: FileText } },
+        { section: 'prism', tab: { id: "mental-prism", label: "منشور ذهنی", icon: Eye } },
+        { section: 'behavior', tab: { id: "behavior", label: "ماژول رفتار", icon: Activity } },
+        { section: 'erdtree', tab: { id: "dream", label: "تجلی رویا", icon: Sparkles, isGolden: true } },
+        { section: 'analysis', tab: { id: "analysis", label: "موتور تحلیل", icon: Brain } },
+        { section: 'intent', tab: { id: "intent", label: "ماژول فرمان", icon: Zap } },
+      ];
+      
+      // Only show tabs for accessible sections
+      availableTabs.forEach(({ section, tab }) => {
+        if (accessibleSections.includes(section)) {
+          baseTabs.push(tab);
+        }
+      });
     }
     
     return baseTabs;
   };
 
   const tabs = getTabs();
+
+  // Set default active tab when tabs are loaded
+  useEffect(() => {
+    if (tabs.length > 0 && !activeTab) {
+      // Set the last tab as default (rightmost in RTL)
+      setActiveTab(tabs[tabs.length - 1].id);
+    }
+  }, [tabs, activeTab]);
 
   return (
     <>
@@ -330,21 +378,44 @@ const StrategicCompassContent = () => {
                 </>
               )}
 
-              {/* Deputy/Manager/Expert Tabs */}
+              {/* Deputy/Manager/Expert Tabs - based on accessible sections */}
               {(isDeputy || isManager || isExpert) && (
                 <>
-                  <TabsContent value="behavior">
-                    <BehaviorModule />
-                  </TabsContent>
-                  <TabsContent value="mental-prism">
-                    <PrismResponse />
-                  </TabsContent>
-                  <TabsContent value="journal">
-                    <DecisionJournal />
-                  </TabsContent>
-                  <TabsContent value="betting">
-                    <StrategicBetting userRole={compassRole} />
-                  </TabsContent>
+                  {userPermissions?.accessibleSections.includes('behavior') && (
+                    <TabsContent value="behavior">
+                      <BehaviorModule canEdit={userPermissions?.canEdit} />
+                    </TabsContent>
+                  )}
+                  {userPermissions?.accessibleSections.includes('prism') && (
+                    <TabsContent value="mental-prism">
+                      <PrismResponse canEdit={userPermissions?.canEdit} />
+                    </TabsContent>
+                  )}
+                  {userPermissions?.accessibleSections.includes('journal') && (
+                    <TabsContent value="journal">
+                      <DecisionJournal canEdit={userPermissions?.canEdit} />
+                    </TabsContent>
+                  )}
+                  {userPermissions?.accessibleSections.includes('betting') && (
+                    <TabsContent value="betting">
+                      <StrategicBetting userRole={compassRole} canEdit={userPermissions?.canEdit} />
+                    </TabsContent>
+                  )}
+                  {userPermissions?.accessibleSections.includes('erdtree') && (
+                    <TabsContent value="dream">
+                      <DreamManifestation />
+                    </TabsContent>
+                  )}
+                  {userPermissions?.accessibleSections.includes('analysis') && (
+                    <TabsContent value="analysis">
+                      <AnalysisEngine />
+                    </TabsContent>
+                  )}
+                  {userPermissions?.accessibleSections.includes('intent') && (
+                    <TabsContent value="intent">
+                      <IntentModule canEdit={userPermissions?.canEdit} />
+                    </TabsContent>
+                  )}
                 </>
               )}
 

@@ -39,7 +39,11 @@ interface Behavior {
   intent?: Intent;
 }
 
-const BehaviorModule = () => {
+interface BehaviorModuleProps {
+  canEdit?: boolean;
+}
+
+const BehaviorModule = ({ canEdit = true }: BehaviorModuleProps) => {
   const [behaviors, setBehaviors] = useState<Behavior[]>([]);
   const [intents, setIntents] = useState<Intent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -153,7 +157,7 @@ const BehaviorModule = () => {
             گزارش اقدامات و عملکرد خود را ثبت کنید
           </p>
         </div>
-        {!isCreating && (
+        {!isCreating && canEdit && (
           <Button 
             onClick={() => setIsCreating(true)}
             className="glow-button text-foreground"
@@ -161,6 +165,11 @@ const BehaviorModule = () => {
             <Plus className="w-4 h-4 ml-2" />
             ثبت اقدام جدید
           </Button>
+        )}
+        {!canEdit && (
+          <div className="glass-card px-4 py-2 border border-amber-500/30 bg-amber-500/10">
+            <span className="text-sm text-amber-400">حالت فقط مشاهده</span>
+          </div>
         )}
       </div>
 
