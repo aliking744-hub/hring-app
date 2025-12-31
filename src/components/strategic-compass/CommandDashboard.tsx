@@ -7,7 +7,9 @@ import {
   Users, 
   AlertTriangle,
   Activity,
-  Brain
+  Brain,
+  Eye,
+  CheckCircle2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -26,7 +28,9 @@ import {
   ScatterChart,
   Scatter,
   ZAxis,
-  Cell
+  Cell,
+  BarChart,
+  Bar
 } from "recharts";
 
 interface Behavior {
@@ -46,9 +50,24 @@ interface CompassUser {
   title: string | null;
 }
 
+interface Scenario {
+  id: string;
+  ceo_answer: string | null;
+  intent_id: string | null;
+}
+
+interface ScenarioResponse {
+  id: string;
+  scenario_id: string;
+  user_id: string;
+  answer: string;
+}
+
 const CommandDashboard = () => {
   const [behaviors, setBehaviors] = useState<Behavior[]>([]);
   const [compassUsers, setCompassUsers] = useState<CompassUser[]>([]);
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [scenarioResponses, setScenarioResponses] = useState<ScenarioResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -57,13 +76,17 @@ const CommandDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [behaviorsRes, usersRes] = await Promise.all([
+      const [behaviorsRes, usersRes, scenariosRes, responsesRes] = await Promise.all([
         supabase.from('behaviors').select('*').order('created_at', { ascending: false }).limit(100),
-        supabase.from('compass_user_roles').select('*').neq('role', 'ceo')
+        supabase.from('compass_user_roles').select('*').neq('role', 'ceo'),
+        supabase.from('scenarios').select('*').eq('is_active', true),
+        supabase.from('scenario_responses').select('*')
       ]);
 
       if (behaviorsRes.data) setBehaviors(behaviorsRes.data);
       if (usersRes.data) setCompassUsers(usersRes.data);
+      if (scenariosRes.data) setScenarios(scenariosRes.data);
+      if (responsesRes.data) setScenarioResponses(responsesRes.data);
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -214,10 +237,41 @@ const CommandDashboard = () => {
     ];
   };
 
+  // Calculate Mental Prism alignment for each user
+  const calculatePrismAlignment = () => {
+    return compassUsers.map(user => {
+      const userResponses = scenarioResponses.filter(r => r.user_id === user.user_id);
+      let alignedCount = 0;
+      let totalCount = 0;
+
+      userResponses.forEach(response => {
+        const scenario = scenarios.find(s => s.id === response.scenario_id);
+        if (scenario && scenario.ceo_answer) {
+          totalCount++;
+          if (response.answer === scenario.ceo_answer) {
+            alignedCount++;
+          }
+        }
+      });
+
+      const percentage = totalCount > 0 ? Math.round((alignedCount / totalCount) * 100) : null;
+
+      return {
+        userId: user.user_id,
+        name: user.title || user.full_name || (user.role === 'deputy' ? 'معاون' : 'مدیرکل'),
+        role: user.role,
+        alignedCount,
+        totalCount,
+        percentage
+      };
+    }).filter(u => u.totalCount > 0);
+  };
+
   const kpiData = calculateKPIs();
   const radarData = calculateRadarData();
   const alignmentMatrixData = calculateAlignmentMatrix();
   const warnings = generateWarnings();
+  const prismAlignments = calculatePrismAlignment();
 
   // Monthly pulse data (mock for now, can be enhanced with real time-series)
   const pulseData = [
@@ -383,6 +437,78 @@ const CommandDashboard = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Mental Prism Alignment */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.55 }}
+        className="glass-card p-6"
+      >
+        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+          <Eye className="w-5 h-5 text-primary" />
+          همسویی منشور ذهنی
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          درصد تطابق پاسخ‌های هر کاربر با پاسخ‌های مدیرعامل در سوالات منشور ذهنی
+        </p>
+        {prismAlignments.length > 0 ? (
+          <div className="space-y-3">
+            {prismAlignments.map((user, idx) => (
+              <motion.div
+                key={user.userId}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded ${
+                        user.role === 'deputy' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'
+                      }`}>
+                        {user.role === 'deputy' ? 'معاون' : 'مدیرکل'}
+                      </span>
+                      <span className="text-foreground font-medium">{user.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {user.alignedCount} از {user.totalCount} سوال
+                      </span>
+                      <span className={`text-lg font-bold ${
+                        user.percentage! >= 80 ? 'text-green-500' :
+                        user.percentage! >= 60 ? 'text-yellow-500' :
+                        'text-red-500'
+                      }`}>
+                        {user.percentage}%
+                      </span>
+                      {user.percentage! >= 80 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                    </div>
+                  </div>
+                  <div className="w-full h-2 bg-secondary/50 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${user.percentage}%` }}
+                      transition={{ duration: 0.8, delay: idx * 0.1 }}
+                      className={`h-full ${
+                        user.percentage! >= 80 ? 'bg-green-500' :
+                        user.percentage! >= 60 ? 'bg-yellow-500' :
+                        'bg-red-500'
+                      }`}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <Eye className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>هنوز پاسخی به سوالات منشور ذهنی ثبت نشده است</p>
+          </div>
+        )}
+      </motion.div>
 
       {/* Alignment Matrix */}
       <motion.div
