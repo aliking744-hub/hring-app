@@ -1,11 +1,13 @@
 import { DEPARTMENTS } from "./types";
-import { Filter, Layers } from "lucide-react";
+import { Filter, Layers, Clock } from "lucide-react";
 
 interface FilterControlsProps {
   selectedDepartments: string[];
   selectedLevels: string[];
+  showExpired: boolean;
   onDepartmentChange: (departments: string[]) => void;
   onLevelChange: (levels: string[]) => void;
+  onExpiredChange: (show: boolean) => void;
 }
 
 const STRATEGIC_LEVELS = [
@@ -17,8 +19,10 @@ const STRATEGIC_LEVELS = [
 const FilterControls = ({
   selectedDepartments,
   selectedLevels,
+  showExpired,
   onDepartmentChange,
   onLevelChange,
+  onExpiredChange,
 }: FilterControlsProps) => {
   const toggleDepartment = (deptId: string) => {
     if (selectedDepartments.includes(deptId)) {
@@ -119,8 +123,28 @@ const FilterControls = ({
         </div>
       </div>
 
+      {/* Expired Tasks Toggle */}
+      <div className="mb-4">
+        <button
+          onClick={() => onExpiredChange(!showExpired)}
+          className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg border transition-all duration-200 ${
+            showExpired
+              ? "border-red-400/50 bg-red-400/20 text-red-400"
+              : "border-border/50 text-muted-foreground bg-transparent hover:border-border"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span>تسک‌های منقضی</span>
+          </div>
+          <span className={`text-xs px-2 py-0.5 rounded ${showExpired ? 'bg-red-400/30' : 'bg-muted'}`}>
+            {showExpired ? 'نمایش' : 'مخفی'}
+          </span>
+        </button>
+      </div>
+
       {/* Active filter count */}
-      <div className="mt-3 pt-3 border-t border-border/30 text-center">
+      <div className="pt-3 border-t border-border/30 text-center">
         <span className="text-xs text-muted-foreground">
           فیلتر فعال:{" "}
           <span className="text-[#D4AF37] font-bold">
