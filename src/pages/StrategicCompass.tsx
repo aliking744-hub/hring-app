@@ -156,21 +156,22 @@ const StrategicCompass = () => {
     const baseTabs = [];
     
     if (isCEO) {
+      // ترتیب از راست به چپ: اولین آیتم سمت راست نمایش داده می‌شود
       baseTabs.push(
-        { id: "command", label: "داشبورد فرمان", icon: Target },
-        { id: "intent", label: "ماژول فرمان", icon: Zap },
-        { id: "analysis", label: "موتور تحلیل", icon: Brain },
-        { id: "ceo-dashboard", label: "داشبورد مدیرعامل", icon: BarChart3 },
-        { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
-        { id: "betting", label: "بازی استراتژیک", icon: Coins },
         { id: "users", label: "مدیریت کاربران", icon: Users },
+        { id: "betting", label: "بازی استراتژیک", icon: Coins },
+        { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
+        { id: "ceo-dashboard", label: "داشبورد مدیرعامل", icon: BarChart3 },
+        { id: "analysis", label: "موتور تحلیل", icon: Brain },
+        { id: "intent", label: "ماژول فرمان", icon: Zap },
+        { id: "command", label: "داشبورد فرمان", icon: Target },
       );
     } else if (isDeputy || isManager) {
       baseTabs.push(
-        { id: "behavior", label: "ماژول رفتار", icon: Activity },
-        { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
-        { id: "journal", label: "ژورنال تصمیم", icon: FileText },
         { id: "betting", label: "بازی استراتژیک", icon: Coins },
+        { id: "journal", label: "ژورنال تصمیم", icon: FileText },
+        { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
+        { id: "behavior", label: "ماژول رفتار", icon: Activity },
       );
     }
     
