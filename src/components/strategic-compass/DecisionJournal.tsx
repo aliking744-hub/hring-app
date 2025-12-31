@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoMode } from "@/contexts/DemoModeContext";
+import { DEMO_BEHAVIOR_LOGS, DEMO_DECISION_JOURNALS } from "@/data/demoData";
 
 interface Behavior {
   id: string;
@@ -48,12 +50,27 @@ const DecisionJournal = () => {
   });
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isDemoMode } = useDemoMode();
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [isDemoMode]);
 
   const fetchData = async () => {
+    if (isDemoMode) {
+      // Map behaviors for demo mode
+      const demoBehaviors = DEMO_BEHAVIOR_LOGS.map(b => ({
+        id: b.id,
+        action_description: b.action_description,
+        intent_id: b.intent_id
+      }));
+      
+      setBehaviors(demoBehaviors);
+      setJournals(DEMO_DECISION_JOURNALS as DecisionJournal[]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const [journalsRes, behaviorsRes] = await Promise.all([
         supabase.from('decision_journals').select('*').order('created_at', { ascending: false }),
@@ -71,6 +88,15 @@ const DecisionJournal = () => {
 
   const handleCreate = async () => {
     if (!user || !formData.behavior_id) return;
+
+    if (isDemoMode) {
+      toast({
+        title: "حالت نمایشی",
+        description: "در حالت نمایشی امکان ثبت وجود ندارد",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase
