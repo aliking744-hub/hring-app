@@ -59,7 +59,7 @@ const LivingTrunk = () => {
       {/* The GLB tree model - scaled and positioned appropriately */}
       <primitive 
         object={clonedScene} 
-        scale={[2.5, 2.5, 2.5]} 
+        scale={[7.5, 7.5, 7.5]} 
         position={[0, -0.5, 0]} 
         rotation={[0, 0, 0]}
       />
