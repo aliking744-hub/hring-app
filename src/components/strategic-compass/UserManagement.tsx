@@ -11,7 +11,9 @@ import {
   Crown,
   UserCheck,
   Briefcase,
-  Mail
+  Mail,
+  User,
+  Key
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,11 +32,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface CompassUser {
   id: string;
   user_id: string;
   role: 'ceo' | 'deputy' | 'manager';
+  full_name: string | null;
+  title: string | null;
   created_at: string;
   email?: string;
 }
@@ -43,12 +55,20 @@ const UserManagement = () => {
   const [users, setUsers] = useState<CompassUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<CompassUser | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     role: "deputy" as 'ceo' | 'deputy' | 'manager',
+    full_name: "",
+    title: "",
+  });
+  const [editFormData, setEditFormData] = useState({
+    role: "deputy" as 'ceo' | 'deputy' | 'manager',
+    full_name: "",
+    title: "",
+    newPassword: "",
   });
   const { user } = useAuth();
   const { toast } = useToast();
@@ -105,18 +125,23 @@ const UserManagement = () => {
         password: formData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/strategic-compass`,
+          data: {
+            full_name: formData.full_name,
+          }
         }
       });
 
       if (authError) throw authError;
 
       if (authData.user) {
-        // Add compass role
+        // Add compass role with full_name and title
         const { error: roleError } = await supabase
           .from('compass_user_roles')
           .insert({
             user_id: authData.user.id,
             role: formData.role,
+            full_name: formData.full_name || null,
+            title: formData.title || null,
           });
 
         if (roleError) throw roleError;
@@ -126,7 +151,7 @@ const UserManagement = () => {
           description: `کاربر با نقش ${getRoleLabel(formData.role)} اضافه شد`,
         });
 
-        setFormData({ email: "", password: "", role: "deputy" });
+        setFormData({ email: "", password: "", role: "deputy", full_name: "", title: "" });
         setIsCreating(false);
         fetchUsers();
       }
@@ -140,24 +165,41 @@ const UserManagement = () => {
     }
   };
 
-  const handleUpdateRole = async (id: string, newRole: 'ceo' | 'deputy' | 'manager') => {
-    try {
-      const { error } = await supabase
-        .from('compass_user_roles')
-        .update({ role: newRole })
-        .eq('id', id);
+  const handleOpenEditDialog = (compassUser: CompassUser) => {
+    setEditingUser(compassUser);
+    setEditFormData({
+      role: compassUser.role,
+      full_name: compassUser.full_name || "",
+      title: compassUser.title || "",
+      newPassword: "",
+    });
+  };
 
-      if (error) throw error;
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+
+    try {
+      // Update compass role data
+      const { error: roleError } = await supabase
+        .from('compass_user_roles')
+        .update({
+          role: editFormData.role,
+          full_name: editFormData.full_name || null,
+          title: editFormData.title || null,
+        })
+        .eq('id', editingUser.id);
+
+      if (roleError) throw roleError;
 
       toast({
         title: "بروزرسانی شد",
-        description: "نقش کاربر تغییر یافت",
+        description: "اطلاعات کاربر تغییر یافت",
       });
 
-      setEditingId(null);
+      setEditingUser(null);
       fetchUsers();
     } catch (err) {
-      console.error('Error updating role:', err);
+      console.error('Error updating user:', err);
       toast({
         title: "خطا",
         description: "مشکلی در بروزرسانی رخ داد",
@@ -289,6 +331,32 @@ const UserManagement = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+                <Label htmlFor="full_name" className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  نام و نام خانوادگی
+                </Label>
+                <Input
+                  id="full_name"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  placeholder="علی محمدی"
+                  className="mt-1.5 bg-secondary/50 border-border"
+                />
+              </div>
+              <div>
+                <Label htmlFor="title">عنوان شغلی</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="مثال: معاون مالی و اداری"
+                  className="mt-1.5 bg-secondary/50 border-border"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
                 <Label htmlFor="email" className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-muted-foreground" />
                   ایمیل
@@ -304,7 +372,10 @@ const UserManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="password">رمز عبور</Label>
+                <Label htmlFor="password" className="flex items-center gap-2">
+                  <Key className="w-4 h-4 text-muted-foreground" />
+                  رمز عبور
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -357,7 +428,7 @@ const UserManagement = () => {
                 variant="outline" 
                 onClick={() => {
                   setIsCreating(false);
-                  setFormData({ email: "", password: "", role: "deputy" });
+                  setFormData({ email: "", password: "", role: "deputy", full_name: "", title: "" });
                 }}
                 className="border-border"
               >
@@ -389,60 +460,39 @@ const UserManagement = () => {
                 </div>
                 <div>
                   <p className="text-foreground font-medium flex items-center gap-2">
-                    {compassUser.email}
+                    {compassUser.full_name || compassUser.email}
                     {isCurrentUser && (
                       <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
                         شما
                       </span>
                     )}
                   </p>
-                  {editingId === compassUser.id ? (
-                    <Select
-                      value={compassUser.role}
-                      onValueChange={(value: 'ceo' | 'deputy' | 'manager') => handleUpdateRole(compassUser.id, value)}
-                    >
-                      <SelectTrigger className="h-8 mt-1 w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ceo">مدیرعامل</SelectItem>
-                        <SelectItem value="deputy">معاون</SelectItem>
-                        <SelectItem value="manager">مدیرکل</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {getRoleLabel(compassUser.role)}
-                    </p>
+                  <p className="text-sm text-muted-foreground">
+                    {compassUser.title || getRoleLabel(compassUser.role)}
+                  </p>
+                  {compassUser.full_name && (
+                    <p className="text-xs text-muted-foreground/70">{compassUser.email}</p>
                   )}
                 </div>
               </div>
 
               {!isCurrentUser && (
                 <div className="flex items-center gap-2">
-                  {editingId === compassUser.id ? (
-                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                      بستن
-                    </Button>
-                  ) : (
-                    <>
-                      <Button 
-                        size="icon" 
-                        variant="ghost"
-                        onClick={() => setEditingId(compassUser.id)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => setDeleteId(compassUser.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </>
-                  )}
+                  <Button 
+                    size="icon" 
+                    variant="ghost"
+                    onClick={() => handleOpenEditDialog(compassUser)}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    size="icon" 
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeleteId(compassUser.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               )}
             </motion.div>
@@ -459,6 +509,63 @@ const UserManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>ویرایش کاربر</DialogTitle>
+            <DialogDescription>
+              اطلاعات کاربر را ویرایش کنید
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="edit_full_name">نام و نام خانوادگی</Label>
+              <Input
+                id="edit_full_name"
+                value={editFormData.full_name}
+                onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit_title">عنوان شغلی</Label>
+              <Input
+                id="edit_title"
+                value={editFormData.title}
+                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                placeholder="مثال: معاون مالی و اداری"
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label>سطح دسترسی</Label>
+              <Select
+                value={editFormData.role}
+                onValueChange={(value: 'ceo' | 'deputy' | 'manager') => setEditFormData({ ...editFormData, role: value })}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ceo">مدیرعامل</SelectItem>
+                  <SelectItem value="deputy">معاون</SelectItem>
+                  <SelectItem value="manager">مدیرکل</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingUser(null)}>
+              انصراف
+            </Button>
+            <Button onClick={handleUpdateUser} className="glow-button">
+              ذخیره تغییرات
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
