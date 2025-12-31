@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
@@ -10,13 +10,34 @@ import { Task } from "./types";
 interface LivingErdtreeSceneProps {
   tasks: Task[];
   newTaskIds?: string[];
+  isFullscreen?: boolean;
 }
 
-const LivingErdtreeScene = ({ tasks, newTaskIds = [] }: LivingErdtreeSceneProps) => {
+const LivingErdtreeScene = ({ tasks, newTaskIds = [], isFullscreen = false }: LivingErdtreeSceneProps) => {
+  // Handle ESC key for fullscreen exit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullscreen) {
+        // Parent handles this via state
+      }
+    };
+    
+    if (isFullscreen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFullscreen]);
+
   return (
-    <div className="w-full h-full min-h-[600px] bg-[#050508] rounded-xl overflow-hidden relative">
+    <div className={`w-full h-full ${isFullscreen ? '' : 'min-h-[600px]'} bg-[#050508] ${isFullscreen ? '' : 'rounded-xl'} overflow-hidden relative`}>
       <Canvas
-        camera={{ position: [10, 5, 10], fov: 45 }}
+        camera={{ 
+          position: isFullscreen ? [12, 6, 12] : [10, 5, 10], 
+          fov: isFullscreen ? 40 : 45 
+        }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: false }}
       >
@@ -39,7 +60,7 @@ const LivingErdtreeScene = ({ tasks, newTaskIds = [] }: LivingErdtreeSceneProps)
           <Stars
             radius={80}
             depth={60}
-            count={3000}
+            count={isFullscreen ? 5000 : 3000}
             factor={5}
             saturation={0.3}
             fade
@@ -47,7 +68,7 @@ const LivingErdtreeScene = ({ tasks, newTaskIds = [] }: LivingErdtreeSceneProps)
           />
           
           {/* Floating particles - golden motes */}
-          <Particles count={200} />
+          <Particles count={isFullscreen ? 300 : 200} />
           
           {/* The Living Erdtree */}
           <group position={[0, -2, 0]}>
@@ -78,7 +99,7 @@ const LivingErdtreeScene = ({ tasks, newTaskIds = [] }: LivingErdtreeSceneProps)
           {/* Post-processing for enhanced glow effect */}
           <EffectComposer>
             <Bloom
-              intensity={2.0}
+              intensity={isFullscreen ? 2.5 : 2.0}
               luminanceThreshold={0.15}
               luminanceSmoothing={0.9}
               mipmapBlur
@@ -86,19 +107,21 @@ const LivingErdtreeScene = ({ tasks, newTaskIds = [] }: LivingErdtreeSceneProps)
             <Vignette 
               eskil={false} 
               offset={0.1} 
-              darkness={0.8} 
+              darkness={isFullscreen ? 0.6 : 0.8} 
             />
           </EffectComposer>
           
-          {/* Camera controls */}
+          {/* Camera controls - enhanced for fullscreen */}
           <OrbitControls
             autoRotate
-            autoRotateSpeed={0.3}
-            enablePan={false}
-            minDistance={5}
-            maxDistance={18}
-            minPolarAngle={Math.PI / 6}
-            maxPolarAngle={Math.PI / 2.2}
+            autoRotateSpeed={isFullscreen ? 0.2 : 0.3}
+            enablePan={isFullscreen}
+            minDistance={isFullscreen ? 4 : 5}
+            maxDistance={isFullscreen ? 25 : 18}
+            minPolarAngle={Math.PI / 8}
+            maxPolarAngle={Math.PI / 2}
+            enableDamping
+            dampingFactor={0.05}
           />
         </Suspense>
       </Canvas>
