@@ -75,6 +75,51 @@ const BlogManager = () => {
     setShowForm(true);
   };
 
+  const resizeImage = (file: File, targetWidth: number, targetHeight: number): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+
+        // Calculate scaling to cover the target area (crop if needed)
+        const scale = Math.max(targetWidth / img.width, targetHeight / img.height);
+        const scaledWidth = img.width * scale;
+        const scaledHeight = img.height * scale;
+        const offsetX = (targetWidth - scaledWidth) / 2;
+        const offsetY = (targetHeight - scaledHeight) / 2;
+
+        // Fill with white background for transparent images
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+        
+        // Draw resized image centered
+        ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to create blob'));
+            }
+          },
+          'image/jpeg',
+          0.9
+        );
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -86,26 +131,29 @@ const BlogManager = () => {
       return;
     }
 
-    // Validate file size (max 2MB)
-    const maxSize = 2 * 1024 * 1024;
+    // Validate file size (max 5MB before resize)
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error('حداکثر حجم فایل ۲ مگابایت است');
+      toast.error('حداکثر حجم فایل ۵ مگابایت است');
       return;
     }
 
     setUploading(true);
 
     try {
+      // Resize image to 1200x630
+      const resizedBlob = await resizeImage(file, 1200, 630);
+      
       // Generate unique filename with UUID
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `blog-${crypto.randomUUID()}.${fileExt}`;
+      const fileName = `blog-${crypto.randomUUID()}.jpg`;
       const filePath = `blog/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('products')
-        .upload(filePath, file, {
+        .upload(filePath, resizedBlob, {
           cacheControl: '3600',
           upsert: false,
+          contentType: 'image/jpeg',
         });
 
       if (uploadError) throw uploadError;
@@ -115,7 +163,7 @@ const BlogManager = () => {
         .getPublicUrl(filePath);
 
       setImageUrl(publicUrl);
-      toast.success('تصویر با موفقیت آپلود شد');
+      toast.success('تصویر ریسایز و آپلود شد (۱۲۰۰×۶۳۰)');
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('خطا در آپلود تصویر');
