@@ -54,7 +54,11 @@ interface IntentAssignment {
   user_id: string;
 }
 
-const PrismResponse = () => {
+interface PrismResponseProps {
+  canEdit?: boolean;
+}
+
+const PrismResponse = ({ canEdit = true }: PrismResponseProps) => {
   const [intents, setIntents] = useState<Intent[]>([]);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [myResponses, setMyResponses] = useState<Response[]>([]);
@@ -343,9 +347,12 @@ const PrismResponse = () => {
                         <RadioGroup
                           value={currentAnswer}
                           onValueChange={(value) => {
-                            setPendingAnswers(prev => ({ ...prev, [scenario.id]: value }));
+                            if (canEdit) {
+                              setPendingAnswers(prev => ({ ...prev, [scenario.id]: value }));
+                            }
                           }}
                           className="space-y-2"
+                          disabled={!canEdit}
                         >
                           {[
                             { key: 'a', label: 'الف', value: scenario.option_a },
@@ -354,14 +361,16 @@ const PrismResponse = () => {
                           ].map((option) => (
                             <div 
                               key={option.key}
-                              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                                !canEdit ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+                              } ${
                                 currentAnswer === option.key 
                                   ? 'border-primary bg-primary/10' 
                                   : 'border-border hover:bg-secondary/50'
                               }`}
                             >
-                              <RadioGroupItem value={option.key} id={`${scenario.id}_${option.key}`} />
-                              <Label htmlFor={`${scenario.id}_${option.key}`} className="flex-1 cursor-pointer">
+                              <RadioGroupItem value={option.key} id={`${scenario.id}_${option.key}`} disabled={!canEdit} />
+                              <Label htmlFor={`${scenario.id}_${option.key}`} className={`flex-1 ${canEdit ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
                                 <span className="text-primary font-bold">{option.label})</span> {option.value}
                               </Label>
                             </div>
@@ -369,7 +378,7 @@ const PrismResponse = () => {
                         </RadioGroup>
                         
                         {/* Submit Button */}
-                        {(pendingAnswers[scenario.id] || !answered) && currentAnswer && (
+                        {canEdit && (pendingAnswers[scenario.id] || !answered) && currentAnswer && (
                           <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -394,6 +403,11 @@ const PrismResponse = () => {
                               )}
                             </Button>
                           </motion.div>
+                        )}
+                        {!canEdit && (
+                          <div className="mt-4 text-center">
+                            <span className="text-xs text-amber-400">حالت فقط مشاهده</span>
+                          </div>
                         )}
                       </motion.div>
                     );

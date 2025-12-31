@@ -32,6 +32,7 @@ import {
 
 interface Props {
   userRole: 'ceo' | 'deputy' | 'manager' | 'expert' | null;
+  canEdit?: boolean;
 }
 
 interface StrategicBet {
@@ -49,7 +50,7 @@ interface BetAllocation {
   coins: number;
 }
 
-const StrategicBetting = ({ userRole }: Props) => {
+const StrategicBetting = ({ userRole, canEdit = true }: Props) => {
   const [bets, setBets] = useState<StrategicBet[]>([]);
   const [allocations, setAllocations] = useState<BetAllocation[]>([]);
   const [userAllocations, setUserAllocations] = useState<Record<string, number>>({});
@@ -355,11 +356,12 @@ const StrategicBetting = ({ userRole }: Props) => {
             <div className="mt-4">
               <Slider
                 value={[userAllocations[bet.id] || 0]}
-                onValueChange={(value) => handleAllocationChange(bet.id, value[0])}
+                onValueChange={(value) => canEdit && handleAllocationChange(bet.id, value[0])}
                 min={0}
                 max={Math.min(TOTAL_COINS, remainingCoins + (userAllocations[bet.id] || 0))}
                 step={5}
-                className="py-2"
+                className={`py-2 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!canEdit}
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
                 <span>۰</span>
@@ -379,7 +381,7 @@ const StrategicBetting = ({ userRole }: Props) => {
           </div>
         )}
 
-        {bets.length > 0 && (
+        {bets.length > 0 && canEdit && (
           <Button 
             onClick={handleSaveAllocations} 
             className="w-full glow-button text-foreground h-12"
@@ -388,6 +390,11 @@ const StrategicBetting = ({ userRole }: Props) => {
             <Save className="w-4 h-4 ml-2" />
             ذخیره تخصیص‌ها
           </Button>
+        )}
+        {bets.length > 0 && !canEdit && (
+          <div className="glass-card p-4 text-center border border-amber-500/30 bg-amber-500/10">
+            <span className="text-sm text-amber-400">حالت فقط مشاهده - امکان تغییر تخصیص‌ها وجود ندارد</span>
+          </div>
         )}
       </div>
 
