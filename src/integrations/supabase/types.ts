@@ -224,20 +224,26 @@ export type Database = {
       compass_user_roles: {
         Row: {
           created_at: string
+          full_name: string | null
           id: string
           role: Database["public"]["Enums"]["compass_role"]
+          title: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          full_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["compass_role"]
+          title?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          full_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["compass_role"]
+          title?: string | null
           user_id?: string
         }
         Relationships: []

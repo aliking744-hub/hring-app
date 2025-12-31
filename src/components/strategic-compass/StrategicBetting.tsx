@@ -215,7 +215,7 @@ const StrategicBetting = ({ userRole }: Props) => {
         <div>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <Coins className="w-6 h-6 text-primary" />
-            شرط‌بندی استراتژیک
+            بازی استراتژیک
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             {isCEO ? "اهداف سال را تعریف کنید و سکه‌ها را تخصیص دهید" : "سکه‌های خود را بین اهداف تقسیم کنید"}
