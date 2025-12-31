@@ -12,6 +12,7 @@ const ADMIN_EMAIL = "ali_king744@yahoo.com";
 const navLinks = [
   { href: "/", label: "خانه" },
   { href: "/shop", label: "فروشگاه" },
+  { href: "/blog", label: "بلاگ" },
   { href: "/dashboard", label: "داشبورد" },
 ];
 
