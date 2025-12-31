@@ -23,14 +23,18 @@ import {
   Radar,
   Flame,
   Lightbulb,
-  Sparkles
+  Sparkles,
+  FlaskConical
 } from "lucide-react";
 import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { DemoModeProvider, useDemoMode } from "@/contexts/DemoModeContext";
 
 // Import compass components
 import CommandDashboard from "@/components/strategic-compass/CommandDashboard";
@@ -47,7 +51,8 @@ import DreamManifestation from "@/components/strategic-compass/DreamManifestatio
 
 type CompassRole = 'ceo' | 'deputy' | 'manager' | null;
 
-const StrategicCompass = () => {
+const StrategicCompassContent = () => {
+  const { isDemoMode, setIsDemoMode } = useDemoMode();
   const [compassRole, setCompassRole] = useState<CompassRole>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("command");
@@ -229,6 +234,20 @@ const StrategicCompass = () => {
             </div>
             
             <div className="flex items-center gap-3">
+              {/* Demo Mode Toggle */}
+              <div className="glass-card px-4 py-2 flex items-center gap-3">
+                <FlaskConical className={`w-4 h-4 ${isDemoMode ? 'text-amber-500' : 'text-muted-foreground'}`} />
+                <Label htmlFor="demo-mode" className="text-sm text-foreground cursor-pointer">
+                  داده‌های فرضی
+                </Label>
+                <Switch
+                  id="demo-mode"
+                  checked={isDemoMode}
+                  onCheckedChange={setIsDemoMode}
+                  className="data-[state=checked]:bg-amber-500"
+                />
+              </div>
+              
               <div className="glass-card px-4 py-2 flex items-center gap-2">
                 <Shield className="w-4 h-4 text-primary" />
                 <span className="text-sm text-foreground">{user?.email}</span>
@@ -321,6 +340,14 @@ const StrategicCompass = () => {
         </div>
       </div>
     </>
+  );
+};
+
+const StrategicCompass = () => {
+  return (
+    <DemoModeProvider>
+      <StrategicCompassContent />
+    </DemoModeProvider>
   );
 };
 
