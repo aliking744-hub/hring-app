@@ -15,11 +15,14 @@ import {
   Sparkles,
   RefreshCw,
   ShieldAlert,
-  Languages
+  Languages,
+  FlaskConical
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useDemoMode } from "@/contexts/DemoModeContext";
+import { DEMO_INTENTS, DEMO_BEHAVIORS, DEMO_SCENARIOS, DEMO_SCENARIO_RESPONSES, DEMO_COMPASS_USERS } from "@/data/demoData";
 import { 
   LineChart, 
   Line, 
@@ -28,7 +31,7 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  BarChart,
+  BarChart as RechartsBarChart,
   Bar,
   PieChart,
   Pie,
@@ -93,11 +96,25 @@ const CEODashboard = () => {
   const [isAnalyzingWarning, setIsAnalyzingWarning] = useState(false);
   const [isAnalyzingRisk, setIsAnalyzingRisk] = useState(false);
 
+  const { isDemoMode } = useDemoMode();
+
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [isDemoMode]);
 
   const fetchData = async () => {
+    setIsLoading(true);
+    
+    if (isDemoMode) {
+      setIntents(DEMO_INTENTS as Intent[]);
+      setBehaviors(DEMO_BEHAVIORS as Behavior[]);
+      setScenarios(DEMO_SCENARIOS as Scenario[]);
+      setResponses(DEMO_SCENARIO_RESPONSES as ScenarioResponse[]);
+      setCompassUsers(DEMO_COMPASS_USERS as CompassUser[]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const [intentsRes, behaviorsRes, scenariosRes, responsesRes, usersRes] = await Promise.all([
         supabase.from('strategic_intents').select('*').eq('status', 'active'),
@@ -437,7 +454,7 @@ ${userComparison.map(u => `- ${u.name} (${u.role === 'deputy' ? 'معاون' : '
           {alignmentByIntent.length > 0 ? (
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={alignmentByIntent} layout="vertical">
+                <RechartsBarChart data={alignmentByIntent} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis type="number" domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
                   <YAxis dataKey="name" type="category" stroke="hsl(var(--muted-foreground))" fontSize={10} width={100} />
@@ -457,7 +474,7 @@ ${userComparison.map(u => `- ${u.name} (${u.role === 'deputy' ? 'معاون' : '
                       />
                     ))}
                   </Bar>
-                </BarChart>
+                </RechartsBarChart>
               </ResponsiveContainer>
             </div>
           ) : (
@@ -484,7 +501,7 @@ ${userComparison.map(u => `- ${u.name} (${u.role === 'deputy' ? 'معاون' : '
           {userComparison.length > 0 ? (
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={userComparison}>
+                <RechartsBarChart data={userComparison}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={10} />
                   <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
@@ -507,7 +524,7 @@ ${userComparison.map(u => `- ${u.name} (${u.role === 'deputy' ? 'معاون' : '
                       />
                     ))}
                   </Bar>
-                </BarChart>
+                </RechartsBarChart>
               </ResponsiveContainer>
             </div>
           ) : (

@@ -15,7 +15,8 @@ import {
   Loader2,
   Target,
   Edit2,
-  Save
+  Save,
+  FlaskConical
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoMode } from "@/contexts/DemoModeContext";
+import { DEMO_INTENTS, DEMO_SCENARIOS, DEMO_SCENARIO_RESPONSES, DEMO_COMPASS_USERS, DEMO_INTENT_ASSIGNMENTS } from "@/data/demoData";
 import {
   Select,
   SelectContent,
@@ -94,12 +97,25 @@ const MentalPrism = () => {
   const [editingAnswer, setEditingAnswer] = useState<string>("");
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isDemoMode } = useDemoMode();
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [isDemoMode]);
 
   const fetchData = async () => {
+    setIsLoading(true);
+    
+    if (isDemoMode) {
+      setIntents(DEMO_INTENTS as Intent[]);
+      setScenarios(DEMO_SCENARIOS as Scenario[]);
+      setResponses(DEMO_SCENARIO_RESPONSES as Response[]);
+      setCompassUsers(DEMO_COMPASS_USERS as CompassUser[]);
+      setAssignments(DEMO_INTENT_ASSIGNMENTS as IntentAssignment[]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const [intentsRes, scenariosRes, responsesRes, usersRes, assignmentsRes] = await Promise.all([
         supabase.from('strategic_intents').select('*').eq('status', 'active'),
