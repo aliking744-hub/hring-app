@@ -526,6 +526,42 @@ export type Database = {
         }
         Relationships: []
       }
+      strategic_achievements: {
+        Row: {
+          completed_at: string
+          created_at: string
+          department_id: string
+          department_name: string
+          id: string
+          name: string
+          owner_name: string
+          strategic_importance: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          department_id: string
+          department_name: string
+          id?: string
+          name: string
+          owner_name: string
+          strategic_importance?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          department_id?: string
+          department_name?: string
+          id?: string
+          name?: string
+          owner_name?: string
+          strategic_importance?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       strategic_bets: {
         Row: {
           ceo_id: string

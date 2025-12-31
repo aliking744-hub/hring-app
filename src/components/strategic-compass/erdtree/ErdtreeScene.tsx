@@ -9,9 +9,10 @@ import { Task } from "./types";
 
 interface ErdtreeSceneProps {
   tasks: Task[];
+  newTaskIds?: string[];
 }
 
-const ErdtreeScene = ({ tasks }: ErdtreeSceneProps) => {
+const ErdtreeScene = ({ tasks, newTaskIds = [] }: ErdtreeSceneProps) => {
   return (
     <div className="w-full h-full min-h-[600px] bg-[#0a0a12] rounded-xl overflow-hidden relative">
       <Canvas
@@ -43,7 +44,7 @@ const ErdtreeScene = ({ tasks }: ErdtreeSceneProps) => {
           {/* The Erdtree */}
           <group position={[0, -1, 0]}>
             <Trunk />
-            <LeafCluster tasks={tasks} />
+            <LeafCluster tasks={tasks} newTaskIds={newTaskIds} />
           </group>
           
           {/* Post-processing for glow effect */}
