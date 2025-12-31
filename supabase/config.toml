@@ -20,15 +20,3 @@ verify_jwt = false
 
 [functions.analyze-candidates]
 verify_jwt = false
-
-[functions.analyze-compass-deviations]
-verify_jwt = false
-
-[functions.generate-compass-scenarios]
-verify_jwt = true
-
-[functions.compass-translation-risk]
-verify_jwt = false
-
-[functions.compass-update-password]
-verify_jwt = true

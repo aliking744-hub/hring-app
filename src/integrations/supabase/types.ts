@@ -14,85 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      behaviors: {
-        Row: {
-          action_description: string
-          alignment_score: number | null
-          created_at: string
-          deputy_id: string
-          id: string
-          intent_id: string
-          notes: string | null
-          resources_used: number
-          result_score: number | null
-          time_spent: number
-        }
-        Insert: {
-          action_description: string
-          alignment_score?: number | null
-          created_at?: string
-          deputy_id: string
-          id?: string
-          intent_id: string
-          notes?: string | null
-          resources_used?: number
-          result_score?: number | null
-          time_spent?: number
-        }
-        Update: {
-          action_description?: string
-          alignment_score?: number | null
-          created_at?: string
-          deputy_id?: string
-          id?: string
-          intent_id?: string
-          notes?: string | null
-          resources_used?: number
-          result_score?: number | null
-          time_spent?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "behaviors_intent_id_fkey"
-            columns: ["intent_id"]
-            isOneToOne: false
-            referencedRelation: "strategic_intents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      bet_allocations: {
-        Row: {
-          bet_id: string
-          coins: number
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          bet_id: string
-          coins?: number
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          bet_id?: string
-          coins?: number
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bet_allocations_bet_id_fkey"
-            columns: ["bet_id"]
-            isOneToOne: false
-            referencedRelation: "strategic_bets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       campaigns: {
         Row: {
           auto_headhunting: boolean | null
@@ -221,62 +142,6 @@ export type Database = {
           },
         ]
       }
-      compass_user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["compass_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["compass_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["compass_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
-      decision_journals: {
-        Row: {
-          behavior_id: string
-          created_at: string
-          id: string
-          rejected_options: string
-          risk_prediction: string
-          supporting_data: string
-        }
-        Insert: {
-          behavior_id: string
-          created_at?: string
-          id?: string
-          rejected_options: string
-          risk_prediction: string
-          supporting_data: string
-        }
-        Update: {
-          behavior_id?: string
-          created_at?: string
-          id?: string
-          rejected_options?: string
-          risk_prediction?: string
-          supporting_data?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "decision_journals_behavior_id_fkey"
-            columns: ["behavior_id"]
-            isOneToOne: true
-            referencedRelation: "behaviors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       digital_products: {
         Row: {
           category: string | null
@@ -319,35 +184,6 @@ export type Database = {
         }
         Relationships: []
       }
-      intent_assignments: {
-        Row: {
-          created_at: string
-          id: string
-          intent_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          intent_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          intent_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "intent_assignments_intent_id_fkey"
-            columns: ["intent_id"]
-            isOneToOne: false
-            referencedRelation: "strategic_intents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       posts: {
         Row: {
           author_id: string | null
@@ -386,112 +222,21 @@ export type Database = {
       }
       profiles: {
         Row: {
-          avatar_url: string | null
           created_at: string
           email: string | null
-          full_name: string | null
           id: string
-          title: string | null
         }
         Insert: {
-          avatar_url?: string | null
           created_at?: string
           email?: string | null
-          full_name?: string | null
           id: string
-          title?: string | null
         }
         Update: {
-          avatar_url?: string | null
           created_at?: string
           email?: string | null
-          full_name?: string | null
           id?: string
-          title?: string | null
         }
         Relationships: []
-      }
-      scenario_responses: {
-        Row: {
-          answer: string
-          created_at: string
-          id: string
-          scenario_id: string
-          user_id: string
-        }
-        Insert: {
-          answer: string
-          created_at?: string
-          id?: string
-          scenario_id: string
-          user_id: string
-        }
-        Update: {
-          answer?: string
-          created_at?: string
-          id?: string
-          scenario_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scenario_responses_scenario_id_fkey"
-            columns: ["scenario_id"]
-            isOneToOne: false
-            referencedRelation: "scenarios"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scenarios: {
-        Row: {
-          category: string
-          ceo_answer: string | null
-          ceo_id: string | null
-          created_at: string
-          id: string
-          intent_id: string | null
-          is_active: boolean
-          option_a: string
-          option_b: string
-          option_c: string
-          question: string
-        }
-        Insert: {
-          category?: string
-          ceo_answer?: string | null
-          ceo_id?: string | null
-          created_at?: string
-          id?: string
-          intent_id?: string | null
-          is_active?: boolean
-          option_a: string
-          option_b: string
-          option_c: string
-          question: string
-        }
-        Update: {
-          category?: string
-          ceo_answer?: string | null
-          ceo_id?: string | null
-          created_at?: string
-          id?: string
-          intent_id?: string | null
-          is_active?: boolean
-          option_a?: string
-          option_b?: string
-          option_c?: string
-          question?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scenarios_intent_id_fkey"
-            columns: ["intent_id"]
-            isOneToOne: false
-            referencedRelation: "strategic_intents"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       site_settings: {
         Row: {
@@ -517,69 +262,6 @@ export type Database = {
           label?: string | null
           updated_at?: string
           value?: string | null
-        }
-        Relationships: []
-      }
-      strategic_bets: {
-        Row: {
-          ceo_id: string
-          created_at: string
-          goal_description: string | null
-          goal_title: string
-          id: string
-          year: number
-        }
-        Insert: {
-          ceo_id: string
-          created_at?: string
-          goal_description?: string | null
-          goal_title: string
-          id?: string
-          year?: number
-        }
-        Update: {
-          ceo_id?: string
-          created_at?: string
-          goal_description?: string | null
-          goal_title?: string
-          id?: string
-          year?: number
-        }
-        Relationships: []
-      }
-      strategic_intents: {
-        Row: {
-          ceo_id: string
-          created_at: string
-          description: string
-          id: string
-          status: string
-          strategic_weight: number
-          title: string
-          tolerance_zone: number
-          updated_at: string
-        }
-        Insert: {
-          ceo_id: string
-          created_at?: string
-          description: string
-          id?: string
-          status?: string
-          strategic_weight?: number
-          title: string
-          tolerance_zone?: number
-          updated_at?: string
-        }
-        Update: {
-          ceo_id?: string
-          created_at?: string
-          description?: string
-          id?: string
-          status?: string
-          strategic_weight?: number
-          title?: string
-          tolerance_zone?: number
-          updated_at?: string
         }
         Relationships: []
       }
@@ -664,13 +346,6 @@ export type Database = {
     Functions: {
       deduct_credits: { Args: { amount: number }; Returns: boolean }
       get_user_credits: { Args: never; Returns: number }
-      has_compass_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["compass_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -678,11 +353,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_ceo: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      compass_role: "ceo" | "deputy" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -811,7 +484,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      compass_role: ["ceo", "deputy", "manager"],
     },
   },
 } as const
