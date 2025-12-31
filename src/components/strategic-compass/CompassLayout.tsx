@@ -26,7 +26,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const CompassLayout = () => {
+interface CompassLayoutProps {
+  children?: React.ReactNode;
+}
+
+const CompassLayout = ({ children }: CompassLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, role, loading, signOut, isCeo } = useCompassAuth();
@@ -170,7 +174,7 @@ const CompassLayout = () => {
 
         {/* Main Content */}
         <main className="flex-1 p-6">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>

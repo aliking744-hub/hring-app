@@ -30,6 +30,17 @@ import CandidateDetail from "./pages/CandidateDetail";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
+// Strategic Compass
+import CompassAuth from "./pages/strategic-compass/CompassAuth";
+import CompassDashboard from "./pages/strategic-compass/CompassDashboard";
+import StrategicIntents from "./pages/strategic-compass/StrategicIntents";
+import Behaviors from "./pages/strategic-compass/Behaviors";
+import Scenarios from "./pages/strategic-compass/Scenarios";
+import StrategicBets from "./pages/strategic-compass/StrategicBets";
+import DecisionJournal from "./pages/strategic-compass/DecisionJournal";
+import UsersManagement from "./pages/strategic-compass/UsersManagement";
+import { CompassAuthProvider } from "./contexts/CompassAuthContext";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -174,6 +185,15 @@ const App = () => (
                   </AdminRoute>
                 } 
               />
+              {/* Strategic Compass Routes */}
+              <Route path="/strategic-compass" element={<CompassAuthProvider><CompassAuth /></CompassAuthProvider>} />
+              <Route path="/strategic-compass/dashboard" element={<CompassAuthProvider><CompassDashboard /></CompassAuthProvider>} />
+              <Route path="/strategic-compass/dashboard/intents" element={<CompassAuthProvider><StrategicIntents /></CompassAuthProvider>} />
+              <Route path="/strategic-compass/dashboard/behaviors" element={<CompassAuthProvider><Behaviors /></CompassAuthProvider>} />
+              <Route path="/strategic-compass/dashboard/scenarios" element={<CompassAuthProvider><Scenarios /></CompassAuthProvider>} />
+              <Route path="/strategic-compass/dashboard/bets" element={<CompassAuthProvider><StrategicBets /></CompassAuthProvider>} />
+              <Route path="/strategic-compass/dashboard/journal" element={<CompassAuthProvider><DecisionJournal /></CompassAuthProvider>} />
+              <Route path="/strategic-compass/dashboard/users" element={<CompassAuthProvider><UsersManagement /></CompassAuthProvider>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
               </Routes>
