@@ -65,6 +65,7 @@ const IntentModule = () => {
     strategic_weight: 5,
     tolerance_zone: 5,
   });
+  const [createSelectedUsers, setCreateSelectedUsers] = useState<string[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
   const { isDemoMode } = useDemoMode();
@@ -104,8 +105,17 @@ const IntentModule = () => {
   const handleCreate = async () => {
     if (!user) return;
     
+    if (isDemoMode) {
+      toast({
+        title: "حالت نمایشی",
+        description: "در حالت نمایشی امکان ثبت وجود ندارد",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      const { error } = await supabase
+      const { data: newIntent, error } = await supabase
         .from('strategic_intents')
         .insert({
           title: formData.title,
@@ -113,9 +123,25 @@ const IntentModule = () => {
           strategic_weight: formData.strategic_weight,
           tolerance_zone: formData.tolerance_zone,
           ceo_id: user.id,
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // If users are selected, create assignments
+      if (createSelectedUsers.length > 0 && newIntent) {
+        const newAssignments = createSelectedUsers.map(userId => ({
+          intent_id: newIntent.id,
+          user_id: userId,
+        }));
+
+        const { error: assignError } = await supabase
+          .from('intent_assignments')
+          .insert(newAssignments);
+
+        if (assignError) console.error('Error assigning users:', assignError);
+      }
 
       toast({
         title: "فرمان ثبت شد",
@@ -123,6 +149,7 @@ const IntentModule = () => {
       });
 
       setFormData({ title: "", description: "", strategic_weight: 5, tolerance_zone: 5 });
+      setCreateSelectedUsers([]);
       setIsCreating(false);
       fetchData();
     } catch (err) {
@@ -380,6 +407,65 @@ const IntentModule = () => {
               </div>
             </div>
 
+            {/* Assign Users Section in Create Form */}
+            <div className="border-t border-border pt-5">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  اختصاص افراد مسئول
+                </Label>
+                <span className="text-sm text-muted-foreground">
+                  {createSelectedUsers.length} نفر انتخاب شده
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                افرادی که باید در اجرای این فرمان مشارکت داشته باشند را انتخاب کنید
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                {compassUsers.map(compassUser => (
+                  <div
+                    key={compassUser.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      createSelectedUsers.includes(compassUser.user_id)
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:bg-secondary/50'
+                    }`}
+                    onClick={() => {
+                      setCreateSelectedUsers(prev => 
+                        prev.includes(compassUser.user_id) 
+                          ? prev.filter(id => id !== compassUser.user_id)
+                          : [...prev, compassUser.user_id]
+                      );
+                    }}
+                  >
+                    <Checkbox
+                      checked={createSelectedUsers.includes(compassUser.user_id)}
+                      onCheckedChange={() => {
+                        setCreateSelectedUsers(prev => 
+                          prev.includes(compassUser.user_id) 
+                            ? prev.filter(id => id !== compassUser.user_id)
+                            : [...prev, compassUser.user_id]
+                        );
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate">
+                        {compassUser.full_name || compassUser.title || 'کاربر'}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {compassUser.title || (compassUser.role === 'deputy' ? 'معاون' : 'مدیرکل')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {compassUsers.length === 0 && (
+                  <p className="col-span-full text-center text-muted-foreground py-4">
+                    هنوز کاربری تعریف نشده است
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div className="flex items-center gap-3 pt-2">
               <Button onClick={handleCreate} className="glow-button text-foreground">
                 <Save className="w-4 h-4 ml-2" />
@@ -389,6 +475,7 @@ const IntentModule = () => {
                 variant="outline" 
                 onClick={() => {
                   setIsCreating(false);
+                  setCreateSelectedUsers([]);
                   setFormData({ title: "", description: "", strategic_weight: 5, tolerance_zone: 5 });
                 }}
                 className="border-border"
