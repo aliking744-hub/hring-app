@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import ErdtreeScene from "./ErdtreeScene";
+import LivingErdtreeScene from "./LivingErdtreeScene";
 import DepartmentLegend from "./DepartmentLegend";
 import StrategicLegend from "./StrategicLegend";
 import ControlsHint from "./ControlsHint";
 import FilterControls, { STRATEGIC_LEVELS } from "./FilterControls";
 import { Sparkles, Loader2 } from "lucide-react";
-import { DEPARTMENTS, SAMPLE_TASKS } from "./types";
+import { DEPARTMENTS } from "./types";
 import { useStrategicAchievements } from "@/hooks/useStrategicAchievements";
 
 const StrategicErdtree = () => {
@@ -49,7 +49,7 @@ const StrategicErdtree = () => {
       <div className="text-center mb-6" dir="rtl">
         <div className="inline-flex items-center gap-3 mb-2">
           <Sparkles className="w-6 h-6 text-[#D4AF37]" />
-          <h2 className="text-2xl font-bold text-foreground">درخت استراتژیک ارد</h2>
+          <h2 className="text-2xl font-bold text-foreground">درخت استراتژیک</h2>
           <Sparkles className="w-6 h-6 text-[#D4AF37]" />
         </div>
         <p className="text-muted-foreground text-sm max-w-md mx-auto">
@@ -67,7 +67,7 @@ const StrategicErdtree = () => {
             </div>
           </div>
         ) : (
-          <ErdtreeScene tasks={filteredTasks} newTaskIds={newTaskIds} />
+          <LivingErdtreeScene tasks={filteredTasks} newTaskIds={newTaskIds} />
         )}
         <FilterControls
           selectedDepartments={selectedDepartments}
