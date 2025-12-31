@@ -9,7 +9,8 @@ import {
   Activity,
   Brain,
   Eye,
-  CheckCircle2
+  CheckCircle2,
+  FlaskConical
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -32,6 +33,8 @@ import {
   BarChart,
   Bar
 } from "recharts";
+import { useDemoMode } from "@/contexts/DemoModeContext";
+import { DEMO_BEHAVIORS, DEMO_COMPASS_USERS, DEMO_SCENARIOS, DEMO_SCENARIO_RESPONSES } from "@/data/demoData";
 
 interface Behavior {
   id: string;
@@ -69,12 +72,25 @@ const CommandDashboard = () => {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [scenarioResponses, setScenarioResponses] = useState<ScenarioResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const { isDemoMode } = useDemoMode();
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [isDemoMode]);
 
   const fetchData = async () => {
+    setIsLoading(true);
+    
+    if (isDemoMode) {
+      setBehaviors(DEMO_BEHAVIORS);
+      setCompassUsers(DEMO_COMPASS_USERS);
+      setScenarios(DEMO_SCENARIOS);
+      setScenarioResponses(DEMO_SCENARIO_RESPONSES);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const [behaviorsRes, usersRes, scenariosRes, responsesRes] = await Promise.all([
         supabase.from('behaviors').select('*').order('created_at', { ascending: false }).limit(100),

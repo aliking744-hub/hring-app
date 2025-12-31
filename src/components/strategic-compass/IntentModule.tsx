@@ -11,7 +11,8 @@ import {
   Scale,
   Gauge,
   Users,
-  UserPlus
+  UserPlus,
+  FlaskConical
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoMode } from "@/contexts/DemoModeContext";
+import { DEMO_INTENTS, DEMO_COMPASS_USERS, DEMO_INTENT_ASSIGNMENTS } from "@/data/demoData";
 
 interface Intent {
   id: string;
@@ -64,12 +67,23 @@ const IntentModule = () => {
   });
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isDemoMode } = useDemoMode();
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [isDemoMode]);
 
   const fetchData = async () => {
+    setIsLoading(true);
+    
+    if (isDemoMode) {
+      setIntents(DEMO_INTENTS as Intent[]);
+      setCompassUsers(DEMO_COMPASS_USERS as CompassUser[]);
+      setAssignments(DEMO_INTENT_ASSIGNMENTS as IntentAssignment[]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const [intentsRes, usersRes, assignmentsRes] = await Promise.all([
         supabase.from('strategic_intents').select('*').order('created_at', { ascending: false }),
