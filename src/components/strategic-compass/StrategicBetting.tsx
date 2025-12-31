@@ -17,6 +17,8 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoMode } from "@/contexts/DemoModeContext";
+import { DEMO_STRATEGIC_BETS, DEMO_BET_ALLOCATIONS } from "@/data/demoData";
 import { 
   BarChart, 
   Bar, 
@@ -59,15 +61,33 @@ const StrategicBetting = ({ userRole }: Props) => {
   });
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isDemoMode } = useDemoMode();
 
   const TOTAL_COINS = 100;
   const isCEO = userRole === 'ceo';
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [isDemoMode]);
 
   const fetchData = async () => {
+    setIsLoading(true);
+    
+    if (isDemoMode) {
+      setBets(DEMO_STRATEGIC_BETS as StrategicBet[]);
+      setAllocations(DEMO_BET_ALLOCATIONS as BetAllocation[]);
+      // Set demo user allocations
+      const demoUserAllocs: Record<string, number> = {};
+      DEMO_BET_ALLOCATIONS.forEach(a => {
+        if (a.user_id === "demo-user-id-1") {
+          demoUserAllocs[a.bet_id] = a.coins;
+        }
+      });
+      setUserAllocations(demoUserAllocs);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const [betsRes, allocationsRes] = await Promise.all([
         supabase.from('strategic_bets').select('*').eq('year', new Date().getFullYear()),
