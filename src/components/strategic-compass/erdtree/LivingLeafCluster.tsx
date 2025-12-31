@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import LivingLeaf from "./LivingLeaf";
-import Tendrils from "./Tendrils";
 import { Task } from "./types";
 
 interface LivingLeafClusterProps {
@@ -14,25 +13,25 @@ const LivingLeafCluster = ({ tasks, newTaskIds = [] }: LivingLeafClusterProps) =
       // Strategic placement based on importance
       const importance = task.strategicImportance;
       
-      // Y position: Higher importance = higher on tree
-      // Level 1-4: Base (y: 1.5-2.5)
-      // Level 5-7: Middle (y: 2.5-4.5)
-      // Level 8-10: Top (y: 4.5-6)
+      // Y position: Higher importance = higher on tree (but keep within bounds)
+      // Level 1-4: Base (y: 0.5-1.5)
+      // Level 5-7: Middle (y: 1.5-3)
+      // Level 8-10: Top (y: 3-4.5)
       let baseY: number;
       if (importance <= 4) {
-        baseY = 1.5 + (importance - 1) * 0.3;
+        baseY = 0.5 + (importance - 1) * 0.25;
       } else if (importance <= 7) {
-        baseY = 2.5 + (importance - 5) * 0.6;
+        baseY = 1.5 + (importance - 5) * 0.5;
       } else {
-        baseY = 4.5 + (importance - 8) * 0.5;
+        baseY = 3 + (importance - 8) * 0.5;
       }
       
-      // Add some randomness
-      const y = baseY + Math.random() * 0.4;
+      // Add some randomness but keep bounded
+      const y = baseY + Math.random() * 0.3;
       
-      // Radial position around the trunk - further out
-      const angle = (index / tasks.length) * Math.PI * 2 + Math.random() * 0.4;
-      const radius = 1.5 + Math.random() * 1.0 + (importance / 10) * 0.8;
+      // Radial position around the trunk - floating freely
+      const angle = (index / tasks.length) * Math.PI * 2 + Math.random() * 0.5;
+      const radius = 1.0 + Math.random() * 1.5 + (importance / 10) * 0.5;
       
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
@@ -47,10 +46,7 @@ const LivingLeafCluster = ({ tasks, newTaskIds = [] }: LivingLeafClusterProps) =
 
   return (
     <group>
-      {/* Tendrils connecting leaves to branches */}
-      <Tendrils tasks={tasks} leafPositions={leafPositions} />
-      
-      {/* Leaves */}
+      {/* Floating leaves without tendrils */}
       {leafPositions.map(({ task, position, isNew }) => (
         <LivingLeaf key={task.id} task={task} position={position} isNew={isNew} />
       ))}
