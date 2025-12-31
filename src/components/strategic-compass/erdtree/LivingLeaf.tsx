@@ -8,9 +8,10 @@ interface LivingLeafProps {
   task: Task;
   position: [number, number, number];
   isNew?: boolean;
+  isExpired?: boolean;
 }
 
-const LivingLeaf = ({ task, position, isNew = false }: LivingLeafProps) => {
+const LivingLeaf = ({ task, position, isNew = false, isExpired = false }: LivingLeafProps) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
@@ -48,32 +49,48 @@ const LivingLeaf = ({ task, position, isNew = false }: LivingLeafProps) => {
     const time = state.clock.elapsedTime;
     
     if (meshRef.current) {
-      // Gentle floating animation
-      meshRef.current.position.y = position[1] + Math.sin(time * 1.5 + position[0] * 2) * 0.03;
+      if (isExpired) {
+        // Expired leaves: lay flat on ground with no animation
+        meshRef.current.position.y = position[1];
+        meshRef.current.rotation.x = Math.PI / 2 + Math.sin(position[0]) * 0.2;
+        meshRef.current.rotation.z = Math.sin(position[2]) * 0.3;
+      } else {
+        // Gentle floating animation for active leaves
+        meshRef.current.position.y = position[1] + Math.sin(time * 1.5 + position[0] * 2) * 0.03;
+      }
       
       // Pulsing emissive - synced with tree's energy flow
       const material = meshRef.current.material as THREE.MeshStandardMaterial;
       
-      // Calculate pulse based on position (energy flows upward)
-      const flowPhase = (position[1] * 0.15 - time * 0.08) % 1;
-      const energyPulse = Math.max(0, Math.sin(flowPhase * Math.PI * 2)) * 0.5;
-      
-      const baseIntensity = isNew && growthProgress < 1 ? 2.5 : 1.0;
-      material.emissiveIntensity = baseIntensity + energyPulse + Math.sin(time * 2) * 0.2;
+      if (isExpired) {
+        // Dim, faded appearance for expired
+        material.emissiveIntensity = 0.15;
+      } else {
+        // Calculate pulse based on position (energy flows upward)
+        const flowPhase = (position[1] * 0.15 - time * 0.08) % 1;
+        const energyPulse = Math.max(0, Math.sin(flowPhase * Math.PI * 2)) * 0.5;
+        
+        const baseIntensity = isNew && growthProgress < 1 ? 2.5 : 1.0;
+        material.emissiveIntensity = baseIntensity + energyPulse + Math.sin(time * 2) * 0.2;
+      }
       
       // Scale on hover + growth animation
-      const baseScale = growthProgress * 0.1;
+      const baseScale = growthProgress * (isExpired ? 0.07 : 0.1);
       const hoverScale = hovered ? 1.8 : 1;
       const targetScale = baseScale * hoverScale;
       meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
     }
     
     if (glowRef.current) {
-      // Outer glow pulse
+      // Outer glow pulse - no glow for expired
       const material = glowRef.current.material as THREE.MeshBasicMaterial;
-      const flowPhase = (position[1] * 0.15 - time * 0.08) % 1;
-      const energyPulse = Math.max(0, Math.sin(flowPhase * Math.PI * 2)) * 0.3;
-      material.opacity = (0.2 + energyPulse) * growthProgress;
+      if (isExpired) {
+        material.opacity = 0.05;
+      } else {
+        const flowPhase = (position[1] * 0.15 - time * 0.08) % 1;
+        const energyPulse = Math.max(0, Math.sin(flowPhase * Math.PI * 2)) * 0.3;
+        material.opacity = (0.2 + energyPulse) * growthProgress;
+      }
     }
   });
 
@@ -90,13 +107,13 @@ const LivingLeaf = ({ task, position, isNew = false }: LivingLeafProps) => {
       >
         <sphereGeometry args={[1, 20, 20]} />
         <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={1.2}
+          color={isExpired ? "#555555" : color}
+          emissive={isExpired ? "#333333" : color}
+          emissiveIntensity={isExpired ? 0.15 : 1.2}
           transparent
-          opacity={0.95 * growthProgress}
-          metalness={0.3}
-          roughness={0.4}
+          opacity={(isExpired ? 0.5 : 0.95) * growthProgress}
+          metalness={isExpired ? 0.1 : 0.3}
+          roughness={isExpired ? 0.8 : 0.4}
         />
       </mesh>
       
@@ -146,6 +163,9 @@ const LivingLeaf = ({ task, position, isNew = false }: LivingLeafProps) => {
             </div>
             {isNew && (
               <p className="text-[#D4AF37] text-xs mt-2 font-bold text-center">✨ تازه اضافه شده!</p>
+            )}
+            {isExpired && (
+              <p className="text-red-400 text-xs mt-2 font-bold text-center">⚠️ منقضی شده</p>
             )}
           </div>
         </Html>

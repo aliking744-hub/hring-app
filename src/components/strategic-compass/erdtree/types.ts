@@ -23,6 +23,13 @@ export const DEPARTMENTS: Department[] = [
   { id: "operations", name: "عملیات", color: "#ff6600" }, // Neon Orange
 ];
 
+// Helper to create dates in the past
+const daysAgo = (days: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date;
+};
+
 export const SAMPLE_TASKS: Task[] = [
   // Visionary Tasks (8-10)
   { id: "1", name: "استراتژی توسعه بین‌المللی", ownerName: "علی محمدی", departmentId: "sales", departmentName: "فروش", strategicImportance: 10, completedAt: new Date() },
@@ -56,4 +63,11 @@ export const SAMPLE_TASKS: Task[] = [
   { id: "23", name: "توسعه موبایل", ownerName: "آتنا رستمی", departmentId: "tech", departmentName: "فناوری", strategicImportance: 8, completedAt: new Date() },
   { id: "24", name: "ارزیابی عملکرد", ownerName: "شهاب منصوری", departmentId: "hr", departmentName: "منابع انسانی", strategicImportance: 5, completedAt: new Date() },
   { id: "25", name: "حسابرسی داخلی", ownerName: "گلناز واحدی", departmentId: "finance", departmentName: "مالی", strategicImportance: 4, completedAt: new Date() },
+  
+  // Expired Tasks (completed more than 30 days ago - will fall to ground)
+  { id: "26", name: "پروژه قدیمی A", ownerName: "امین صالحی", departmentId: "tech", departmentName: "فناوری", strategicImportance: 7, completedAt: daysAgo(45) },
+  { id: "27", name: "کمپین منقضی", ownerName: "سمیرا افشار", departmentId: "marketing", departmentName: "بازاریابی", strategicImportance: 5, completedAt: daysAgo(60) },
+  { id: "28", name: "قرارداد تمام‌شده", ownerName: "نوید کریمی", departmentId: "sales", departmentName: "فروش", strategicImportance: 8, completedAt: daysAgo(50) },
+  { id: "29", name: "آموزش گذشته", ownerName: "مهسا رحمانی", departmentId: "hr", departmentName: "منابع انسانی", strategicImportance: 4, completedAt: daysAgo(40) },
+  { id: "30", name: "گزارش مالی قبلی", ownerName: "بهنام توکلی", departmentId: "finance", departmentName: "مالی", strategicImportance: 3, completedAt: daysAgo(55) },
 ];
