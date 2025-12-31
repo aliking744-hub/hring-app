@@ -198,3 +198,47 @@ export const DEMO_BET_ALLOCATIONS = [
   { id: "demo-alloc-5", bet_id: "demo-bet-3", user_id: "demo-user-id-5", coins: 60, created_at: "2024-02-12T10:00:00Z" },
   { id: "demo-alloc-6", bet_id: "demo-bet-3", user_id: "demo-user-id-4", coins: 30, created_at: "2024-02-12T11:00:00Z" },
 ];
+
+// Demo Behavior Logs (for BehaviorModule)
+export const DEMO_BEHAVIOR_LOGS = [
+  {
+    id: "demo-behavior-log-1",
+    intent_id: "demo-intent-1",
+    action_description: "برگزاری جلسه هماهنگی با تیم فروش برای بررسی استراتژی جدید نفوذ به بازار",
+    time_spent: 4,
+    resources_used: 5,
+    notes: "تیم به خوبی همکاری کرد. نیاز به پیگیری هفتگی داریم.",
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    deputy_id: "demo-user-id-1"
+  },
+  {
+    id: "demo-behavior-log-2",
+    intent_id: "demo-intent-2",
+    action_description: "آماده‌سازی گزارش تحلیل رقبا و ارائه به هیئت مدیره",
+    time_spent: 8,
+    resources_used: 12,
+    notes: "گزارش مورد تایید قرار گرفت. نیاز به آپدیت ماهانه.",
+    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    deputy_id: "demo-user-id-1"
+  },
+  {
+    id: "demo-behavior-log-3",
+    intent_id: "demo-intent-3",
+    action_description: "برنامه‌ریزی و اجرای دوره آموزشی برای کارکنان جدید",
+    time_spent: 16,
+    resources_used: 25,
+    notes: null,
+    created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    deputy_id: "demo-user-id-2"
+  },
+  {
+    id: "demo-behavior-log-4",
+    intent_id: "demo-intent-1",
+    action_description: "مذاکره با تامین‌کننده جدید برای کاهش هزینه‌های تولید",
+    time_spent: 6,
+    resources_used: 2,
+    notes: "توافق اولیه حاصل شد. قرارداد در حال تنظیم است.",
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    deputy_id: "demo-user-id-1"
+  }
+];

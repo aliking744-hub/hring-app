@@ -12,6 +12,7 @@ import {
   ThermometerSun
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 import { 
   BarChart, 
   Bar, 
@@ -27,10 +28,12 @@ import {
 
 const AnalysisEngine = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const { isDemoMode } = useDemoMode();
 
   useEffect(() => {
+    // In non-demo mode without data, show empty state
     setIsLoading(false);
-  }, []);
+  }, [isDemoMode]);
 
   // Mock analysis data
   const executionLoyaltyData = [
@@ -96,6 +99,30 @@ const AnalysisEngine = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <Brain className="w-8 h-8 text-primary animate-pulse" />
+      </div>
+    );
+  }
+
+  // Non-demo mode: show empty state
+  if (!isDemoMode) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Brain className="w-6 h-6 text-primary" />
+            موتور تحلیل (Processing Core)
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            تحلیل عمیق عملکرد معاونین و همسویی با استراتژی
+          </p>
+        </div>
+        <div className="glass-card p-12 text-center">
+          <Brain className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">داده‌ای برای تحلیل وجود ندارد</h3>
+          <p className="text-muted-foreground text-sm">
+            با ثبت رفتارها و پاسخ به سناریوها، موتور تحلیل شروع به کار خواهد کرد
+          </p>
+        </div>
       </div>
     );
   }

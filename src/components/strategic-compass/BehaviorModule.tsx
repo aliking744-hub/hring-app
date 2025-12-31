@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoMode } from "@/contexts/DemoModeContext";
+import { DEMO_INTENTS, DEMO_BEHAVIOR_LOGS } from "@/data/demoData";
 
 interface Intent {
   id: string;
@@ -52,11 +54,25 @@ const BehaviorModule = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const { isDemoMode } = useDemoMode();
+
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [isDemoMode]);
 
   const fetchData = async () => {
+    if (isDemoMode) {
+      // Map intents to behavior logs for demo mode
+      const demoBehaviorsWithIntents = DEMO_BEHAVIOR_LOGS.map(b => ({
+        ...b,
+        intent: DEMO_INTENTS.find(i => i.id === b.intent_id)
+      }));
+      setIntents(DEMO_INTENTS as Intent[]);
+      setBehaviors(demoBehaviorsWithIntents as Behavior[]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const [intentsRes, behaviorsRes] = await Promise.all([
         supabase.from('strategic_intents').select('id, title, description').eq('status', 'active'),
