@@ -5,9 +5,13 @@ import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import Trunk from "./Trunk";
 import LeafCluster from "./LeafCluster";
 import Particles from "./Particles";
-import { SAMPLE_TASKS } from "./types";
+import { Task } from "./types";
 
-const ErdtreeScene = () => {
+interface ErdtreeSceneProps {
+  tasks: Task[];
+}
+
+const ErdtreeScene = ({ tasks }: ErdtreeSceneProps) => {
   return (
     <div className="w-full h-full min-h-[600px] bg-[#0a0a12] rounded-xl overflow-hidden relative">
       <Canvas
@@ -39,7 +43,7 @@ const ErdtreeScene = () => {
           {/* The Erdtree */}
           <group position={[0, -1, 0]}>
             <Trunk />
-            <LeafCluster tasks={SAMPLE_TASKS} />
+            <LeafCluster tasks={tasks} />
           </group>
           
           {/* Post-processing for glow effect */}
