@@ -1,11 +1,40 @@
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import ErdtreeScene from "./ErdtreeScene";
 import DepartmentLegend from "./DepartmentLegend";
 import StrategicLegend from "./StrategicLegend";
 import ControlsHint from "./ControlsHint";
+import FilterControls, { STRATEGIC_LEVELS } from "./FilterControls";
 import { Sparkles } from "lucide-react";
+import { DEPARTMENTS, SAMPLE_TASKS } from "./types";
 
 const StrategicErdtree = () => {
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>(
+    DEPARTMENTS.map((d) => d.id)
+  );
+  const [selectedLevels, setSelectedLevels] = useState<string[]>(
+    STRATEGIC_LEVELS.map((l) => l.id)
+  );
+
+  const filteredTasks = useMemo(() => {
+    return SAMPLE_TASKS.filter((task) => {
+      // Check department filter
+      if (!selectedDepartments.includes(task.departmentId)) {
+        return false;
+      }
+
+      // Check strategic level filter
+      const importance = task.strategicImportance;
+      const matchesLevel = selectedLevels.some((levelId) => {
+        const level = STRATEGIC_LEVELS.find((l) => l.id === levelId);
+        if (!level) return false;
+        return importance >= level.range[0] && importance <= level.range[1];
+      });
+
+      return matchesLevel;
+    });
+  }, [selectedDepartments, selectedLevels]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -27,10 +56,27 @@ const StrategicErdtree = () => {
 
       {/* 3D Scene Container */}
       <div className="relative h-[600px] rounded-xl overflow-hidden border border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.15)]">
-        <ErdtreeScene />
+        <ErdtreeScene tasks={filteredTasks} />
+        <FilterControls
+          selectedDepartments={selectedDepartments}
+          selectedLevels={selectedLevels}
+          onDepartmentChange={setSelectedDepartments}
+          onLevelChange={setSelectedLevels}
+        />
         <DepartmentLegend />
         <StrategicLegend />
         <ControlsHint />
+        
+        {/* Filtered count indicator */}
+        <div className="absolute bottom-4 left-4 z-20 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-[#D4AF37]/30">
+          <span className="text-xs text-muted-foreground" dir="rtl">
+            نمایش{" "}
+            <span className="text-[#D4AF37] font-bold">{filteredTasks.length}</span>
+            {" "}از{" "}
+            <span className="text-foreground">{SAMPLE_TASKS.length}</span>
+            {" "}وظیفه
+          </span>
+        </div>
         
         {/* Decorative corner elements */}
         <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-[#D4AF37]/40 rounded-tl-xl pointer-events-none" />
