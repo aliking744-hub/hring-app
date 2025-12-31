@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LivingErdtreeScene from "./LivingErdtreeScene";
 import DepartmentLegend from "./DepartmentLegend";
 import StrategicLegend from "./StrategicLegend";
 import ControlsHint from "./ControlsHint";
 import FilterControls, { STRATEGIC_LEVELS } from "./FilterControls";
+import TaskDetailModal from "./TaskDetailModal";
 import { Sparkles, Loader2, Maximize2, Minimize2, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
-import { DEPARTMENTS } from "./types";
+import { DEPARTMENTS, Task } from "./types";
 import { useStrategicAchievements } from "@/hooks/useStrategicAchievements";
 import { Button } from "@/components/ui/button";
 
@@ -14,6 +15,7 @@ const StrategicErdtree = () => {
   const { tasks, newTaskIds, loading } = useStrategicAchievements();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpired, setShowExpired] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>(
     DEPARTMENTS.map((d) => d.id)
@@ -21,6 +23,14 @@ const StrategicErdtree = () => {
   const [selectedLevels, setSelectedLevels] = useState<string[]>(
     STRATEGIC_LEVELS.map((l) => l.id)
   );
+
+  const handleTaskClick = useCallback((task: Task) => {
+    setSelectedTask(task);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setSelectedTask(null);
+  }, []);
 
   const filteredTasks = useMemo(() => {
     const now = new Date();
@@ -88,7 +98,7 @@ const StrategicErdtree = () => {
                 </div>
               </div>
             ) : (
-              <LivingErdtreeScene tasks={filteredTasks} newTaskIds={newTaskIds} />
+              <LivingErdtreeScene tasks={filteredTasks} newTaskIds={newTaskIds} onTaskClick={handleTaskClick} />
             )}
             
             {/* Fullscreen button */}
@@ -154,7 +164,7 @@ const StrategicErdtree = () => {
           >
             {/* Scene */}
             <div className="w-full h-full">
-              <LivingErdtreeScene tasks={filteredTasks} newTaskIds={newTaskIds} isFullscreen />
+              <LivingErdtreeScene tasks={filteredTasks} newTaskIds={newTaskIds} isFullscreen onTaskClick={handleTaskClick} />
             </div>
             
             {/* Fullscreen controls overlay */}
@@ -227,6 +237,13 @@ const StrategicErdtree = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Task Detail Modal */}
+      <TaskDetailModal 
+        task={selectedTask} 
+        open={!!selectedTask} 
+        onClose={handleCloseModal} 
+      />
     </>
   );
 };

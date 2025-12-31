@@ -5,9 +5,10 @@ import { Task } from "./types";
 interface LivingLeafClusterProps {
   tasks: Task[];
   newTaskIds?: string[];
+  onTaskClick?: (task: Task) => void;
 }
 
-const LivingLeafCluster = ({ tasks, newTaskIds = [] }: LivingLeafClusterProps) => {
+const LivingLeafCluster = ({ tasks, newTaskIds = [], onTaskClick }: LivingLeafClusterProps) => {
   const leafPositions = useMemo(() => {
     const now = new Date();
     
@@ -61,7 +62,14 @@ const LivingLeafCluster = ({ tasks, newTaskIds = [] }: LivingLeafClusterProps) =
     <group>
       {/* Floating leaves without tendrils */}
       {leafPositions.map(({ task, position, isNew, isExpired }) => (
-        <LivingLeaf key={task.id} task={task} position={position} isNew={isNew} isExpired={isExpired} />
+        <LivingLeaf 
+          key={task.id} 
+          task={task} 
+          position={position} 
+          isNew={isNew} 
+          isExpired={isExpired}
+          onTaskClick={onTaskClick}
+        />
       ))}
     </group>
   );

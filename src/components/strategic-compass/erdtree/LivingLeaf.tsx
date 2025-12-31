@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, ThreeEvent } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { Task, DEPARTMENTS } from "./types";
@@ -9,9 +9,10 @@ interface LivingLeafProps {
   position: [number, number, number];
   isNew?: boolean;
   isExpired?: boolean;
+  onTaskClick?: (task: Task) => void;
 }
 
-const LivingLeaf = ({ task, position, isNew = false, isExpired = false }: LivingLeafProps) => {
+const LivingLeaf = ({ task, position, isNew = false, isExpired = false, onTaskClick }: LivingLeafProps) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
@@ -104,6 +105,10 @@ const LivingLeaf = ({ task, position, isNew = false, isExpired = false }: Living
         ref={meshRef}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
+        onClick={(e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          onTaskClick?.(task);
+        }}
       >
         <sphereGeometry args={[1, 20, 20]} />
         <meshStandardMaterial
