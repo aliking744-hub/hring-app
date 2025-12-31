@@ -38,6 +38,7 @@ import BehaviorModule from "@/components/strategic-compass/BehaviorModule";
 import AnalysisEngine from "@/components/strategic-compass/AnalysisEngine";
 import CEODashboard from "@/components/strategic-compass/CEODashboard";
 import MentalPrism from "@/components/strategic-compass/MentalPrism";
+import PrismResponse from "@/components/strategic-compass/PrismResponse";
 import StrategicBetting from "@/components/strategic-compass/StrategicBetting";
 import DecisionJournal from "@/components/strategic-compass/DecisionJournal";
 import UserManagement from "@/components/strategic-compass/UserManagement";
@@ -167,6 +168,7 @@ const StrategicCompass = () => {
     } else if (isDeputy || isManager) {
       baseTabs.push(
         { id: "behavior", label: "ماژول رفتار", icon: Activity },
+        { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
         { id: "journal", label: "ژورنال تصمیم", icon: FileText },
         { id: "betting", label: "شرط‌بندی استراتژیک", icon: Coins },
       );
@@ -291,6 +293,9 @@ const StrategicCompass = () => {
                 <>
                   <TabsContent value="behavior">
                     <BehaviorModule />
+                  </TabsContent>
+                  <TabsContent value="mental-prism">
+                    <PrismResponse />
                   </TabsContent>
                   <TabsContent value="journal">
                     <DecisionJournal />
