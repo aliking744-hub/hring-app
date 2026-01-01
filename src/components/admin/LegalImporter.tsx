@@ -28,6 +28,12 @@ const LegalImporter = () => {
   const [htmlContent, setHtmlContent] = useState('');
   const [manualSourceUrl, setManualSourceUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const docFileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Document upload state
+  const [docSourceUrl, setDocSourceUrl] = useState('');
+  const [docCategory, setDocCategory] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -48,6 +54,83 @@ const LegalImporter = () => {
       toast.error('خطا در خواندن فایل');
     };
     reader.readAsText(file, 'UTF-8');
+  };
+
+  const handleDocFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const validTypes = ['.pdf', '.doc', '.docx', '.txt', '.rtf'];
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    
+    if (!validTypes.includes(ext)) {
+      toast.error('فرمت فایل پشتیبانی نمی‌شود. فرمت‌های مجاز: PDF, Word, TXT');
+      return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('حداکثر حجم فایل 10 مگابایت است');
+      return;
+    }
+    
+    setSelectedFile(file);
+    toast.success(`فایل ${file.name} انتخاب شد`);
+  };
+
+  const handleDocumentProcess = async () => {
+    if (!selectedFile || !docCategory) {
+      toast.error('لطفاً فایل و دسته‌بندی را انتخاب کنید');
+      return;
+    }
+
+    setIsProcessing(true);
+    setLogs(['شروع پردازش فایل...']);
+    setStats(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('category', docCategory);
+      formData.append('sourceUrl', docSourceUrl || 'uploaded-document');
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-document-text`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.logs) {
+        setLogs(data.logs);
+      }
+
+      if (data.stats) {
+        setStats(data.stats);
+      }
+
+      if (data.success) {
+        toast.success(`${data.stats?.savedCount || 0} بخش با موفقیت وارد شد`);
+        setSelectedFile(null);
+        if (docFileInputRef.current) {
+          docFileInputRef.current.value = '';
+        }
+      } else {
+        toast.error(data.error || 'خطا در پردازش');
+      }
+    } catch (error) {
+      console.error('Error processing document:', error);
+      const errorMessage = error instanceof Error ? error.message : 'خطای ناشناخته';
+      setLogs(prev => [...prev, `خطا: ${errorMessage}`]);
+      toast.error(errorMessage);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleProcess = async () => {
@@ -144,8 +227,12 @@ const LegalImporter = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Tabs defaultValue="manual" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs defaultValue="document" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="document" className="flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                آپلود فایل
+              </TabsTrigger>
               <TabsTrigger value="manual" className="flex items-center gap-2">
                 <ClipboardPaste className="w-4 h-4" />
                 ورود دستی HTML
@@ -155,6 +242,109 @@ const LegalImporter = () => {
                 اسکرپ از URL
               </TabsTrigger>
             </TabsList>
+
+            {/* Document Upload Tab */}
+            <TabsContent value="document" className="space-y-4 mt-4">
+              <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-800 p-4">
+                <h4 className="font-semibold text-green-800 dark:text-green-300 mb-2">فرمت‌های پشتیبانی شده:</h4>
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  PDF، Word (doc, docx)، متن ساده (txt) - حداکثر ۱۰ مگابایت
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="docSourceUrl" className="flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    آدرس URL منبع (اختیاری)
+                  </Label>
+                  <Input
+                    id="docSourceUrl"
+                    type="url"
+                    placeholder="https://example.com/law.pdf"
+                    value={docSourceUrl}
+                    onChange={(e) => setDocSourceUrl(e.target.value)}
+                    disabled={isProcessing}
+                    dir="ltr"
+                    className="text-left"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="docCategory" className="flex items-center gap-2">
+                    <Database className="w-4 h-4" />
+                    دسته‌بندی
+                  </Label>
+                  <Select value={docCategory} onValueChange={setDocCategory} disabled={isProcessing}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="انتخاب دسته‌بندی..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  انتخاب فایل
+                </Label>
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt,.rtf"
+                    onChange={handleDocFileSelect}
+                    ref={docFileInputRef}
+                    className="hidden"
+                    disabled={isProcessing}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    onClick={() => docFileInputRef.current?.click()}
+                    disabled={isProcessing}
+                    className="mb-2"
+                  >
+                    <Upload className="w-5 h-5 ml-2" />
+                    انتخاب فایل
+                  </Button>
+                  {selectedFile ? (
+                    <p className="text-sm text-green-600 dark:text-green-400 mt-2">
+                      ✅ {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      فایل PDF، Word یا متنی را انتخاب کنید
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleDocumentProcess} 
+                disabled={isProcessing || !selectedFile || !docCategory}
+                className="w-full"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    در حال پردازش با هوش مصنوعی...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 ml-2" />
+                    استخراج متن و ذخیره
+                  </>
+                )}
+              </Button>
+            </TabsContent>
 
             {/* Manual HTML Tab */}
             <TabsContent value="manual" className="space-y-4 mt-4">
