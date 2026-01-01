@@ -28,7 +28,8 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Building2, Trash2, Edit2, Search, Filter } from 'lucide-react';
+import { Loader2, Plus, Building2, Trash2, Edit2, Search, Filter, Download, CheckCircle, Clock, XCircle } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { TIER_NAMES, STATUS_NAMES } from '@/types/multiTenant';
 import type { Company, SubscriptionTier, CompanyStatus } from '@/types/multiTenant';
 
@@ -91,6 +92,35 @@ const CompanyManager = () => {
   };
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || tierFilter !== 'all';
+
+  // Statistics
+  const stats = useMemo(() => ({
+    total: companies.length,
+    active: companies.filter(c => c.status === 'active').length,
+    trial: companies.filter(c => c.status === 'trial').length,
+    suspended: companies.filter(c => c.status === 'suspended').length,
+  }), [companies]);
+
+  // Export to Excel
+  const exportToExcel = () => {
+    const exportData = filteredCompanies.map(company => ({
+      'نام شرکت': company.name,
+      'دامنه': company.domain || '-',
+      'وضعیت': STATUS_NAMES[company.status],
+      'اشتراک': TIER_NAMES[company.subscription_tier],
+      'اعتبار مصرفی': company.used_credits,
+      'اعتبار ماهانه': company.monthly_credits,
+      'حداکثر اعضا': company.max_members,
+      'تاریخ ایجاد': new Date(company.created_at).toLocaleDateString('fa-IR'),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'شرکت‌ها');
+    XLSX.writeFile(workbook, `companies-${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast({ title: 'فایل اکسل دانلود شد' });
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -231,6 +261,38 @@ const CompanyManager = () => {
   return (
     <Card className="glass-card">
       <CardHeader className="flex flex-col gap-4">
+        {/* Statistics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+            <Building2 className="w-5 h-5 text-primary" />
+            <div>
+              <p className="text-xs text-muted-foreground">کل شرکت‌ها</p>
+              <p className="text-lg font-bold">{stats.total}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">فعال</p>
+              <p className="text-lg font-bold text-green-500">{stats.active}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/10">
+            <Clock className="w-5 h-5 text-yellow-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">آزمایشی</p>
+              <p className="text-lg font-bold text-yellow-500">{stats.trial}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">معلق</p>
+              <p className="text-lg font-bold text-red-500">{stats.suspended}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Building2 className="w-5 h-5" />
@@ -239,19 +301,24 @@ const CompanyManager = () => {
               ({filteredCompanies.length} از {companies.length})
             </span>
           </CardTitle>
-          <Dialog open={dialogOpen} onOpenChange={(open) => {
-            setDialogOpen(open);
-            if (!open) {
-              setEditingCompany(null);
-              resetForm();
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button className="glow-button gap-2">
-                <Plus className="w-4 h-4" />
-                شرکت جدید
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={exportToExcel} className="gap-1">
+              <Download className="w-4 h-4" />
+              اکسل
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (!open) {
+                setEditingCompany(null);
+                resetForm();
+              }
+            }}>
+              <DialogTrigger asChild>
+                <Button className="glow-button gap-2">
+                  <Plus className="w-4 h-4" />
+                  شرکت جدید
+                </Button>
+              </DialogTrigger>
             <DialogContent className="glass-card border-border" dir="rtl">
               <DialogHeader>
                 <DialogTitle>
@@ -337,6 +404,7 @@ const CompanyManager = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
         
         {/* Search and Filters */}
