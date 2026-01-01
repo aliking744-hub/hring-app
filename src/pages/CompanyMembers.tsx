@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { 
   Users, UserPlus, Copy, Link2, Trash2, 
   Shield, ChevronLeft, Check, RefreshCw,
-  Building2, Loader2, UserCog, Mail, Lock, User
+  Building2, Loader2, UserCog, Mail, Lock, User,
+  KeyRound, Edit, Eye, EyeOff
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuroraBackground from '@/components/AuroraBackground';
@@ -26,7 +27,10 @@ import {
   TableHeader, TableRow 
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
+  DropdownMenuTrigger, DropdownMenuSeparator 
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { useCompany } from '@/hooks/useCompany';
 import { useUserContext } from '@/hooks/useUserContext';
@@ -58,6 +62,20 @@ const CompanyMembers = () => {
   const [newUserFullName, setNewUserFullName] = useState('');
   const [newUserRole, setNewUserRole] = useState<CompanyRole>('employee');
   const [creatingUser, setCreatingUser] = useState(false);
+
+  // Reset password dialog state
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [selectedUserForReset, setSelectedUserForReset] = useState<{ id: string; name: string } | null>(null);
+  const [newPasswordForReset, setNewPasswordForReset] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
+
+  // Edit profile dialog state
+  const [editProfileDialogOpen, setEditProfileDialogOpen] = useState(false);
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<{ id: string; name: string; title: string } | null>(null);
+  const [editFullName, setEditFullName] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [updatingProfile, setUpdatingProfile] = useState(false);
 
   const handleCreateInvite = async () => {
     setCreatingInvite(true);
@@ -124,6 +142,100 @@ const CompanyMembers = () => {
     } finally {
       setCreatingUser(false);
     }
+  };
+
+  const handleResetPassword = async () => {
+    if (!context?.companyId || !selectedUserForReset) return;
+
+    if (!newPasswordForReset || newPasswordForReset.length < 6) {
+      toast.error('رمز عبور باید حداقل ۶ کاراکتر باشد');
+      return;
+    }
+
+    setResettingPassword(true);
+    try {
+      const response = await supabase.functions.invoke('reset-company-user-password', {
+        body: {
+          userId: selectedUserForReset.id,
+          newPassword: newPasswordForReset,
+          companyId: context.companyId
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      toast.success(`رمز عبور "${selectedUserForReset.name}" با موفقیت تغییر کرد`);
+      setResetPasswordDialogOpen(false);
+      setSelectedUserForReset(null);
+      setNewPasswordForReset('');
+      setShowResetPassword(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'خطا در تغییر رمز عبور';
+      toast.error(errorMessage);
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!context?.companyId || !selectedUserForEdit) return;
+
+    if (!editFullName.trim()) {
+      toast.error('نام نمی‌تواند خالی باشد');
+      return;
+    }
+
+    setUpdatingProfile(true);
+    try {
+      const response = await supabase.functions.invoke('update-company-user-profile', {
+        body: {
+          userId: selectedUserForEdit.id,
+          fullName: editFullName.trim(),
+          title: editTitle.trim() || null,
+          companyId: context.companyId
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      toast.success(`پروفایل "${editFullName}" با موفقیت بروزرسانی شد`);
+      setEditProfileDialogOpen(false);
+      setSelectedUserForEdit(null);
+      setEditFullName('');
+      setEditTitle('');
+      await refetch();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'خطا در بروزرسانی پروفایل';
+      toast.error(errorMessage);
+    } finally {
+      setUpdatingProfile(false);
+    }
+  };
+
+  const openResetPasswordDialog = (userId: string, userName: string) => {
+    setSelectedUserForReset({ id: userId, name: userName });
+    setNewPasswordForReset('');
+    setShowResetPassword(false);
+    setResetPasswordDialogOpen(true);
+  };
+
+  const openEditProfileDialog = (userId: string, userName: string, userTitle: string) => {
+    setSelectedUserForEdit({ id: userId, name: userName, title: userTitle });
+    setEditFullName(userName);
+    setEditTitle(userTitle || '');
+    setEditProfileDialogOpen(true);
   };
 
   const handleCopyInviteLink = async (code: string) => {
@@ -514,17 +626,45 @@ const CompanyMembers = () => {
                             </TableCell>
                             <TableCell className="text-center">
                               {member.role !== 'ceo' && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => handleRemoveMember(
-                                    member.user_id, 
-                                    member.profile?.full_name || 'کاربر'
-                                  )}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      عملیات
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => openEditProfileDialog(
+                                        member.user_id,
+                                        member.profile?.full_name || '',
+                                        member.profile?.title || ''
+                                      )}
+                                    >
+                                      <Edit className="w-4 h-4 ml-2" />
+                                      ویرایش پروفایل
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => openResetPasswordDialog(
+                                        member.user_id,
+                                        member.profile?.full_name || 'کاربر'
+                                      )}
+                                    >
+                                      <KeyRound className="w-4 h-4 ml-2" />
+                                      تغییر رمز عبور
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() => handleRemoveMember(
+                                        member.user_id, 
+                                        member.profile?.full_name || 'کاربر'
+                                      )}
+                                    >
+                                      <Trash2 className="w-4 h-4 ml-2" />
+                                      حذف از شرکت
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               )}
                             </TableCell>
                           </>
@@ -538,6 +678,125 @@ const CompanyMembers = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>تغییر رمز عبور</DialogTitle>
+            <DialogDescription>
+              رمز عبور جدید برای "{selectedUserForReset?.name}" وارد کنید.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>رمز عبور جدید</Label>
+              <div className="relative">
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type={showResetPassword ? 'text' : 'password'}
+                  placeholder="حداقل ۶ کاراکتر"
+                  value={newPasswordForReset}
+                  onChange={(e) => setNewPasswordForReset(e.target.value)}
+                  className="pr-10 pl-10"
+                  dir="ltr"
+                  disabled={resettingPassword}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                  onClick={() => setShowResetPassword(!showResetPassword)}
+                >
+                  {showResetPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                این رمز را به کاربر اطلاع دهید تا بتواند وارد شود.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setResetPasswordDialogOpen(false)}
+              disabled={resettingPassword}
+            >
+              انصراف
+            </Button>
+            <Button onClick={handleResetPassword} disabled={resettingPassword}>
+              {resettingPassword ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                  در حال تغییر...
+                </>
+              ) : (
+                'تغییر رمز عبور'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={editProfileDialogOpen} onOpenChange={setEditProfileDialogOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>ویرایش پروفایل</DialogTitle>
+            <DialogDescription>
+              اطلاعات پروفایل کاربر را ویرایش کنید.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>نام و نام خانوادگی</Label>
+              <div className="relative">
+                <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="مثال: علی احمدی"
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  className="pr-10"
+                  disabled={updatingProfile}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>سمت / عنوان شغلی</Label>
+              <Input
+                placeholder="مثال: مدیر منابع انسانی"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                disabled={updatingProfile}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setEditProfileDialogOpen(false)}
+              disabled={updatingProfile}
+            >
+              انصراف
+            </Button>
+            <Button onClick={handleUpdateProfile} disabled={updatingProfile}>
+              {updatingProfile ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                  در حال ذخیره...
+                </>
+              ) : (
+                'ذخیره تغییرات'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
