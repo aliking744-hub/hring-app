@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.scrape-legal-docs]
 verify_jwt = false
+
+[functions.search-legal-docs]
+verify_jwt = false

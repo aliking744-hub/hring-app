@@ -1193,6 +1193,22 @@ export type Database = {
         Returns: boolean
       }
       reset_monthly_credits: { Args: never; Returns: undefined }
+      search_legal_docs: {
+        Args: {
+          filter_category?: string
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          article_number: string
+          category: string
+          content: string
+          id: string
+          similarity: number
+          source_url: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

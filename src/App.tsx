@@ -30,6 +30,7 @@ import CampaignDetail from "./pages/CampaignDetail";
 import CandidateDetail from "./pages/CandidateDetail";
 import Admin from "./pages/Admin";
 import AdminLegalImporter from "./pages/AdminLegalImporter";
+import LegalSearchPage from "./pages/LegalSearchPage";
 import StrategicCompass from "./pages/StrategicCompass";
 import CompanyMembers from "./pages/CompanyMembers";
 import CompanySettings from "./pages/CompanySettings";
@@ -237,6 +238,14 @@ const App = () => (
                   <AdminRoute>
                     <AdminLegalImporter />
                   </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/legal-search" 
+                element={
+                  <ProtectedRoute>
+                    <LegalSearchPage />
+                  </ProtectedRoute>
                 } 
               />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
