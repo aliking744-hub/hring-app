@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, FileText, Package, Users, Settings, Building2, ToggleRight, MessageSquare, BarChart3 } from 'lucide-react';
+import { ArrowRight, FileText, Package, Users, Settings, Building2, ToggleRight, MessageSquare, BarChart3, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BlogManager from '@/components/admin/BlogManager';
 import ProductManager from '@/components/admin/ProductManager';
@@ -12,6 +12,7 @@ import FeatureFlagsManager from '@/components/admin/FeatureFlagsManager';
 import CorporateUserManager from '@/components/admin/CorporateUserManager';
 import TestimonialsManager from '@/components/admin/TestimonialsManager';
 import CreditAnalytics from '@/components/admin/CreditAnalytics';
+import AuditLogsViewer from '@/components/admin/AuditLogsViewer';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -37,10 +38,14 @@ const Admin = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-9 mb-8">
+          <TabsList className="grid w-full grid-cols-10 mb-8">
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">آنالیتیکس</span>
+            </TabsTrigger>
+            <TabsTrigger value="audit-logs" className="gap-2">
+              <Shield className="w-4 h-4" />
+              <span className="hidden sm:inline">لاگ امنیتی</span>
             </TabsTrigger>
             <TabsTrigger value="companies" className="gap-2">
               <Building2 className="w-4 h-4" />
@@ -78,6 +83,10 @@ const Admin = () => {
 
           <TabsContent value="analytics">
             <CreditAnalytics />
+          </TabsContent>
+
+          <TabsContent value="audit-logs">
+            <AuditLogsViewer />
           </TabsContent>
 
           <TabsContent value="companies">
