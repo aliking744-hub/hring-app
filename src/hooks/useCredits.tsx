@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
+// Father Admin email for bypass
+const FATHER_ADMIN_EMAIL = 'ali_king744@yahoo.com';
+
 // Diamond costs for different AI operations
 export const DIAMOND_COSTS = {
   // Simple Text Generation - 5 Diamonds
@@ -55,6 +58,9 @@ export const useCredits = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
+  // Check if current user is Father Admin (bypasses all credit restrictions)
+  const isFatherAdmin = user?.email?.toLowerCase() === FATHER_ADMIN_EMAIL.toLowerCase();
+
   const fetchCredits = async () => {
     if (!user) {
       setCredits(0);
@@ -80,6 +86,11 @@ export const useCredits = () => {
   }, [user]);
 
   const deductCredits = async (amount: number, featureKey?: string): Promise<boolean> => {
+    // Father Admin bypasses credit deduction
+    if (isFatherAdmin) {
+      return true;
+    }
+
     try {
       const { data, error } = await supabase.rpc('deduct_credits', { amount });
       
@@ -106,6 +117,10 @@ export const useCredits = () => {
   };
 
   const hasEnoughCredits = (operation: CreditOperation): boolean => {
+    // Father Admin always has enough credits
+    if (isFatherAdmin) {
+      return true;
+    }
     return credits >= CREDIT_COSTS[operation];
   };
 
@@ -122,6 +137,10 @@ export const useCredits = () => {
   };
 
   const deductForOperation = async (operation: CreditOperation): Promise<boolean> => {
+    // Father Admin bypasses credit deduction
+    if (isFatherAdmin) {
+      return true;
+    }
     const cost = CREDIT_COSTS[operation];
     if (credits < cost) {
       return false;
@@ -130,7 +149,7 @@ export const useCredits = () => {
   };
 
   return { 
-    credits, 
+    credits: isFatherAdmin ? 999999 : credits, // Father Admin sees "infinite" credits
     loading, 
     deductCredits, 
     deductForOperation,
@@ -138,6 +157,7 @@ export const useCredits = () => {
     getCost,
     getLabel,
     getTooltip,
-    refetch: fetchCredits 
+    refetch: fetchCredits,
+    isFatherAdmin,
   };
 };

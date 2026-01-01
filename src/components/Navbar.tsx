@@ -1,13 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Crown } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 import { useLogos, useFonts } from "@/hooks/useSiteSettings";
 import defaultLogo from "@/assets/logo.png";
-
-const ADMIN_EMAIL = "ali_king744@yahoo.com";
 
 const navLinks = [
   { href: "/", label: "خانه" },
@@ -19,8 +16,6 @@ const navLinks = [
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = useAuth();
-  const isAdmin = user?.email === ADMIN_EMAIL;
   const logos = useLogos();
   const fonts = useFonts();
   
@@ -64,14 +59,6 @@ const Navbar = () => {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
-            {isAdmin && (
-              <Link to="/admin">
-                <Button variant="outline" className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10 font-medium px-4">
-                  <Crown className="w-4 h-4 ml-2" />
-                  ادمین
-                </Button>
-              </Link>
-            )}
             <Link to="/auth">
               <Button className="glow-button text-foreground font-medium px-6">
                 ورود
@@ -141,26 +128,10 @@ const Navbar = () => {
                   </motion.div>
                 ))}
                 
-                {isAdmin && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="mt-4"
-                  >
-                    <Link to="/admin" onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full border-amber-500/50 text-amber-500 hover:bg-amber-500/10 font-medium">
-                        <Crown className="w-4 h-4 ml-2" />
-                        پنل ادمین
-                      </Button>
-                    </Link>
-                  </motion.div>
-                )}
-
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: isAdmin ? 0.4 : 0.3 }}
+                  transition={{ delay: 0.3 }}
                   className="mt-4"
                 >
                   <Link to="/auth" onClick={() => setIsOpen(false)}>

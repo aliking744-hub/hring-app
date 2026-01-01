@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserContext } from './useUserContext';
+import { useSuperAdmin } from './useSuperAdmin';
 import type { 
   FeaturePermission, 
   FeatureAccess, 
@@ -16,13 +17,14 @@ interface UseFeaturePermissionsReturn {
   canEdit: (featureKey: string) => boolean;
   getCreditCost: (featureKey: string) => number;
   refetch: () => Promise<void>;
+  isFatherAdmin: boolean;
 }
 
 export const useFeaturePermissions = (): UseFeaturePermissionsReturn => {
   const { context, loading: contextLoading } = useUserContext();
+  const { isFatherAdmin, loading: superAdminLoading } = useSuperAdmin();
   const [permissions, setPermissions] = useState<FeaturePermission[]>([]);
   const [loading, setLoading] = useState(true);
-
   const fetchPermissions = async () => {
     try {
       const { data, error } = await supabase
@@ -52,6 +54,11 @@ export const useFeaturePermissions = (): UseFeaturePermissionsReturn => {
   }, []);
 
   const checkAccess = useCallback((featureKey: string): FeatureAccess => {
+    // Father Admin has FULL unrestricted access - bypasses everything
+    if (isFatherAdmin) {
+      return { hasAccess: true, canEdit: true, creditCost: 0 };
+    }
+
     if (!context) {
       return { hasAccess: false, canEdit: false, creditCost: 0, reason: 'لطفاً وارد شوید' };
     }
@@ -121,7 +128,7 @@ export const useFeaturePermissions = (): UseFeaturePermissionsReturn => {
       canEdit: permission.allow_edit,
       creditCost: permission.credit_cost,
     };
-  }, [context, permissions]);
+  }, [context, permissions, isFatherAdmin]);
 
   const hasFeature = useCallback((featureKey: string): boolean => {
     return checkAccess(featureKey).hasAccess;
@@ -137,11 +144,12 @@ export const useFeaturePermissions = (): UseFeaturePermissionsReturn => {
 
   return {
     permissions,
-    loading: loading || contextLoading,
+    loading: loading || contextLoading || superAdminLoading,
     checkAccess,
     hasFeature,
     canEdit,
     getCreditCost,
     refetch: fetchPermissions,
+    isFatherAdmin,
   };
 };
