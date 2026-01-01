@@ -460,13 +460,6 @@ const LegalImporter = () => {
 
             {/* URL Scrape Tab */}
             <TabsContent value="url" className="space-y-4 mt-4">
-              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-4">
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  ⚠️ توجه: برخی سایت‌های ایرانی (مثل qavanin.ir) فقط با IP ایران قابل دسترسی هستند. 
-                  در صورت خطا، از روش "ورود دستی HTML" استفاده کنید.
-                </p>
-              </div>
-
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="sourceUrl" className="flex items-center gap-2">
