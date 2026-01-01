@@ -32,6 +32,7 @@ import Admin from "./pages/Admin";
 import AdminLegalImporter from "./pages/AdminLegalImporter";
 import LegalSearchPage from "./pages/LegalSearchPage";
 import LegalAdvisor from "./pages/LegalAdvisor";
+import LaborComplaint from "./pages/LaborComplaint";
 import StrategicCompass from "./pages/StrategicCompass";
 import CompanyMembers from "./pages/CompanyMembers";
 import CompanySettings from "./pages/CompanySettings";
@@ -254,6 +255,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <LegalAdvisor />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/labor-complaint" 
+                element={
+                  <ProtectedRoute>
+                    <LaborComplaint />
                   </ProtectedRoute>
                 } 
               />
