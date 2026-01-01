@@ -1,10 +1,16 @@
 import { Link } from "react-router-dom";
-import { useLogos, useFonts } from "@/hooks/useSiteSettings";
+import { useLogos, useFonts, useSiteSettings } from "@/hooks/useSiteSettings";
 import defaultLogo from "@/assets/logo_zir_white.png";
 
 const Footer = () => {
   const logos = useLogos();
   const fonts = useFonts();
+  const { getSetting } = useSiteSettings();
+  
+  const footerCredit = getSetting('footer_credit', 'Architected by');
+  const footerAuthor = getSetting('footer_author', 'Ali Dehghani');
+  const footerAi = getSetting('footer_ai', 'Gemini');
+  const footerCopyright = getSetting('footer_copyright', 'تمامی حقوق محفوظ است');
   
   // Use dynamic footer logo or fallback
   const footerLogo = logos.footer || defaultLogo;
@@ -46,15 +52,15 @@ const Footer = () => {
 
           {/* Credit */}
           <p className="text-sm text-muted-foreground text-center md:text-right">
-            Architected by{" "}
-            <span className="text-foreground">Ali Dehghani</span>
+            {footerCredit}{" "}
+            <span className="text-foreground">{footerAuthor}</span>
             {" "}&{" "}
-            <span className="gradient-text-primary">Gemini</span>
+            <span className="gradient-text-primary">{footerAi}</span>
           </p>
         </div>
 
         <div className="mt-8 pt-8 border-t border-border text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} hring. تمامی حقوق محفوظ است.
+          © {new Date().getFullYear()} hring. {footerCopyright}
         </div>
       </div>
     </footer>

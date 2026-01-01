@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star, Quote } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 interface Testimonial {
   id: string;
@@ -17,6 +18,21 @@ interface Testimonial {
 }
 
 const TestimonialsSection = () => {
+  const { getSetting } = useSiteSettings();
+  
+  const testimonialsTitle = getSetting('testimonials_title', 'نظرات');
+  const testimonialsTitleHighlight = getSetting('testimonials_title_highlight', 'مشتریان');
+  const testimonialsSubtitle = getSetting('testimonials_subtitle', 'ببینید چرا صدها شرکت به HRing اعتماد کرده‌اند');
+  
+  const statCompanies = getSetting('stat_companies', '۵۰۰+');
+  const statCompaniesLabel = getSetting('stat_companies_label', 'شرکت فعال');
+  const statHiring = getSetting('stat_hiring', '۱۵,۰۰۰+');
+  const statHiringLabel = getSetting('stat_hiring_label', 'استخدام موفق');
+  const statSatisfaction = getSetting('stat_satisfaction', '۹۸٪');
+  const statSatisfactionLabel = getSetting('stat_satisfaction_label', 'رضایت مشتریان');
+  const statSaving = getSetting('stat_saving', '۷۰٪');
+  const statSavingLabel = getSetting('stat_saving_label', 'صرفه‌جویی زمان');
+
   const { data: testimonials, isLoading } = useQuery({
     queryKey: ["testimonials"],
     queryFn: async () => {
@@ -40,10 +56,10 @@ const TestimonialsSection = () => {
           className="text-center mb-12"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4 font-heading">
-            نظرات <span className="gradient-text-primary">مشتریان</span>
+            {testimonialsTitle} <span className="gradient-text-primary">{testimonialsTitleHighlight}</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            ببینید چرا صدها شرکت به HRing اعتماد کرده‌اند
+            {testimonialsSubtitle}
           </p>
         </motion.div>
 
@@ -123,10 +139,10 @@ const TestimonialsSection = () => {
           className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto"
         >
           {[
-            { value: "۵۰۰+", label: "شرکت فعال" },
-            { value: "۱۵,۰۰۰+", label: "استخدام موفق" },
-            { value: "۹۸٪", label: "رضایت مشتریان" },
-            { value: "۷۰٪", label: "صرفه‌جویی زمان" },
+            { value: statCompanies, label: statCompaniesLabel },
+            { value: statHiring, label: statHiringLabel },
+            { value: statSatisfaction, label: statSatisfactionLabel },
+            { value: statSaving, label: statSavingLabel },
           ].map((stat, index) => (
             <div
               key={stat.label}

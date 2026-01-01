@@ -1,9 +1,9 @@
 import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import ScrollReveal from "@/components/ScrollReveal";
 import { LayoutGrid, Cake, DollarSign, MapPin, User, Timer, ArrowLeft, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 // Import dashboard screenshots
 import dashboardOverview from "@/assets/dashboard-overview.png";
@@ -25,6 +25,11 @@ const tabs = [
 const DashboardPreview = () => {
   const ref = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const { getSetting } = useSiteSettings();
+  
+  const dashboardTitle = getSetting('dashboard_title', 'تجربه داشبورد مدرن');
+  const dashboardSubtitle = getSetting('dashboard_subtitle', 'طراحی شده برای بهره‌وری حداکثری');
+  const dashboardCta = getSetting('dashboard_cta', 'مشاهده داشبورد کامل و فیلترها');
   
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -65,10 +70,10 @@ const DashboardPreview = () => {
         <ScrollReveal>
           <div className="text-center mb-12" dir="rtl">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              تجربه داشبورد مدرن
+              {dashboardTitle}
             </h2>
             <p className="text-muted-foreground text-lg">
-              طراحی شده برای بهره‌وری حداکثری
+              {dashboardSubtitle}
             </p>
           </div>
         </ScrollReveal>
@@ -168,7 +173,7 @@ const DashboardPreview = () => {
                 className="glow-button text-lg px-8 py-6 gap-3"
               >
                 <BarChart3 className="w-5 h-5" />
-                مشاهده داشبورد کامل و فیلترها
+                {dashboardCta}
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </a>
