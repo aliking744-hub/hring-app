@@ -114,6 +114,10 @@ export interface UserContext {
   usedCredits: number;
   companyCreditPool: number;
   companyCreditPoolEnabled: boolean;
+  // Profile fields
+  fullName: string | null;
+  title: string | null;
+  avatarUrl: string | null;
 }
 
 // Feature access result

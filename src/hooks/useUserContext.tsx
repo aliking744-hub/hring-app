@@ -93,6 +93,10 @@ export const UserContextProvider = ({ children }: { children: ReactNode }) => {
         usedCredits: profile?.used_credits ?? 0,
         companyCreditPool,
         companyCreditPoolEnabled,
+        // Profile fields
+        fullName: profile?.full_name ?? null,
+        title: profile?.title ?? null,
+        avatarUrl: profile?.avatar_url ?? null,
       };
 
       setContext(userContext);
