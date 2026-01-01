@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { 
   Building2, Settings, Save, ChevronLeft, 
-  CreditCard, Users, Gem, Crown, Shield, Loader2
+  CreditCard, Users, Gem, Crown, Shield, Loader2, Coins
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuroraBackground from '@/components/AuroraBackground';
@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompany } from '@/hooks/useCompany';
@@ -25,17 +26,19 @@ const CompanySettings = () => {
   const { context, loading: contextLoading } = useUserContext();
   const { company, members, loading, isCEO, refetch } = useCompany();
 
-  const [companyName, setCompanyName] = useState(company?.name || '');
-  const [companyDomain, setCompanyDomain] = useState(company?.domain || '');
+  const [companyName, setCompanyName] = useState('');
+  const [companyDomain, setCompanyDomain] = useState('');
+  const [creditPoolEnabled, setCreditPoolEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Update state when company loads
-  useState(() => {
+  useEffect(() => {
     if (company) {
       setCompanyName(company.name);
       setCompanyDomain(company.domain || '');
+      setCreditPoolEnabled(company.credit_pool_enabled || false);
     }
-  });
+  }, [company]);
 
   const handleSave = async () => {
     if (!company || !isCEO) return;
@@ -46,7 +49,8 @@ const CompanySettings = () => {
         .from('companies')
         .update({
           name: companyName,
-          domain: companyDomain || null
+          domain: companyDomain || null,
+          credit_pool_enabled: creditPoolEnabled
         })
         .eq('id', company.id);
 
@@ -225,6 +229,40 @@ const CompanySettings = () => {
                       </div>
                       <Progress value={membersPercent} className="mt-2 h-2" />
                     </div>
+                  </div>
+
+                  <Separator className="my-6" />
+
+                  {/* Credit Pool Toggle */}
+                  <div className="p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl border border-amber-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Coins className="w-6 h-6 text-amber-500" />
+                        <div>
+                          <p className="font-medium text-foreground">اعتبار مشترک تیمی (Credit Pool)</p>
+                          <p className="text-sm text-muted-foreground">
+                            اعضای تیم از یک مخزن اعتبار مشترک استفاده می‌کنند
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={creditPoolEnabled}
+                        onCheckedChange={setCreditPoolEnabled}
+                      />
+                    </div>
+                    {creditPoolEnabled && company && (
+                      <div className="mt-4 p-3 bg-background/50 rounded-lg">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-amber-500">
+                            {company.credit_pool}
+                          </span>
+                          <span className="text-muted-foreground">اعتبار موجود در مخزن</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          اعتبار مخزن هر ماه بر اساس پلن شرکت ریست می‌شود
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <Separator className="my-6" />

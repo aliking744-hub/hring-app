@@ -24,6 +24,9 @@ export interface Company {
   monthly_credits: number;
   used_credits: number;
   max_members: number;
+  credit_pool: number;
+  credit_pool_enabled: boolean;
+  last_credit_reset: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
