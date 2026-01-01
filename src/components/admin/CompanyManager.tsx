@@ -28,9 +28,16 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Building2, Trash2, Edit2, Search } from 'lucide-react';
+import { Loader2, Plus, Building2, Trash2, Edit2, Search, Filter } from 'lucide-react';
 import { TIER_NAMES, STATUS_NAMES } from '@/types/multiTenant';
 import type { Company, SubscriptionTier, CompanyStatus } from '@/types/multiTenant';
+
+// Corporate tiers only
+const CORPORATE_TIERS: SubscriptionTier[] = [
+  'corporate_expert',
+  'corporate_decision_support',
+  'corporate_decision_making',
+];
 
 const CompanyManager = () => {
   const { toast } = useToast();
@@ -39,6 +46,8 @@ const CompanyManager = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<CompanyStatus | 'all'>('all');
+  const [tierFilter, setTierFilter] = useState<SubscriptionTier | 'all'>('all');
   const [formData, setFormData] = useState({
     name: '',
     domain: '',
@@ -48,16 +57,40 @@ const CompanyManager = () => {
     max_members: 10,
   });
 
-  // Filter companies based on search query
+  // Filter companies based on search query and filters
   const filteredCompanies = useMemo(() => {
-    if (!searchQuery.trim()) return companies;
-    const query = searchQuery.toLowerCase();
-    return companies.filter(company => 
-      company.name.toLowerCase().includes(query) ||
-      company.domain?.toLowerCase().includes(query) ||
-      company.id.toLowerCase().includes(query)
-    );
-  }, [companies, searchQuery]);
+    let result = companies;
+    
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(company => 
+        company.name.toLowerCase().includes(query) ||
+        company.domain?.toLowerCase().includes(query) ||
+        company.id.toLowerCase().includes(query)
+      );
+    }
+    
+    // Status filter
+    if (statusFilter !== 'all') {
+      result = result.filter(company => company.status === statusFilter);
+    }
+    
+    // Subscription tier filter
+    if (tierFilter !== 'all') {
+      result = result.filter(company => company.subscription_tier === tierFilter);
+    }
+    
+    return result;
+  }, [companies, searchQuery, statusFilter, tierFilter]);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setTierFilter('all');
+  };
+
+  const hasActiveFilters = searchQuery || statusFilter !== 'all' || tierFilter !== 'all';
 
   const fetchCompanies = async () => {
     try {
@@ -306,15 +339,50 @@ const CompanyManager = () => {
           </Dialog>
         </div>
         
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="جستجوی نام یا دامنه شرکت..."
-            className="pr-10"
-          />
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="جستجوی نام یا دامنه شرکت..."
+              className="pr-10"
+            />
+          </div>
+          
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as CompanyStatus | 'all')}>
+            <SelectTrigger className="w-full sm:w-[140px]">
+              <SelectValue placeholder="وضعیت" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">همه وضعیت‌ها</SelectItem>
+              <SelectItem value="active">فعال</SelectItem>
+              <SelectItem value="trial">آزمایشی</SelectItem>
+              <SelectItem value="suspended">معلق</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={tierFilter} onValueChange={(v) => setTierFilter(v as SubscriptionTier | 'all')}>
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue placeholder="اشتراک" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">همه اشتراک‌ها</SelectItem>
+              {CORPORATE_TIERS.map((tier) => (
+                <SelectItem key={tier} value={tier}>
+                  {TIER_NAMES[tier]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+              <Filter className="w-4 h-4" />
+              پاک کردن
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent>
