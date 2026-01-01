@@ -68,7 +68,7 @@ const HeroSection = () => {
             <Button 
               variant="outline" 
               size="lg" 
-              className="border-border bg-secondary/50 hover:bg-secondary text-foreground font-medium px-8 py-6 text-lg"
+              className="border-primary/50 bg-primary/10 hover:bg-primary/20 text-foreground font-medium px-8 py-6 text-lg animate-pulse shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.6)] transition-shadow duration-300"
               onClick={() => {
                 const element = document.getElementById('pricing');
                 if (element) {
