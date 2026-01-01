@@ -8,8 +8,6 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 import { UserContextProvider } from "@/hooks/useUserContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import AdminRoute from "@/components/AdminRoute";
-import SuperAdminRoute from "@/components/SuperAdminRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -29,9 +27,7 @@ import CostCalculator from "./pages/CostCalculator";
 import SmartHeadhunting from "./pages/SmartHeadhunting";
 import CampaignDetail from "./pages/CampaignDetail";
 import CandidateDetail from "./pages/CandidateDetail";
-import Admin from "./pages/Admin";
 import King744 from "./pages/King744";
-import AdminLegalImporter from "./pages/AdminLegalImporter";
 import LegalSearchPage from "./pages/LegalSearchPage";
 import LegalAdvisor from "./pages/LegalAdvisor";
 import StrategicCompass from "./pages/StrategicCompass";
@@ -41,7 +37,6 @@ import Upgrade from "./pages/Upgrade";
 import PaymentHistory from "./pages/PaymentHistory";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-import SupportManager from "./pages/SupportManager";
 import SupportChatWidget from "./components/SupportChatWidget";
 const queryClient = new QueryClient();
 
@@ -229,32 +224,8 @@ const App = () => (
                 } 
               />
               <Route 
-                path="/admin" 
-                element={
-                  <AdminRoute>
-                    <Admin />
-                  </AdminRoute>
-                } 
-              />
-              <Route 
                 path="/king744" 
                 element={<King744 />}
-              />
-              <Route 
-                path="/admin/legal-importer" 
-                element={
-                  <AdminRoute>
-                    <AdminLegalImporter />
-                  </AdminRoute>
-                } 
-              />
-              <Route 
-                path="/admin/support-manager" 
-                element={
-                  <AdminRoute>
-                    <SupportManager />
-                  </AdminRoute>
-                } 
               />
               <Route 
                 path="/legal-search" 
