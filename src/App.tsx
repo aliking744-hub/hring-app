@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
+import { UserContextProvider } from "@/hooks/useUserContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
 import Index from "./pages/Index";
@@ -41,8 +42,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <SiteSettingsProvider>
-              <Routes>
+            <UserContextProvider>
+              <SiteSettingsProvider>
+                <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/blog" element={<Blog />} />
@@ -185,8 +187,9 @@ const App = () => (
               />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
-              </Routes>
-            </SiteSettingsProvider>
+                </Routes>
+              </SiteSettingsProvider>
+            </UserContextProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
