@@ -9,9 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useCredits, CREDIT_COSTS } from "@/hooks/useCredits";
+import { useCredits, DIAMOND_COSTS } from "@/hooks/useCredits";
 import { jsPDF } from "jspdf";
 import logoImage from "@/assets/logo.png";
+import DataPrivacyWarning from "@/components/DataPrivacyWarning";
 
 const seniorityLevels = [
   { value: "junior", label: "کارشناس (Junior)" },
@@ -66,7 +67,7 @@ const JobDescriptionGenerator = () => {
     if (!hasEnoughCredits('JOB_PROFILE')) {
       toast({
         title: "اعتبار ناکافی",
-        description: `برای این عملیات ${CREDIT_COSTS.JOB_PROFILE} جم نیاز دارید. اعتبار فعلی: ${credits}`,
+        description: `برای این عملیات ${DIAMOND_COSTS.JOB_PROFILE} الماس نیاز دارید. اعتبار فعلی: ${credits}`,
         variant: "destructive",
       });
       return;
@@ -280,6 +281,9 @@ const JobDescriptionGenerator = () => {
             <p className="text-muted-foreground">با هوش مصنوعی سند شرح شغلی حرفه‌ای بسازید</p>
           </div>
         </motion.div>
+
+        {/* Data Privacy Warning for non-Plus users */}
+        <DataPrivacyWarning className="mb-6" />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6 space-y-6">

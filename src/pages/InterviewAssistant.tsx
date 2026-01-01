@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { useCredits, CREDIT_COSTS } from "@/hooks/useCredits";
+import { useCredits, CREDIT_COSTS, DIAMOND_COSTS } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Loader2, Download, ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, MessageSquare, Brain, Users, Briefcase, Coins } from "lucide-react";
 import { Link } from "react-router-dom";

@@ -23,19 +23,55 @@ import {
   Building2,
   Loader2,
   Crown,
-  History
+  History,
+  Lock,
+  Eye
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useCredits } from "@/hooks/useCredits";
 import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 import CorporateDashboard from "@/components/dashboard/CorporateDashboard";
+import type { SubscriptionTier } from "@/types/multiTenant";
+
+// Feature visibility rules based on plan
+const getFeatureVisibility = (tier: SubscriptionTier | null, userType: 'individual' | 'corporate') => {
+  // Corporate users have different rules
+  if (userType === 'corporate') {
+    return {
+      modules: true,
+      headhunting: true,
+      onboarding: tier !== 'corporate_expert', // Hidden for Expert
+      strategicCompass: tier === 'corporate_decision_support' || tier === 'corporate_decision_making',
+      hrDashboard: tier === 'corporate_decision_making',
+      costCalculator: true,
+    };
+  }
+
+  // Individual users
+  const isFree = tier === 'individual_free' || !tier;
+  const isPro = tier === 'individual_pro';
+  const isPlus = tier === 'individual_plus';
+
+  return {
+    modules: true, // Always visible
+    costCalculator: true, // Always visible
+    headhunting: isPro || isPlus, // Hidden for Free
+    onboarding: isPlus, // Hidden for Free/Pro (Plus gets demo)
+    strategicCompass: isPlus, // Hidden for Free/Pro (Plus gets demo)
+    hrDashboard: isPro || isPlus, // Hidden for Free
+    canSaveData: isPlus, // Only Plus can save data
+    isDemoMode: isPlus && !userType, // Plus users get demo mode for restricted features
+  };
+};
 
 const Dashboard = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -46,39 +82,94 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Dynamic sidebar items based on user type
+  // Get visibility rules based on user's plan
+  const visibility = getFeatureVisibility(
+    context?.subscriptionTier || context?.companyTier || null,
+    context?.userType || 'individual'
+  );
+
+  // Dynamic sidebar items based on user type and plan
   const getSidebarItems = () => {
-    const baseItems = [
+    const items: Array<{
+      icon: any;
+      label: string;
+      path: string;
+      hidden?: boolean;
+      demoMode?: boolean;
+    }> = [
       { icon: LayoutDashboard, label: "نمای کلی", path: "/dashboard" },
       { icon: Boxes, label: "ماژول‌ها", path: "/modules" },
-      { icon: UserPlus, label: "آنبوردینگ", path: "/onboarding" },
-      { icon: Crosshair, label: "هدهانتینگ", path: "/smart-headhunting" },
       { icon: Calculator, label: "بهای تمام شده", path: "/cost-calculator" },
-      { icon: Grid3X3, label: "ابزارهای مدیریتی", path: "/hr-dashboard" },
-      { icon: Compass, label: "قطب نمای استراتژی", path: "/strategic-compass" },
-      { icon: FileText, label: "فروشگاه", path: "/shop" },
     ];
+
+    // Headhunting - Hidden for Free users
+    if (visibility.headhunting) {
+      items.push({ icon: Crosshair, label: "هدهانتینگ", path: "/smart-headhunting" });
+    }
+
+    // Onboarding - Hidden for Free/Pro, Demo for Plus (individual)
+    if (visibility.onboarding) {
+      const isPlus = context?.subscriptionTier === 'individual_plus';
+      items.push({ 
+        icon: UserPlus, 
+        label: "آنبوردینگ", 
+        path: "/onboarding",
+        demoMode: isPlus && context?.userType === 'individual'
+      });
+    }
+
+    // HR Dashboard - Hidden for Free
+    if (visibility.hrDashboard) {
+      items.push({ icon: Grid3X3, label: "داشبورد HR", path: "/hr-dashboard" });
+    }
+
+    // Strategic Compass - Only for corporate or Plus (demo)
+    if (visibility.strategicCompass) {
+      const isPlus = context?.subscriptionTier === 'individual_plus';
+      items.push({ 
+        icon: Compass, 
+        label: "قطب نمای استراتژی", 
+        path: "/strategic-compass",
+        demoMode: isPlus && context?.userType === 'individual'
+      });
+    }
+
+    // Shop - Always visible
+    items.push({ icon: FileText, label: "فروشگاه", path: "/shop" });
 
     // Add corporate-specific items
     if (context?.userType === 'corporate') {
-      baseItems.splice(1, 0, { icon: Users, label: "اعضای تیم", path: "/company-members" });
+      items.splice(1, 0, { icon: Users, label: "اعضای تیم", path: "/company-members" });
       if (context.companyRole === 'ceo') {
-        baseItems.push({ icon: Settings, label: "تنظیمات شرکت", path: "/company-settings" });
+        items.push({ icon: Settings, label: "تنظیمات شرکت", path: "/company-settings" });
       }
     }
 
     // Add admin link
     if (isAdmin) {
-      baseItems.push({ icon: Shield, label: "پنل ادمین", path: "/admin" });
+      items.push({ icon: Shield, label: "پنل ادمین", path: "/admin" });
     }
 
-    return baseItems;
+    return items;
   };
 
   const sidebarItems = getSidebarItems();
 
   // Get max credits based on user's plan
-  const maxCredits = context?.credits || 50;
+  const getMaxCredits = () => {
+    const tier = context?.subscriptionTier || context?.companyTier;
+    switch (tier) {
+      case 'individual_free': return 50;
+      case 'individual_pro': return 600;
+      case 'individual_plus': return 2500;
+      case 'corporate_expert': return 500;
+      case 'corporate_decision_support': return 2000;
+      case 'corporate_decision_making': return 5000;
+      default: return 50;
+    }
+  };
+
+  const maxCredits = getMaxCredits();
   const creditPercentage = maxCredits > 0 ? Math.min((credits / maxCredits) * 100, 100) : 0;
 
   const handleLogout = async () => {
@@ -194,6 +285,12 @@ const Dashboard = () => {
                     >
                       <item.icon className="w-5 h-5" />
                       <span className="font-medium">{item.label}</span>
+                      {item.demoMode && (
+                        <Badge variant="secondary" className="mr-auto text-xs">
+                          <Eye className="w-3 h-3 ml-1" />
+                          دمو
+                        </Badge>
+                      )}
                     </Link>
                   ))}
                 </nav>
@@ -281,6 +378,12 @@ const Dashboard = () => {
               >
                 <item.icon className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>
+                {item.demoMode && (
+                  <Badge variant="secondary" className="mr-auto text-xs">
+                    <Eye className="w-3 h-3 ml-1" />
+                    دمو
+                  </Badge>
+                )}
               </Link>
             ))}
           </nav>

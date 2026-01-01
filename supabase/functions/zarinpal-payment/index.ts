@@ -11,14 +11,23 @@ const ZARINPAL_API_URL = "https://payment.zarinpal.com/pg/v4/payment";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Plan prices in Tomans
+// Plan prices in Tomans (updated pricing)
 const PLAN_PRICES: Record<string, number> = {
-  individual_expert: 199000,
-  individual_pro: 399000,
-  individual_plus: 699000,
-  corporate_expert: 999000,
-  corporate_decision_support: 1999000,
-  corporate_decision_making: 3999000,
+  individual_pro: 490000,        // ~490k Toman
+  individual_plus: 990000,       // ~990k Toman
+  corporate_expert: 1490000,     // ~1.49M Toman
+  corporate_decision_support: 2990000, // ~2.99M Toman
+  corporate_decision_making: 5990000,  // ~5.99M Toman
+};
+
+// Plan credit allocations
+const PLAN_CREDITS: Record<string, number> = {
+  individual_free: 50,
+  individual_pro: 600,
+  individual_plus: 2500,
+  corporate_expert: 1000,
+  corporate_decision_support: 3000,
+  corporate_decision_making: 10000,
 };
 
 interface PaymentRequest {
@@ -172,19 +181,38 @@ serve(async (req) => {
           .update({ status: "verified", ref_id: String(refId) })
           .eq("id", transaction.id);
 
-        // Update user's subscription
+        // Update user's subscription and credits
+        const creditAmount = PLAN_CREDITS[transaction.plan_type] || 0;
+        
         if (transaction.company_id) {
           // Corporate subscription
           await supabase
             .from("companies")
-            .update({ subscription_tier: transaction.plan_type })
+            .update({ 
+              subscription_tier: transaction.plan_type,
+              monthly_credits: creditAmount,
+              used_credits: 0,
+              credit_pool: creditAmount,
+              last_credit_reset: new Date().toISOString()
+            })
             .eq("id", transaction.company_id);
         } else {
           // Individual subscription
           await supabase
             .from("profiles")
-            .update({ subscription_tier: transaction.plan_type })
+            .update({ 
+              subscription_tier: transaction.plan_type,
+              monthly_credits: creditAmount,
+              used_credits: 0,
+              last_credit_reset: new Date().toISOString()
+            })
             .eq("id", transaction.user_id);
+            
+          // Also update user_credits table
+          await supabase
+            .from("user_credits")
+            .update({ credits: creditAmount })
+            .eq("user_id", transaction.user_id);
         }
 
         return new Response(
