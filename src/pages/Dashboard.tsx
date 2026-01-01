@@ -27,8 +27,7 @@ import {
   History,
   Lock,
   Eye,
-  User,
-  Gavel
+  User
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -140,13 +139,6 @@ const Dashboard = () => {
 
     // Legal Advisor - Always visible
     items.push({ icon: Scale, label: "مشاور حقوقی", path: "/legal-advisor" });
-
-    // Personal Lawyer (Labor Complaint) - Pro & Plus individual users only
-    const isPro = context?.subscriptionTier === 'individual_pro';
-    const isPlus = context?.subscriptionTier === 'individual_plus';
-    if ((isPro || isPlus) && context?.userType === 'individual') {
-      items.push({ icon: Gavel, label: "وکیل شخصی", path: "/labor-complaint" });
-    }
 
     // Shop - Always visible
     items.push({ icon: FileText, label: "فروشگاه", path: "/shop" });

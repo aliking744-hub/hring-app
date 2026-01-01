@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
-import { Scale, Send, Paperclip, FileText, X, Loader2, Bot, User, ArrowRight, Sparkles, Plus, MessageSquare, Trash2, Clock, Lock, Shield, MessageCircle } from "lucide-react";
+import { Scale, Send, Paperclip, FileText, X, Loader2, Bot, User, ArrowRight, Sparkles, Plus, MessageSquare, Trash2, Clock, Lock, Shield, MessageCircle, Gavel } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import AuroraBackground from "@/components/AuroraBackground";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/landing/Footer";
 import DefenseBuilder from "@/components/legal/DefenseBuilder";
+import LaborComplaintAssistant from "@/components/legal/LaborComplaintAssistant";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -388,16 +389,30 @@ const LegalAdvisor = () => {
 
           {/* Mode Tabs */}
           <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
+            <TabsList className="grid w-full max-w-xl mx-auto grid-cols-3 mb-6">
               <TabsTrigger value="chat" className="gap-2">
                 <MessageCircle className="w-4 h-4" />
                 مشاور حقوقی
               </TabsTrigger>
               <TabsTrigger value="defense" className="gap-2">
                 <Shield className="w-4 h-4" />
-                تحلیل پرونده
+                دفاع کارفرما
+              </TabsTrigger>
+              <TabsTrigger value="complaint" className="gap-2">
+                <Gavel className="w-4 h-4" />
+                شکایت کارگر
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="complaint">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card p-6"
+              >
+                <LaborComplaintAssistant />
+              </motion.div>
+            </TabsContent>
 
             <TabsContent value="defense">
               <motion.div
