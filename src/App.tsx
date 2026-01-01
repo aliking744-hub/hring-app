@@ -30,6 +30,8 @@ import CampaignDetail from "./pages/CampaignDetail";
 import CandidateDetail from "./pages/CandidateDetail";
 import Admin from "./pages/Admin";
 import StrategicCompass from "./pages/StrategicCompass";
+import CompanyMembers from "./pages/CompanyMembers";
+import CompanySettings from "./pages/CompanySettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -174,6 +176,22 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <StrategicCompass />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/company-members" 
+                element={
+                  <ProtectedRoute>
+                    <CompanyMembers />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/company-settings" 
+                element={
+                  <ProtectedRoute>
+                    <CompanySettings />
                   </ProtectedRoute>
                 } 
               />
