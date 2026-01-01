@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   Users, UserPlus, Copy, Link2, Trash2, 
   Shield, ChevronLeft, Check, RefreshCw,
-  Building2, Loader2
+  Building2, Loader2, UserCog, Mail, Lock, User
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuroraBackground from '@/components/AuroraBackground';
@@ -26,13 +26,17 @@ import {
   TableHeader, TableRow 
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useCompany } from '@/hooks/useCompany';
 import { useUserContext } from '@/hooks/useUserContext';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { CompanyRole, ROLE_NAMES } from '@/types/multiTenant';
 
 const CompanyMembers = () => {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const { context, loading: contextLoading } = useUserContext();
   const { 
     company, members, invites, loading, isCEO, canInvite,
@@ -40,11 +44,20 @@ const CompanyMembers = () => {
     toggleInvitePermission, deactivateInvite, refetch
   } = useCompany();
 
+  // Invite dialog state
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [newInviteRole, setNewInviteRole] = useState<CompanyRole>('employee');
   const [newInviteMaxUses, setNewInviteMaxUses] = useState<number>(1);
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  // Create user dialog state
+  const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserFullName, setNewUserFullName] = useState('');
+  const [newUserRole, setNewUserRole] = useState<CompanyRole>('employee');
+  const [creatingUser, setCreatingUser] = useState(false);
 
   const handleCreateInvite = async () => {
     setCreatingInvite(true);
@@ -55,6 +68,61 @@ const CompanyMembers = () => {
       setNewInviteMaxUses(1);
     } finally {
       setCreatingInvite(false);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!context?.companyId || !session?.access_token) return;
+
+    // Validation
+    if (!newUserEmail || !newUserPassword || !newUserFullName) {
+      toast.error('لطفاً تمام فیلدها را پر کنید');
+      return;
+    }
+
+    if (newUserPassword.length < 6) {
+      toast.error('رمز عبور باید حداقل ۶ کاراکتر باشد');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newUserEmail)) {
+      toast.error('فرمت ایمیل نامعتبر است');
+      return;
+    }
+
+    setCreatingUser(true);
+    try {
+      const response = await supabase.functions.invoke('create-company-user', {
+        body: {
+          email: newUserEmail.trim(),
+          password: newUserPassword,
+          fullName: newUserFullName.trim(),
+          role: newUserRole,
+          companyId: context.companyId
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      toast.success(`کاربر "${newUserFullName}" با موفقیت ایجاد شد`);
+      setCreateUserDialogOpen(false);
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserFullName('');
+      setNewUserRole('employee');
+      await refetch();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'خطا در ایجاد کاربر';
+      toast.error(errorMessage);
+    } finally {
+      setCreatingUser(false);
     }
   };
 
@@ -129,12 +197,118 @@ const CompanyMembers = () => {
               <Button variant="outline" size="icon" onClick={refetch}>
                 <RefreshCw className="w-4 h-4" />
               </Button>
+              
+              {/* Create User Dialog - CEO Only */}
+              {isCEO && (
+                <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <UserCog className="w-4 h-4" />
+                      ساخت کاربر
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent dir="rtl" className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>ساخت کاربر جدید</DialogTitle>
+                      <DialogDescription>
+                        یک حساب کاربری جدید برای عضو شرکت ایجاد کنید. کاربر با این اطلاعات می‌تواند وارد پنل شود.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>نام و نام خانوادگی</Label>
+                        <div className="relative">
+                          <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            placeholder="مثال: علی احمدی"
+                            value={newUserFullName}
+                            onChange={(e) => setNewUserFullName(e.target.value)}
+                            className="pr-10"
+                            disabled={creatingUser}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>ایمیل</Label>
+                        <div className="relative">
+                          <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            type="email"
+                            placeholder="user@company.com"
+                            value={newUserEmail}
+                            onChange={(e) => setNewUserEmail(e.target.value)}
+                            className="pr-10"
+                            dir="ltr"
+                            disabled={creatingUser}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>رمز عبور</Label>
+                        <div className="relative">
+                          <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            type="text"
+                            placeholder="حداقل ۶ کاراکتر"
+                            value={newUserPassword}
+                            onChange={(e) => setNewUserPassword(e.target.value)}
+                            className="pr-10"
+                            dir="ltr"
+                            disabled={creatingUser}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          این رمز را به کاربر اطلاع دهید تا بتواند وارد شود.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>نقش در شرکت</Label>
+                        <Select 
+                          value={newUserRole} 
+                          onValueChange={(v) => setNewUserRole(v as CompanyRole)}
+                          disabled={creatingUser}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="deputy">معاون</SelectItem>
+                            <SelectItem value="manager">مدیر</SelectItem>
+                            <SelectItem value="employee">کارشناس</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter className="gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setCreateUserDialogOpen(false)}
+                        disabled={creatingUser}
+                      >
+                        انصراف
+                      </Button>
+                      <Button onClick={handleCreateUser} disabled={creatingUser}>
+                        {creatingUser ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                            در حال ایجاد...
+                          </>
+                        ) : (
+                          'ایجاد کاربر'
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+
+              {/* Invite Link Dialog */}
               {(isCEO || canInvite) && (
                 <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="glow-button text-foreground">
                       <UserPlus className="w-4 h-4 ml-2" />
-                      ایجاد لینک دعوت
+                      لینک دعوت
                     </Button>
                   </DialogTrigger>
                   <DialogContent dir="rtl">
