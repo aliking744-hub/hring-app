@@ -41,6 +41,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useCredits } from "@/hooks/useCredits";
 import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 import CorporateDashboard from "@/components/dashboard/CorporateDashboard";
+import NotificationsDropdown from "@/components/NotificationsDropdown";
 import type { SubscriptionTier } from "@/types/multiTenant";
 
 // Feature visibility rules based on plan
@@ -427,12 +428,7 @@ const Dashboard = () => {
                   className="pr-9 w-48 bg-secondary/50 border-border"
                 />
               </div>
-              <Button size="icon" variant="outline" className="relative border-border bg-secondary/50">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full text-xs flex items-center justify-center text-primary-foreground">
-                  ۳
-                </span>
-              </Button>
+              <NotificationsDropdown />
             </header>
 
             {/* Conditional Dashboard Content */}
