@@ -12,7 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_NAMES, CompanyRole } from "@/types/multiTenant";
-import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useSiteSettings, useLogos } from "@/hooks/useSiteSettings";
+import defaultLogo from "@/assets/logo.png";
 
 type AccountType = 'person' | 'company';
 
@@ -43,6 +44,10 @@ const Auth = () => {
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
   const { getSetting } = useSiteSettings();
+  const logos = useLogos();
+  
+  // Use dynamic logo or fallback to default
+  const authLogo = logos.auth || logos.main || defaultLogo;
 
   // Dynamic texts
   const authTitle = getSetting('auth_title', 'ورود به HRing');
@@ -646,8 +651,9 @@ const Auth = () => {
         <div className="glass-card p-8">
           {/* Header */}
           <div className="text-center mb-6">
-            <Link to="/" className="inline-block text-3xl font-bold gradient-text-primary mb-4">
-              hring
+            <Link to="/" className="inline-flex items-center justify-center gap-2 mb-4">
+              <img src={authLogo} alt="Logo" className="h-10 w-10 object-contain" />
+              <span className="text-3xl font-bold gradient-text-primary">hring</span>
             </Link>
             <h1 className="text-2xl font-semibold text-foreground">
               {inviteInfo?.is_valid 

@@ -43,11 +43,14 @@ const DEFAULT_FONTS: FontSettings = {
 
 // Note: These are empty strings because we use ES6 imports for fallbacks in components
 // This allows Vite to properly bundle the assets
+// Default favicon is a neutral briefcase icon (data URI) instead of Lovable heart
+const DEFAULT_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='7' width='20' height='14' rx='2' ry='2'/%3E%3Cpath d='M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16'/%3E%3C/svg%3E";
+
 const DEFAULT_LOGOS: LogoSettings = {
   main: '',
   footer: '',
   auth: '',
-  favicon: '/favicon.ico',
+  favicon: DEFAULT_FAVICON,
 };
 
 const SiteSettingsContext = createContext<SiteSettingsContextType | null>(null);
@@ -108,6 +111,7 @@ const updateFavicon = (faviconUrl: string) => {
     link.rel = 'icon';
     document.head.appendChild(link);
   }
+  link.type = faviconUrl.startsWith('data:') ? 'image/svg+xml' : 'image/x-icon';
   link.href = faviconUrl;
 };
 
@@ -167,10 +171,8 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
     };
     setLogos(newLogos);
     
-    // Update favicon if set
-    if (settingsMap['logo_favicon']) {
-      updateFavicon(settingsMap['logo_favicon']);
-    }
+    // Always update favicon - use custom if set, otherwise use default
+    updateFavicon(settingsMap['logo_favicon'] || DEFAULT_FAVICON);
 
     setLoading(false);
   };
