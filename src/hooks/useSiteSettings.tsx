@@ -31,6 +31,7 @@ interface SiteSettingsContextType {
   fonts: FontSettings;
   logos: LogoSettings;
   customFonts: CustomFont[];
+  siteName: string;
   refetch: () => Promise<void>;
 }
 
@@ -52,6 +53,8 @@ const DEFAULT_LOGOS: LogoSettings = {
   auth: '',
   favicon: DEFAULT_FAVICON,
 };
+
+const DEFAULT_SITE_NAME = 'hring';
 
 const SiteSettingsContext = createContext<SiteSettingsContextType | null>(null);
 
@@ -121,6 +124,7 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
   const [fonts, setFonts] = useState<FontSettings>(DEFAULT_FONTS);
   const [logos, setLogos] = useState<LogoSettings>(DEFAULT_LOGOS);
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
+  const [siteName, setSiteName] = useState<string>(DEFAULT_SITE_NAME);
 
   const fetchSettings = async () => {
     const { data, error } = await supabase
@@ -174,6 +178,9 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
     // Always update favicon - use custom if set, otherwise use default
     updateFavicon(settingsMap['logo_favicon'] || DEFAULT_FAVICON);
 
+    // Extract site name
+    setSiteName(settingsMap['site_name'] || DEFAULT_SITE_NAME);
+
     setLoading(false);
   };
 
@@ -193,6 +200,7 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
       fonts, 
       logos,
       customFonts,
+      siteName,
       refetch: fetchSettings 
     }}>
       {children}
@@ -213,11 +221,18 @@ export const useSiteSettings = (): SiteSettingsContextType => {
       fonts: DEFAULT_FONTS,
       logos: DEFAULT_LOGOS,
       customFonts: [],
+      siteName: DEFAULT_SITE_NAME,
       refetch: async () => {},
     };
   }
   
   return context;
+};
+
+// Utility hook for site name
+export const useSiteName = () => {
+  const { siteName } = useSiteSettings();
+  return siteName;
 };
 
 // Utility hook for just fonts

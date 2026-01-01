@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import { useLogos, useFonts, useSiteSettings } from "@/hooks/useSiteSettings";
+import { useLogos, useFonts, useSiteSettings, useSiteName } from "@/hooks/useSiteSettings";
 import defaultLogo from "@/assets/logo_zir_white.png";
 
 const Footer = () => {
   const logos = useLogos();
   const fonts = useFonts();
   const { getSetting } = useSiteSettings();
+  const siteName = useSiteName();
   
   const footerCredit = getSetting('footer_credit', 'Architected by');
   const footerAuthor = getSetting('footer_author', 'Ali Dehghani');
@@ -23,14 +24,14 @@ const Footer = () => {
           <Link to="/" className="flex items-center gap-3">
             <img 
               src={footerLogo} 
-              alt="HRing" 
+              alt={siteName} 
               className="h-10 object-contain"
             />
             <span 
               className="text-xl font-bold gradient-text-primary"
               style={{ fontFamily: fonts.heading }}
             >
-              hring
+              {siteName}
             </span>
           </Link>
 
@@ -60,7 +61,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-8 pt-8 border-t border-border text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} hring. {footerCopyright}
+          © {new Date().getFullYear()} {siteName}. {footerCopyright}
         </div>
       </div>
     </footer>

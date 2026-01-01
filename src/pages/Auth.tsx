@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_NAMES, CompanyRole } from "@/types/multiTenant";
-import { useSiteSettings, useLogos } from "@/hooks/useSiteSettings";
+import { useSiteSettings, useLogos, useSiteName } from "@/hooks/useSiteSettings";
 import defaultLogo from "@/assets/logo.png";
 
 type AccountType = 'person' | 'company';
@@ -45,12 +45,13 @@ const Auth = () => {
   const navigate = useNavigate();
   const { getSetting } = useSiteSettings();
   const logos = useLogos();
+  const siteName = useSiteName();
   
   // Use dynamic logo or fallback to default
   const authLogo = logos.auth || logos.main || defaultLogo;
 
-  // Dynamic texts
-  const authTitle = getSetting('auth_title', 'ورود به HRing');
+  // Dynamic texts - use siteName for defaults
+  const authTitle = getSetting('auth_title', `ورود به ${siteName}`);
   const authSubtitle = getSetting('auth_subtitle', 'به پلتفرم مدیریت منابع انسانی خوش آمدید');
   const authGoogleBtn = getSetting('auth_google_btn', 'ورود با گوگل');
   const authLoginTab = getSetting('auth_login_tab', 'ورود');
@@ -282,7 +283,7 @@ const Auth = () => {
             description: inviteInfo?.is_valid 
               ? `به ${inviteInfo.company_name} خوش آمدید`
               : accountType === 'person' 
-                ? "به داشبورد hring خوش آمدید" 
+                ? `به داشبورد ${siteName} خوش آمدید` 
                 : "به پنل شرکت خوش آمدید",
           });
           navigate('/dashboard');
@@ -324,7 +325,7 @@ const Auth = () => {
           } else {
             toast({
               title: "ثبت‌نام موفق",
-              description: "به HRing خوش آمدید",
+              description: `به ${siteName} خوش آمدید`,
             });
             navigate('/dashboard');
           }
