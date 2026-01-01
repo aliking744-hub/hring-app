@@ -99,6 +99,13 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'IRANSans', 'BNazanin', 'Inter', system-ui, sans-serif;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+  }
+
+  /* Safe area padding for mobile devices */
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }
 

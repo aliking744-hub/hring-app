@@ -89,7 +89,7 @@ const StrategicErdtree = () => {
           </div>
 
           {/* 3D Scene Container */}
-          <div className="relative h-[600px] rounded-xl overflow-hidden border border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.15)]">
+          <div className="relative h-[400px] sm:h-[500px] md:h-[600px] rounded-xl overflow-hidden border border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.15)]">
             {loading ? (
               <div className="w-full h-full flex items-center justify-center bg-[#0a0a12]">
                 <div className="text-center">

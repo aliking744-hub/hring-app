@@ -367,8 +367,8 @@ const LegalAdvisor = () => {
       
       <Navbar />
       
-      <main className="pt-32 pb-24 px-4">
-        <div className="container mx-auto max-w-6xl">
+      <main className="pt-32 pb-24 px-2 sm:px-4">
+        <div className="container mx-auto max-w-6xl 2xl:max-w-7xl">
           {/* Header */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -389,18 +389,21 @@ const LegalAdvisor = () => {
 
           {/* Mode Tabs */}
           <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="grid w-full max-w-xl mx-auto grid-cols-3 mb-6">
-              <TabsTrigger value="chat" className="gap-2">
+            <TabsList className="grid w-full max-w-xl mx-auto grid-cols-3 mb-6 h-auto">
+              <TabsTrigger value="chat" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2 px-1 sm:px-3 flex-col sm:flex-row">
                 <MessageCircle className="w-4 h-4" />
-                مشاور حقوقی
+                <span className="hidden sm:inline">مشاور حقوقی</span>
+                <span className="sm:hidden">مشاور</span>
               </TabsTrigger>
-              <TabsTrigger value="defense" className="gap-2">
+              <TabsTrigger value="defense" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2 px-1 sm:px-3 flex-col sm:flex-row">
                 <Shield className="w-4 h-4" />
-                دفاع کارفرما
+                <span className="hidden sm:inline">دفاع کارفرما</span>
+                <span className="sm:hidden">دفاع</span>
               </TabsTrigger>
-              <TabsTrigger value="complaint" className="gap-2">
+              <TabsTrigger value="complaint" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2 px-1 sm:px-3 flex-col sm:flex-row">
                 <Gavel className="w-4 h-4" />
-                شکایت کارگر
+                <span className="hidden sm:inline">شکایت کارگر</span>
+                <span className="sm:hidden">شکایت</span>
               </TabsTrigger>
             </TabsList>
 
@@ -425,13 +428,13 @@ const LegalAdvisor = () => {
             </TabsContent>
 
             <TabsContent value="chat">
-          <div className="flex gap-4">
+          <div className="flex flex-col lg:flex-row gap-4">
             {/* Sidebar - Conversation History */}
             {canSaveHistory() && (
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="hidden lg:block w-72 glass-card p-4 h-[600px] flex flex-col"
+                className="hidden lg:flex w-72 glass-card p-4 h-[600px] flex-col"
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-foreground">تاریخچه مکالمات</h3>
@@ -520,7 +523,7 @@ const LegalAdvisor = () => {
               </div>
 
               {/* Messages */}
-              <ScrollArea className="h-[450px] px-6 py-4" ref={scrollRef}>
+              <ScrollArea className="h-[350px] sm:h-[450px] px-3 sm:px-6 py-4" ref={scrollRef}>
                 <div className="space-y-4">
                   {messages.length === 0 && (
                     <div className="text-center py-12">
@@ -635,7 +638,7 @@ const LegalAdvisor = () => {
               </ScrollArea>
 
               {/* Input Area */}
-              <div className="border-t border-border px-6 py-4 space-y-3">
+              <div className="border-t border-border px-3 sm:px-6 py-3 sm:py-4 space-y-3 pb-safe">
                 {attachments.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
                     {attachments.map((att, index) => (

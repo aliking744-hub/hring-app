@@ -416,12 +416,12 @@ const Dashboard = () => {
         </motion.aside>
 
         {/* Main Content */}
-        <div className="flex-1 p-4 lg:pr-0 pt-20 lg:pt-4">
+        <div className="flex-1 p-4 lg:pr-0 pt-20 lg:pt-4 min-w-0">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="glass-card h-full p-6 overflow-auto"
+            className="glass-card h-full p-4 sm:p-6 overflow-auto max-w-[1920px] mx-auto"
           >
             {/* Header with Search & Notifications */}
             <header className="flex items-center justify-end gap-3 mb-6">

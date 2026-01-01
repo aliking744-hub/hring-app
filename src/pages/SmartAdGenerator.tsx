@@ -251,22 +251,23 @@ const SmartAdGenerator = () => {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground py-12 px-4">
-        <div className="container max-w-4xl mx-auto">
+      <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground py-8 sm:py-12 px-4">
+        <div className="container max-w-4xl 2xl:max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-6">
-            <Link to="/dashboard" className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground transition-colors">
-              <ArrowRight className="w-5 h-5" />
-              <span>بازگشت به داشبورد</span>
+            <Link to="/dashboard" className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground transition-colors text-sm sm:text-base">
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">بازگشت به داشبورد</span>
+              <span className="sm:hidden">بازگشت</span>
             </Link>
-            <img src={logo} alt="لوگو" className="w-12 h-12" />
+            <img src={logo} alt="لوگو" className="w-10 h-10 sm:w-12 sm:h-12" />
           </div>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary-foreground/20 flex items-center justify-center">
-              <Megaphone className="w-7 h-7" />
+          <div className="flex items-center gap-3 sm:gap-4 mb-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary-foreground/20 flex items-center justify-center">
+              <Megaphone className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold">آگهی‌نویس هوشمند</h1>
-              <p className="text-primary-foreground/80 mt-1">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">آگهی‌نویس هوشمند</h1>
+              <p className="text-primary-foreground/80 mt-1 text-sm sm:text-base">
                 نوشتن آگهی‌های شغلی جذاب با هوش مصنوعی
               </p>
             </div>
@@ -275,7 +276,7 @@ const SmartAdGenerator = () => {
       </div>
 
       {/* Form Section */}
-      <div className="container max-w-4xl mx-auto py-10 px-4">
+      <div className="container max-w-4xl 2xl:max-w-5xl mx-auto py-6 sm:py-10 px-2 sm:px-4">
         <Card className="shadow-lg border-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -492,7 +493,7 @@ const SmartAdGenerator = () => {
                   <img
                     src={generatedImage}
                     alt="تصویر آگهی شغلی"
-                    className="w-full rounded-lg shadow-md"
+                    className="w-full max-w-full rounded-lg shadow-md object-contain max-h-[60vh] sm:max-h-none"
                   />
                 </CardContent>
               </Card>

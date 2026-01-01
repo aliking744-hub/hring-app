@@ -559,8 +559,8 @@ const SmartHeadhunting = () => {
         />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 lg:p-8" dir="rtl">
-        <div className="max-w-[1400px] mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 sm:p-6 lg:p-8" dir="rtl">
+        <div className="max-w-[1400px] 2xl:max-w-[1600px] mx-auto">
           {/* Logo - Top Left */}
           <div className="fixed top-6 left-6 z-50">
             <img 
@@ -877,7 +877,7 @@ const SmartHeadhunting = () => {
           )}
 
           {/* Active Campaigns Table */}
-          <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+          <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden overflow-x-auto">
             <div className="p-6 border-b border-slate-700/50">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h2 className="text-xl font-semibold text-white flex items-center gap-3">
