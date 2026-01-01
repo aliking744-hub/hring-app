@@ -2,15 +2,28 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-// Credit costs for different operations
-export const CREDIT_COSTS = {
-  JOB_PROFILE: 5,        // مهندسی مشاغل
-  SMART_AD_TEXT: 5,      // آگهی‌نویس - فقط متن
-  SMART_AD_IMAGE: 20,    // آگهی‌نویس - با تصویر
-  INTERVIEW_KIT: 5,      // دستیار مصاحبه
-  ONBOARDING_PLAN: 5,    // معمار موفقیت ۹۰ روزه
-  HR_DASHBOARD: 20,      // داشبورد HR
+// Diamond costs for different AI operations
+export const DIAMOND_COSTS = {
+  // Simple Text Generation - 5 Diamonds
+  JOB_PROFILE: 5,
+  SMART_AD_TEXT: 5,
+  INTERVIEW_KIT: 5,
+  ONBOARDING_PLAN: 5,
+  
+  // Image Generation - 20 Diamonds
+  SMART_AD_IMAGE: 20,
+  HR_DASHBOARD: 20,
+  ANALYTICS_HUB: 20,
+  
+  // Deep Web Search - 30 Diamonds
+  HEADHUNTING: 30,
+  
+  // Complex Analysis - 40 Diamonds
+  STRATEGIC_ANALYSIS: 40,
 } as const;
+
+// Backward compatibility
+export const CREDIT_COSTS = DIAMOND_COSTS;
 
 export type CreditOperation = keyof typeof CREDIT_COSTS;
 
