@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.search-legal-docs]
 verify_jwt = false
+
+[functions.process-legal-html]
+verify_jwt = false

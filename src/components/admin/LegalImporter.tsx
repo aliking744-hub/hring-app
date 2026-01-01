@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, FileText, Database, Globe, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, FileText, Database, Globe, CheckCircle, AlertCircle, ClipboardPaste } from 'lucide-react';
 
 const CATEGORIES = [
   { value: 'labor_law', label: 'قانون کار' },
@@ -21,6 +23,10 @@ const LegalImporter = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [stats, setStats] = useState<{ totalChunks?: number; savedCount?: number; contentLength?: number } | null>(null);
+  
+  // Manual HTML paste mode
+  const [htmlContent, setHtmlContent] = useState('');
+  const [manualSourceUrl, setManualSourceUrl] = useState('');
 
   const handleProcess = async () => {
     if (!sourceUrl || !category) {
@@ -62,6 +68,47 @@ const LegalImporter = () => {
     }
   };
 
+  const handleManualProcess = async () => {
+    if (!htmlContent || !category || !manualSourceUrl) {
+      toast.error('لطفاً HTML، URL منبع و دسته‌بندی را وارد کنید');
+      return;
+    }
+
+    setIsProcessing(true);
+    setLogs(['شروع پردازش محتوای دستی...']);
+    setStats(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('process-legal-html', {
+        body: { htmlContent, sourceUrl: manualSourceUrl, category }
+      });
+
+      if (error) throw error;
+
+      if (data.logs) {
+        setLogs(data.logs);
+      }
+
+      if (data.stats) {
+        setStats(data.stats);
+      }
+
+      if (data.success) {
+        toast.success(`${data.stats?.savedCount || 0} ماده با موفقیت وارد شد`);
+        setHtmlContent('');
+      } else {
+        toast.error(data.error || 'خطا در پردازش');
+      }
+    } catch (error) {
+      console.error('Error processing:', error);
+      const errorMessage = error instanceof Error ? error.message : 'خطای ناشناخته';
+      setLogs(prev => [...prev, `خطا: ${errorMessage}`]);
+      toast.error(errorMessage);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -71,65 +118,178 @@ const LegalImporter = () => {
             وارد کردن اسناد حقوقی
           </CardTitle>
           <CardDescription>
-            صفحات قوانین را از منابع معتبر اسکرپ کرده و در پایگاه دانش ذخیره کنید
+            صفحات قوانین را وارد کرده و در پایگاه دانش ذخیره کنید
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="sourceUrl" className="flex items-center gap-2">
+          <Tabs defaultValue="manual" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="manual" className="flex items-center gap-2">
+                <ClipboardPaste className="w-4 h-4" />
+                ورود دستی HTML
+              </TabsTrigger>
+              <TabsTrigger value="url" className="flex items-center gap-2">
                 <Globe className="w-4 h-4" />
-                آدرس URL منبع
-              </Label>
-              <Input
-                id="sourceUrl"
-                type="url"
-                placeholder="https://rc.majlis.ir/fa/law/..."
-                value={sourceUrl}
-                onChange={(e) => setSourceUrl(e.target.value)}
-                disabled={isProcessing}
-                dir="ltr"
-                className="text-left"
-              />
-            </div>
+                اسکرپ از URL
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="space-y-2">
-              <Label htmlFor="category" className="flex items-center gap-2">
-                <Database className="w-4 h-4" />
-                دسته‌بندی
-              </Label>
-              <Select value={category} onValueChange={setCategory} disabled={isProcessing}>
-                <SelectTrigger>
-                  <SelectValue placeholder="انتخاب دسته‌بندی..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            {/* Manual HTML Tab */}
+            <TabsContent value="manual" className="space-y-4 mt-4">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-4">
+                <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">راهنما:</h4>
+                <ol className="list-decimal list-inside text-sm text-blue-700 dark:text-blue-400 space-y-1">
+                  <li>صفحه قانون را در مرورگر خود باز کنید</li>
+                  <li>کلید F12 را بزنید یا راست کلیک → Inspect</li>
+                  <li>در تب Elements، روی تگ html راست کلیک → Copy → Copy outerHTML</li>
+                  <li>محتوا را در کادر زیر paste کنید</li>
+                </ol>
+              </div>
 
-          <Button 
-            onClick={handleProcess} 
-            disabled={isProcessing || !sourceUrl || !category}
-            className="w-full"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                در حال پردازش...
-              </>
-            ) : (
-              <>
-                <FileText className="w-4 h-4 ml-2" />
-                پردازش و ذخیره
-              </>
-            )}
-          </Button>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="manualSourceUrl" className="flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    آدرس URL منبع
+                  </Label>
+                  <Input
+                    id="manualSourceUrl"
+                    type="url"
+                    placeholder="https://qavanin.ir/Law/..."
+                    value={manualSourceUrl}
+                    onChange={(e) => setManualSourceUrl(e.target.value)}
+                    disabled={isProcessing}
+                    dir="ltr"
+                    className="text-left"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="manualCategory" className="flex items-center gap-2">
+                    <Database className="w-4 h-4" />
+                    دسته‌بندی
+                  </Label>
+                  <Select value={category} onValueChange={setCategory} disabled={isProcessing}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="انتخاب دسته‌بندی..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="htmlContent" className="flex items-center gap-2">
+                  <ClipboardPaste className="w-4 h-4" />
+                  محتوای HTML صفحه
+                </Label>
+                <Textarea
+                  id="htmlContent"
+                  placeholder="محتوای HTML را اینجا paste کنید..."
+                  value={htmlContent}
+                  onChange={(e) => setHtmlContent(e.target.value)}
+                  disabled={isProcessing}
+                  dir="ltr"
+                  className="text-left font-mono text-xs min-h-[200px]"
+                />
+                {htmlContent && (
+                  <p className="text-xs text-muted-foreground">
+                    {htmlContent.length.toLocaleString('fa-IR')} کاراکتر
+                  </p>
+                )}
+              </div>
+
+              <Button 
+                onClick={handleManualProcess} 
+                disabled={isProcessing || !htmlContent || !category || !manualSourceUrl}
+                className="w-full"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    در حال پردازش...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 ml-2" />
+                    پردازش و ذخیره
+                  </>
+                )}
+              </Button>
+            </TabsContent>
+
+            {/* URL Scrape Tab */}
+            <TabsContent value="url" className="space-y-4 mt-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-4">
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  ⚠️ توجه: برخی سایت‌های ایرانی (مثل qavanin.ir) فقط با IP ایران قابل دسترسی هستند. 
+                  در صورت خطا، از روش "ورود دستی HTML" استفاده کنید.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="sourceUrl" className="flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    آدرس URL منبع
+                  </Label>
+                  <Input
+                    id="sourceUrl"
+                    type="url"
+                    placeholder="https://rc.majlis.ir/fa/law/..."
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    disabled={isProcessing}
+                    dir="ltr"
+                    className="text-left"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="flex items-center gap-2">
+                    <Database className="w-4 h-4" />
+                    دسته‌بندی
+                  </Label>
+                  <Select value={category} onValueChange={setCategory} disabled={isProcessing}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="انتخاب دسته‌بندی..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleProcess} 
+                disabled={isProcessing || !sourceUrl || !category}
+                className="w-full"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    در حال پردازش...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 ml-2" />
+                    پردازش و ذخیره
+                  </>
+                )}
+              </Button>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
