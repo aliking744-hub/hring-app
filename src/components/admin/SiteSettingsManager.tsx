@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,8 +6,63 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Loader2, Save, Plus, Trash2, Type, Image, FileText, Upload } from 'lucide-react';
+import { Loader2, Save, Plus, Trash2, Type, Image, FileText, Upload, ChevronDown, Home, LogIn, LayoutDashboard, User, FolderOpen, Settings } from 'lucide-react';
+
+// Text settings groups configuration
+const TEXT_GROUPS = [
+  { 
+    id: 'hero', 
+    label: 'بخش هیرو', 
+    icon: Home, 
+    prefixes: ['hero_'],
+    description: 'عناوین و متون بخش اصلی صفحه اول'
+  },
+  { 
+    id: 'landing', 
+    label: 'صفحه اصلی', 
+    icon: Home, 
+    prefixes: ['dashboard_title', 'dashboard_subtitle', 'dashboard_cta', 'bento_', 'legal_', 'shop_', 'testimonials_', 'stat_', 'blog_title', 'blog_subtitle'],
+    description: 'سایر بخش‌های صفحه اصلی'
+  },
+  { 
+    id: 'footer', 
+    label: 'فوتر', 
+    icon: Settings, 
+    prefixes: ['footer_'],
+    description: 'متون پایین صفحه'
+  },
+  { 
+    id: 'auth', 
+    label: 'صفحه ورود', 
+    icon: LogIn, 
+    prefixes: ['auth_'],
+    description: 'عناوین و متون صفحه ورود و ثبت‌نام'
+  },
+  { 
+    id: 'dashboard_page', 
+    label: 'داشبورد', 
+    icon: LayoutDashboard, 
+    prefixes: ['dashboard_page_', 'dashboard_credit', 'dashboard_back', 'dashboard_upgrade', 'dashboard_logout', 'dashboard_search', 'dashboard_corporate'],
+    description: 'عناوین و متون صفحه داشبورد'
+  },
+  { 
+    id: 'profile', 
+    label: 'پروفایل', 
+    icon: User, 
+    prefixes: ['profile_'],
+    description: 'عناوین و متون صفحه پروفایل'
+  },
+  { 
+    id: 'other', 
+    label: 'سایر', 
+    icon: FolderOpen, 
+    prefixes: [],
+    description: 'متون دسته‌بندی نشده'
+  },
+];
 
 interface SiteSetting {
   id: string;
@@ -404,6 +459,49 @@ const SiteSettingsManager = () => {
     s.key !== 'custom_fonts'
   );
 
+  // Group text settings by category
+  const groupedSettings = useMemo(() => {
+    const groups: Record<string, SiteSetting[]> = {};
+    
+    TEXT_GROUPS.forEach(group => {
+      groups[group.id] = [];
+    });
+
+    textSettings.forEach(setting => {
+      let assigned = false;
+      
+      for (const group of TEXT_GROUPS) {
+        if (group.id === 'other') continue;
+        
+        for (const prefix of group.prefixes) {
+          if (setting.key.startsWith(prefix) || setting.key === prefix.replace('_', '')) {
+            groups[group.id].push(setting);
+            assigned = true;
+            break;
+          }
+        }
+        if (assigned) break;
+      }
+      
+      if (!assigned) {
+        groups['other'].push(setting);
+      }
+    });
+
+    return groups;
+  }, [textSettings]);
+
+  // Track open groups
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    TEXT_GROUPS.forEach(g => { initial[g.id] = true; });
+    return initial;
+  });
+
+  const toggleGroup = (groupId: string) => {
+    setOpenGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -499,56 +597,103 @@ const SiteSettingsManager = () => {
               </Card>
             )}
 
-            {/* Text Settings List */}
-            <Card>
-              <CardContent className="p-6">
-                {textSettings.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    هنوز متنی وجود ندارد
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {textSettings.map((setting) => (
-                      <div key={setting.id} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-base font-medium">
-                            {setting.label || setting.key}
-                          </Label>
-                          <div className="flex items-center gap-2">
-                            <code className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                              {setting.key}
-                            </code>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(setting.id)}
-                              className="text-destructive hover:text-destructive h-8 w-8"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+            {/* Grouped Text Settings */}
+            <div className="space-y-4">
+              {TEXT_GROUPS.map((group) => {
+                const groupSettings = groupedSettings[group.id] || [];
+                if (groupSettings.length === 0) return null;
+                
+                const IconComponent = group.icon;
+                
+                return (
+                  <Collapsible
+                    key={group.id}
+                    open={openGroups[group.id]}
+                    onOpenChange={() => toggleGroup(group.id)}
+                  >
+                    <Card>
+                      <CollapsibleTrigger asChild>
+                        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-primary/10">
+                                <IconComponent className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <CardTitle className="text-lg">{group.label}</CardTitle>
+                                <p className="text-sm text-muted-foreground mt-0.5">{group.description}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Badge variant="secondary">{groupSettings.length} مورد</Badge>
+                              <ChevronDown 
+                                className={`w-5 h-5 text-muted-foreground transition-transform ${
+                                  openGroups[group.id] ? 'rotate-180' : ''
+                                }`} 
+                              />
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Input
-                            value={editedValues[setting.key] || ''}
-                            onChange={(e) => handleValueChange(setting.key, e.target.value)}
-                            className="flex-1"
-                          />
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleSaveSetting(setting.key, setting.label || setting.key)}
-                            disabled={saving || editedValues[setting.key] === setting.value}
-                          >
-                            <Save className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+                      
+                      <CollapsibleContent>
+                        <CardContent className="pt-0">
+                          <div className="space-y-4 border-t pt-4">
+                            {groupSettings.map((setting) => (
+                              <div key={setting.id} className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-base font-medium">
+                                    {setting.label || setting.key}
+                                  </Label>
+                                  <div className="flex items-center gap-2">
+                                    <code className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                                      {setting.key}
+                                    </code>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDelete(setting.id)}
+                                      className="text-destructive hover:text-destructive h-8 w-8"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Input
+                                    value={editedValues[setting.key] || ''}
+                                    onChange={(e) => handleValueChange(setting.key, e.target.value)}
+                                    className="flex-1"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => handleSaveSetting(setting.key, setting.label || setting.key)}
+                                    disabled={saving || editedValues[setting.key] === setting.value}
+                                  >
+                                    <Save className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
+                );
+              })}
+              
+              {textSettings.length === 0 && (
+                <Card>
+                  <CardContent className="py-12">
+                    <div className="text-center text-muted-foreground">
+                      هنوز متنی وجود ندارد
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </TabsContent>
 
