@@ -65,15 +65,19 @@ const HeroSection = () => {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
-            <Link to="/shop">
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="border-border bg-secondary/50 hover:bg-secondary text-foreground font-medium px-8 py-6 text-lg"
-              >
-                فروشگاه اسناد
-              </Button>
-            </Link>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="border-border bg-secondary/50 hover:bg-secondary text-foreground font-medium px-8 py-6 text-lg"
+              onClick={() => {
+                const element = document.getElementById('pricing');
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+            >
+              مشاهده پلن‌ها
+            </Button>
           </motion.div>
         </motion.div>
 
