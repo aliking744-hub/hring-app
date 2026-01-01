@@ -836,6 +836,10 @@ const SmartHeadhunting = () => {
                           <strong className="text-white">غنی‌سازی هوشمند:</strong> سیستم هوش مصنوعی تمام اطلاعات رزومه‌ها و اکسل را بررسی می‌کند، 
                           در شبکه‌های اجتماعی و اینترنت بر اساس نام و حوزه فعالیت جستجو می‌کند و تحلیل کاملی از تطابق هر کاندیدا ارائه می‌دهد.
                         </p>
+                        <p className="text-xs text-amber-400/80 mt-2 flex items-center gap-1">
+                          <span className="inline-block w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+                          ۶۰ الماس • از جستجوی پیشرفته بلادرنگ و تحلیل عمیق AI استفاده می‌کند
+                        </p>
                       </div>
                     </div>
                   </div>
