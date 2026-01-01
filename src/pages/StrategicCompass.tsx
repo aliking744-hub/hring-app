@@ -328,24 +328,26 @@ const StrategicCompassContent = () => {
             transition={{ delay: 0.1 }}
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="glass-card w-full flex flex-wrap justify-end gap-1 p-2 mb-6 h-auto">
-                {tabs.map((tab) => (
-                  <TabsTrigger
-                    key={tab.id}
-                    value={tab.id}
-                    className={`flex items-center gap-2 px-4 py-2.5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary ${
-                      tab.isGolden 
-                        ? 'border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.5)] animate-golden-pulse bg-gradient-to-r from-[#D4AF37]/10 to-[#B8860B]/10 text-[#D4AF37] data-[state=active]:border-[#D4AF37] data-[state=active]:bg-[#D4AF37]/20 data-[state=active]:text-[#D4AF37]' 
-                        : tab.isAdmin
-                          ? 'border border-red-500/30 bg-red-500/10 text-red-400 data-[state=active]:border-red-500 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-300'
-                          : ''
-                    }`}
-                  >
-                    <tab.icon className={`w-4 h-4 ${tab.isGolden ? 'text-[#D4AF37]' : tab.isAdmin ? 'text-red-400' : ''}`} />
-                    <span className="hidden sm:inline">{tab.label}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+              <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                <TabsList className="glass-card w-max sm:w-full flex flex-nowrap sm:flex-wrap justify-start sm:justify-end gap-1 p-2 mb-6 h-auto min-w-max">
+                  {tabs.map((tab) => (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 whitespace-nowrap text-xs sm:text-sm data-[state=active]:bg-primary/20 data-[state=active]:text-primary ${
+                        tab.isGolden 
+                          ? 'border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.5)] animate-golden-pulse bg-gradient-to-r from-[#D4AF37]/10 to-[#B8860B]/10 text-[#D4AF37] data-[state=active]:border-[#D4AF37] data-[state=active]:bg-[#D4AF37]/20 data-[state=active]:text-[#D4AF37]' 
+                          : tab.isAdmin
+                            ? 'border border-red-500/30 bg-red-500/10 text-red-400 data-[state=active]:border-red-500 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-300'
+                            : ''
+                      }`}
+                    >
+                      <tab.icon className={`w-4 h-4 ${tab.isGolden ? 'text-[#D4AF37]' : tab.isAdmin ? 'text-red-400' : ''}`} />
+                      <span className="hidden sm:inline">{tab.label}</span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
 
               {/* CEO Tabs */}
               {isCEO && (

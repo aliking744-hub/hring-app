@@ -311,7 +311,7 @@ const LaborComplaintAssistant = () => {
   };
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-4 sm:space-y-6" dir="rtl">
       {/* Disclaimer */}
       <Alert className="border-amber-500/50 bg-amber-500/10">
         <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -323,11 +323,11 @@ const LaborComplaintAssistant = () => {
       </Alert>
 
       {/* Progress Steps */}
-      <div className="flex items-center justify-center gap-4 mb-6">
+      <div className="flex items-center justify-center gap-2 sm:gap-4 mb-4 sm:mb-6">
         {[1, 2, 3].map((s) => (
           <div key={s} className="flex items-center">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold transition-colors text-sm sm:text-base ${
                 step >= s
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground"
@@ -337,7 +337,7 @@ const LaborComplaintAssistant = () => {
             </div>
             {s < 3 && (
               <div
-                className={`w-16 h-1 mx-2 transition-colors ${
+                className={`w-8 sm:w-16 h-1 mx-1 sm:mx-2 transition-colors ${
                   step > s ? "bg-primary" : "bg-secondary"
                 }`}
               />
@@ -347,10 +347,10 @@ const LaborComplaintAssistant = () => {
       </div>
 
       {/* Step Labels */}
-      <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground mb-8">
-        <span className={step >= 1 ? "text-primary" : ""}>انتخاب شکایت</span>
-        <span className={step >= 2 ? "text-primary" : ""}>بررسی مدارک</span>
-        <span className={step >= 3 ? "text-primary" : ""}>نتیجه و دادخواست</span>
+      <div className="flex items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-6 sm:mb-8">
+        <span className={step >= 1 ? "text-primary" : ""}>انتخاب</span>
+        <span className={step >= 2 ? "text-primary" : ""}>مدارک</span>
+        <span className={step >= 3 ? "text-primary" : ""}>نتیجه</span>
       </div>
 
       <AnimatePresence mode="wait">
@@ -500,7 +500,7 @@ const LaborComplaintAssistant = () => {
                   <p className="text-sm text-muted-foreground mb-3">
                     هر مدرک دیگری که فکر می‌کنید به پرونده شما کمک می‌کند
                   </p>
-                  <label className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors">
+                  <label className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors">
                     <Upload className="w-8 h-8 text-muted-foreground mb-2" />
                     <span className="text-muted-foreground">
                       کلیک کنید یا فایل را بکشید

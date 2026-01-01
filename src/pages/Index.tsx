@@ -22,10 +22,10 @@ const Index = () => {
         <meta name="keywords" content="منابع انسانی, استخدام, مصاحبه, آنبوردینگ, HR, هوش مصنوعی, نرم افزار منابع انسانی" />
         <link rel="canonical" href="https://hring.ir/" />
       </Helmet>
-      <div className="relative min-h-screen">
+      <div className="relative min-h-screen overflow-x-hidden">
         <AuroraBackground />
         <Navbar />
-        <main>
+        <main className="max-w-[1920px] mx-auto">
           <HeroSection />
           <DashboardPreview />
           <BentoGrid />
