@@ -25,7 +25,8 @@ import {
   Crown,
   History,
   Lock,
-  Eye
+  Eye,
+  User
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -136,8 +137,10 @@ const Dashboard = () => {
 
     // Shop - Always visible
     items.push({ icon: FileText, label: "فروشگاه", path: "/shop" });
+    
+    // Profile - Always visible
+    items.push({ icon: User, label: "پروفایل", path: "/profile" });
 
-    // Add corporate-specific items
     if (context?.userType === 'corporate') {
       items.splice(1, 0, { icon: Users, label: "اعضای تیم", path: "/company-members" });
       if (context.companyRole === 'ceo') {

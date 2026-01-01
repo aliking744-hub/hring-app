@@ -34,6 +34,7 @@ import CompanyMembers from "./pages/CompanyMembers";
 import CompanySettings from "./pages/CompanySettings";
 import Upgrade from "./pages/Upgrade";
 import PaymentHistory from "./pages/PaymentHistory";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -210,6 +211,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <PaymentHistory />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute>
+                    <Profile />
                   </ProtectedRoute>
                 } 
               />
