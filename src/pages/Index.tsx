@@ -9,15 +9,18 @@ import LegalAdvisorSection from "@/components/landing/LegalAdvisorSection";
 import ShopTeaser from "@/components/landing/ShopTeaser";
 import BlogTeaser from "@/components/landing/BlogTeaser";
 import Footer from "@/components/landing/Footer";
+import { useSiteName } from "@/hooks/useSiteSettings";
 
 const Index = () => {
+  const siteName = useSiteName();
+
   return (
     <>
       <Helmet>
-        <title>HRing - نرم افزار جامع منابع انسانی</title>
+        <title>{siteName} - نرم افزار جامع منابع انسانی</title>
         <meta 
           name="description" 
-          content="HRing سیستم مدیریت منابع انسانی نسل جدید. استخدام هوشمند، مصاحبه خودکار و آنبوردینگ حرفه‌ای با قدرت هوش مصنوعی. راهکار یکپارچه برای تیم‌های HR." 
+          content={`${siteName} سیستم مدیریت منابع انسانی نسل جدید. استخدام هوشمند، مصاحبه خودکار و آنبوردینگ حرفه‌ای با قدرت هوش مصنوعی. راهکار یکپارچه برای تیم‌های HR.`}
         />
         <meta name="keywords" content="منابع انسانی, استخدام, مصاحبه, آنبوردینگ, HR, هوش مصنوعی, نرم افزار منابع انسانی" />
         <link rel="canonical" href="https://hring.ir/" />

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useLogos, useFonts } from "@/hooks/useSiteSettings";
+import { useLogos, useFonts, useSiteName } from "@/hooks/useSiteSettings";
 import defaultLogo from "@/assets/logo.png";
 
 const navLinks = [
@@ -18,6 +18,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const logos = useLogos();
   const fonts = useFonts();
+  const siteName = useSiteName();
   
   // Use dynamic logo or fallback to default
   const logo = logos.main || defaultLogo;
@@ -30,7 +31,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-3">
             <motion.img
               src={logo}
-              alt="HRing - سیستم مدیریت منابع انسانی"
+              alt={`${siteName} - سیستم مدیریت منابع انسانی`}
               className="h-8 w-8 object-contain"
               whileHover={{ scale: 1.05 }}
             />
@@ -39,7 +40,7 @@ const Navbar = () => {
               style={{ fontFamily: fonts.heading }}
               whileHover={{ scale: 1.05 }}
             >
-              hring
+              {siteName}
             </motion.div>
           </Link>
 
@@ -97,12 +98,12 @@ const Navbar = () => {
             >
               <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-2">
-                  <img src={logo} alt="HRing - سیستم مدیریت منابع انسانی" className="h-6 w-6 object-contain" />
+                  <img src={logo} alt={`${siteName} - سیستم مدیریت منابع انسانی`} className="h-6 w-6 object-contain" />
                   <span 
                     className="text-xl font-bold gradient-text-primary"
                     style={{ fontFamily: fonts.heading }}
                   >
-                    hring
+                    {siteName}
                   </span>
                 </div>
                 <button onClick={() => setIsOpen(false)}>

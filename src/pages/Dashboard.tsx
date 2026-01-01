@@ -44,7 +44,7 @@ import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 import CorporateDashboard from "@/components/dashboard/CorporateDashboard";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import type { SubscriptionTier } from "@/types/multiTenant";
-import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useSiteSettings, useSiteName } from "@/hooks/useSiteSettings";
 
 // Feature visibility rules based on plan
 const getFeatureVisibility = (tier: SubscriptionTier | null, userType: 'individual' | 'corporate') => {
@@ -86,6 +86,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { getSetting } = useSiteSettings();
+  const siteName = useSiteName();
 
   // Dynamic texts
   const creditLabel = getSetting('dashboard_credit_label', 'اعتبار باقی‌مانده');
@@ -208,10 +209,10 @@ const Dashboard = () => {
   return (
     <>
       <Helmet>
-        <title>داشبورد | HRing - پنل مدیریت منابع انسانی</title>
+        <title>داشبورد | {siteName} - پنل مدیریت منابع انسانی</title>
         <meta 
           name="description" 
-          content="پنل مدیریت منابع انسانی HRing. مشاهده وضعیت استخدام، مصاحبه‌ها و آمار تیم در یک نگاه." 
+          content={`پنل مدیریت منابع انسانی ${siteName}. مشاهده وضعیت استخدام، مصاحبه‌ها و آمار تیم در یک نگاه.`}
         />
       </Helmet>
       <div className="relative min-h-screen flex" dir="rtl">
@@ -254,7 +255,7 @@ const Dashboard = () => {
                 {/* Logo & User Type Badge */}
                 <div className="mb-4">
                   <Link to="/" className="text-2xl font-bold gradient-text-primary">
-                    hring
+                    {siteName}
                   </Link>
                   {context?.userType === 'corporate' && (
                     <div className="flex items-center gap-2 mt-2">
@@ -349,7 +350,7 @@ const Dashboard = () => {
           {/* Logo & User Type */}
           <div className="mb-4">
             <Link to="/" className="text-2xl font-bold gradient-text-primary">
-              hring
+              {siteName}
             </Link>
             {context?.userType === 'corporate' && (
               <div className="flex items-center gap-2 mt-2">

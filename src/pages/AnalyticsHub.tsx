@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
+import { useSiteName } from "@/hooks/useSiteSettings";
 import { generateSampleData } from "@/utils/sampleData";
 import { Employee } from "@/types/employee";
 import {
@@ -78,6 +79,7 @@ const AnalyticsHub = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { credits, loading: creditsLoading } = useCredits();
+  const siteName = useSiteName();
 
   // Filter states
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
@@ -223,7 +225,7 @@ const AnalyticsHub = () => {
               </button>
 
               <Link to="/" className="text-2xl font-bold gradient-text-primary mb-4">
-                hring
+                {siteName}
               </Link>
 
               <Link 
@@ -276,7 +278,7 @@ const AnalyticsHub = () => {
         className="w-64 glass-card m-4 p-4 hidden lg:flex flex-col"
       >
         <Link to="/" className="text-2xl font-bold gradient-text-primary mb-4">
-          hring
+          {siteName}
         </Link>
 
         <Link 

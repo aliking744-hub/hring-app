@@ -2,13 +2,14 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useSiteSettings, useSiteName } from "@/hooks/useSiteSettings";
 
 const HeroSection = () => {
   const { fonts, getSetting } = useSiteSettings();
+  const siteName = useSiteName();
   
-  // Get dynamic texts or use defaults
-  const heroPrefix = getSetting('hero_prefix', 'hring:');
+  // Get dynamic texts or use defaults (using siteName as fallback prefix)
+  const heroPrefix = getSetting('hero_prefix', `${siteName}:`);
   const heroTitle = getSetting('hero_title', 'سیستم مدیریت منابع انسانی');
   const heroSuffix = getSetting('hero_suffix', 'نسل جدید');
   const heroSubtitle = getSetting('hero_subtitle', 'قدرت گرفته از هوش مصنوعی. استخدام، مصاحبه و آنبوردینگ را به صورت خودکار و هوشمند مدیریت کنید.');
