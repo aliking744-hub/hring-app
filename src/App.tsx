@@ -31,6 +31,7 @@ import CandidateDetail from "./pages/CandidateDetail";
 import Admin from "./pages/Admin";
 import AdminLegalImporter from "./pages/AdminLegalImporter";
 import LegalSearchPage from "./pages/LegalSearchPage";
+import LegalAdvisor from "./pages/LegalAdvisor";
 import StrategicCompass from "./pages/StrategicCompass";
 import CompanyMembers from "./pages/CompanyMembers";
 import CompanySettings from "./pages/CompanySettings";
@@ -245,6 +246,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <LegalSearchPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/legal-advisor" 
+                element={
+                  <ProtectedRoute>
+                    <LegalAdvisor />
                   </ProtectedRoute>
                 } 
               />
