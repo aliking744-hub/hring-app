@@ -22,6 +22,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 // Resize image before upload
 const resizeImage = (file: File, maxWidth: number, maxHeight: number): Promise<Blob> => {
@@ -68,12 +69,26 @@ const Profile = () => {
   const { user } = useAuth();
   const { context, refetch } = useUserContext();
   const { toast } = useToast();
+  const { getSetting } = useSiteSettings();
   
   const [fullName, setFullName] = useState(context?.fullName || "");
   const [title, setTitle] = useState(context?.title || "");
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Dynamic texts
+  const profilePageTitle = getSetting('profile_page_title', 'پروفایل کاربری');
+  const profileBackBtn = getSetting('profile_back_btn', 'بازگشت به داشبورد');
+  const profileAvatarHint = getSetting('profile_avatar_hint', 'برای تغییر تصویر، روی آن کلیک کنید');
+  const profileEmailLabel = getSetting('profile_email_label', 'ایمیل');
+  const profileNameLabel = getSetting('profile_name_label', 'نام و نام خانوادگی');
+  const profileNamePlaceholder = getSetting('profile_name_placeholder', 'نام کامل خود را وارد کنید');
+  const profileTitleLabel = getSetting('profile_title_label', 'عنوان شغلی');
+  const profileTitlePlaceholder = getSetting('profile_title_placeholder', 'مثال: مدیر منابع انسانی');
+  const profileSaveBtn = getSetting('profile_save_btn', 'ذخیره تغییرات');
+  const profileCorporateLabel = getSetting('profile_corporate_label', 'حساب شرکتی');
+  const profileRolePrefix = getSetting('profile_role_prefix', 'شما عضو یک حساب شرکتی هستید. نقش شما:');
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -204,7 +219,7 @@ const Profile = () => {
   return (
     <>
       <Helmet>
-        <title>پروفایل کاربری | HRing</title>
+        <title>{profilePageTitle} | HRing</title>
         <meta name="description" content="مشاهده و ویرایش پروفایل کاربری" />
       </Helmet>
       
@@ -218,7 +233,7 @@ const Profile = () => {
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowRight className="w-4 h-4" />
-            بازگشت به داشبورد
+            {profileBackBtn}
           </Link>
 
           <motion.div
@@ -228,7 +243,7 @@ const Profile = () => {
           >
             <Card className="glass-card border-border/50">
               <CardHeader className="text-center pb-2">
-                <CardTitle className="text-2xl font-bold">پروفایل کاربری</CardTitle>
+                <CardTitle className="text-2xl font-bold">{profilePageTitle}</CardTitle>
               </CardHeader>
               
               <CardContent className="space-y-6">
@@ -257,7 +272,7 @@ const Profile = () => {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    برای تغییر تصویر، روی آن کلیک کنید
+                    {profileAvatarHint}
                   </p>
                 </div>
 
@@ -267,7 +282,7 @@ const Profile = () => {
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-muted-foreground" />
-                      ایمیل
+                      {profileEmailLabel}
                     </Label>
                     <Input 
                       value={user?.email || ""} 
@@ -280,12 +295,12 @@ const Profile = () => {
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <User className="w-4 h-4 text-muted-foreground" />
-                      نام و نام خانوادگی
+                      {profileNameLabel}
                     </Label>
                     <Input 
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="نام کامل خود را وارد کنید"
+                      placeholder={profileNamePlaceholder}
                     />
                   </div>
 
@@ -293,12 +308,12 @@ const Profile = () => {
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4 text-muted-foreground" />
-                      عنوان شغلی
+                      {profileTitleLabel}
                     </Label>
                     <Input 
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="مثال: مدیر منابع انسانی"
+                      placeholder={profileTitlePlaceholder}
                     />
                   </div>
 
@@ -307,10 +322,10 @@ const Profile = () => {
                     <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                       <div className="flex items-center gap-2 text-primary mb-2">
                         <Building2 className="w-5 h-5" />
-                        <span className="font-medium">حساب شرکتی</span>
+                        <span className="font-medium">{profileCorporateLabel}</span>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        شما عضو یک حساب شرکتی هستید. نقش شما: {' '}
+                        {profileRolePrefix}{' '}
                         <span className="text-foreground font-medium">
                           {context.companyRole === 'ceo' && 'مدیرعامل'}
                           {context.companyRole === 'deputy' && 'معاون'}
@@ -335,7 +350,7 @@ const Profile = () => {
                     ) : (
                       <>
                         <Save className="w-4 h-4 ml-2" />
-                        ذخیره تغییرات
+                        {profileSaveBtn}
                       </>
                     )}
                   </Button>
