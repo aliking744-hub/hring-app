@@ -64,6 +64,22 @@ export const UserContextProvider = ({ children }: { children: ReactNode }) => {
         .eq('is_active', true)
         .maybeSingle();
 
+      // Get company credit pool if corporate user with pool enabled
+      let companyCreditPool = 0;
+      let companyCreditPoolEnabled = false;
+      if (membership?.company_id) {
+        const { data: companyData } = await supabase
+          .from('companies')
+          .select('credit_pool, credit_pool_enabled')
+          .eq('id', membership.company_id)
+          .maybeSingle();
+        
+        if (companyData) {
+          companyCreditPool = companyData.credit_pool || 0;
+          companyCreditPoolEnabled = companyData.credit_pool_enabled || false;
+        }
+      }
+
       const userContext: UserContext = {
         userId: user.id,
         email: user.email ?? null,
@@ -75,6 +91,8 @@ export const UserContextProvider = ({ children }: { children: ReactNode }) => {
         companyTier: (membership?.companies as any)?.subscription_tier as SubscriptionTier ?? null,
         credits: profile?.monthly_credits ?? 50,
         usedCredits: profile?.used_credits ?? 0,
+        companyCreditPool,
+        companyCreditPoolEnabled,
       };
 
       setContext(userContext);

@@ -112,6 +112,8 @@ export interface UserContext {
   companyTier: SubscriptionTier | null;
   credits: number;
   usedCredits: number;
+  companyCreditPool: number;
+  companyCreditPoolEnabled: boolean;
 }
 
 // Feature access result

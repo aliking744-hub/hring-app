@@ -99,8 +99,14 @@ export const useFeaturePermissions = (): UseFeaturePermissionsReturn => {
       }
     }
 
-    // Check credits if needed
-    const availableCredits = context.credits - context.usedCredits;
+    // Check credits if needed - consider company credit pool
+    let availableCredits = context.credits - context.usedCredits;
+    
+    // If corporate user with credit pool enabled, use company pool
+    if (context.userType === 'corporate' && context.companyCreditPoolEnabled) {
+      availableCredits = context.companyCreditPool;
+    }
+    
     if (permission.credit_cost > 0 && availableCredits < permission.credit_cost) {
       return {
         hasAccess: permission.allow_view,
