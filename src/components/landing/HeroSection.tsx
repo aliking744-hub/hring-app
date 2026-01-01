@@ -69,7 +69,7 @@ const HeroSection = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="border-primary/50 bg-primary/10 hover:bg-primary/20 text-foreground font-medium px-8 py-6 text-lg animate-pulse shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.6)] transition-shadow duration-300"
+                className="border-primary/50 bg-primary/10 hover:bg-primary/20 text-foreground font-medium px-8 py-6 text-lg shadow-[0_0_15px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.5)] transition-all duration-500"
               >
                 مشاهده پلن‌ها
               </Button>
