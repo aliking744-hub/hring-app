@@ -5,6 +5,7 @@ import HeroSection from "@/components/landing/HeroSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import BentoGrid from "@/components/landing/BentoGrid";
 import DashboardPreview from "@/components/landing/DashboardPreview";
+import LegalAdvisorSection from "@/components/landing/LegalAdvisorSection";
 import ShopTeaser from "@/components/landing/ShopTeaser";
 import BlogTeaser from "@/components/landing/BlogTeaser";
 import Footer from "@/components/landing/Footer";
@@ -28,6 +29,7 @@ const Index = () => {
           <HeroSection />
           <DashboardPreview />
           <BentoGrid />
+          <LegalAdvisorSection />
           <ShopTeaser />
           <TestimonialsSection />
           <BlogTeaser />
