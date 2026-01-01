@@ -44,6 +44,7 @@ import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 import CorporateDashboard from "@/components/dashboard/CorporateDashboard";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import type { SubscriptionTier } from "@/types/multiTenant";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 // Feature visibility rules based on plan
 const getFeatureVisibility = (tier: SubscriptionTier | null, userType: 'individual' | 'corporate') => {
@@ -84,6 +85,15 @@ const Dashboard = () => {
   const { credits } = useCredits();
   const navigate = useNavigate();
   const location = useLocation();
+  const { getSetting } = useSiteSettings();
+
+  // Dynamic texts
+  const creditLabel = getSetting('dashboard_credit_label', 'اعتبار باقی‌مانده');
+  const backHomeText = getSetting('dashboard_back_home', 'بازگشت به صفحه اصلی');
+  const upgradeText = getSetting('dashboard_upgrade_btn', 'ارتقای پلن');
+  const logoutText = getSetting('dashboard_logout_btn', 'خروج');
+  const searchPlaceholder = getSetting('dashboard_search_placeholder', 'جستجو...');
+  const corporateLabel = getSetting('dashboard_corporate_label', 'حساب شرکتی');
 
   // Get visibility rules based on user's plan
   const visibility = getFeatureVisibility(
@@ -249,13 +259,13 @@ const Dashboard = () => {
                   {context?.userType === 'corporate' && (
                     <div className="flex items-center gap-2 mt-2">
                       <Building2 className="w-4 h-4 text-primary" />
-                      <span className="text-sm text-muted-foreground">حساب شرکتی</span>
+                      <span className="text-sm text-muted-foreground">{corporateLabel}</span>
                     </div>
                   )}
                   {/* Credits Display with Progress */}
                   <div className="mt-3 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted-foreground">اعتبار باقی‌مانده</span>
+                      <span className="text-xs text-muted-foreground">{creditLabel}</span>
                       <Link to="/payment-history" className="text-xs text-primary hover:underline flex items-center gap-1">
                         <History className="w-3 h-3" />
                         تاریخچه
@@ -275,7 +285,7 @@ const Dashboard = () => {
                   className="flex items-center gap-3 px-4 py-3 mb-4 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors border border-border/50"
                 >
                   <Home className="w-5 h-5" />
-                  <span className="font-medium">بازگشت به صفحه اصلی</span>
+                  <span className="font-medium">{backHomeText}</span>
                 </Link>
 
                 {/* Nav Items */}
@@ -310,7 +320,7 @@ const Dashboard = () => {
                   className="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg bg-gradient-to-l from-primary/20 to-primary/10 text-primary border border-primary/30 hover:from-primary/30 hover:to-primary/20 transition-all"
                 >
                   <Crown className="w-5 h-5" />
-                  <span className="font-medium">ارتقای پلن</span>
+                  <span className="font-medium">{upgradeText}</span>
                 </Link>
 
                 {/* Logout */}
@@ -322,7 +332,7 @@ const Dashboard = () => {
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <LogOut className="w-5 h-5" />
-                  <span className="font-medium">خروج</span>
+                  <span className="font-medium">{logoutText}</span>
                 </button>
               </motion.aside>
             </>
@@ -344,13 +354,13 @@ const Dashboard = () => {
             {context?.userType === 'corporate' && (
               <div className="flex items-center gap-2 mt-2">
                 <Building2 className="w-4 h-4 text-primary" />
-                <span className="text-sm text-muted-foreground">حساب شرکتی</span>
+                <span className="text-sm text-muted-foreground">{corporateLabel}</span>
               </div>
             )}
             {/* Credits Display with Progress */}
             <div className="mt-3 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground">اعتبار باقی‌مانده</span>
+                <span className="text-xs text-muted-foreground">{creditLabel}</span>
                 <Link to="/payment-history" className="text-xs text-primary hover:underline flex items-center gap-1">
                   <History className="w-3 h-3" />
                   تاریخچه
@@ -369,7 +379,7 @@ const Dashboard = () => {
             className="flex items-center gap-3 px-4 py-3 mb-4 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors border border-border/50"
           >
             <Home className="w-5 h-5" />
-            <span className="font-medium">بازگشت به صفحه اصلی</span>
+            <span className="font-medium">{backHomeText}</span>
           </Link>
 
           {/* Nav Items */}
@@ -402,7 +412,7 @@ const Dashboard = () => {
             className="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg bg-gradient-to-l from-primary/20 to-primary/10 text-primary border border-primary/30 hover:from-primary/30 hover:to-primary/20 transition-all"
           >
             <Crown className="w-5 h-5" />
-            <span className="font-medium">ارتقای پلن</span>
+            <span className="font-medium">{upgradeText}</span>
           </Link>
 
           {/* Logout */}
@@ -411,7 +421,7 @@ const Dashboard = () => {
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
           >
             <LogOut className="w-5 h-5" />
-            <span className="font-medium">خروج</span>
+            <span className="font-medium">{logoutText}</span>
           </button>
         </motion.aside>
 
@@ -428,7 +438,7 @@ const Dashboard = () => {
               <div className="relative hidden sm:block">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
-                  placeholder="جستجو..." 
+                  placeholder={searchPlaceholder} 
                   className="pr-9 w-48 bg-secondary/50 border-border"
                 />
               </div>
