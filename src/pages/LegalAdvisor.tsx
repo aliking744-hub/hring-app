@@ -1,16 +1,18 @@
 import { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
-import { Scale, Send, Paperclip, FileText, X, Loader2, Bot, User, ArrowRight, Sparkles, Plus, MessageSquare, Trash2, Clock, Lock } from "lucide-react";
+import { Scale, Send, Paperclip, FileText, X, Loader2, Bot, User, ArrowRight, Sparkles, Plus, MessageSquare, Trash2, Clock, Lock, Shield, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AuroraBackground from "@/components/AuroraBackground";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/landing/Footer";
+import DefenseBuilder from "@/components/legal/DefenseBuilder";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -384,6 +386,30 @@ const LegalAdvisor = () => {
             </p>
           </motion.div>
 
+          {/* Mode Tabs */}
+          <Tabs defaultValue="chat" className="w-full">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
+              <TabsTrigger value="chat" className="gap-2">
+                <MessageCircle className="w-4 h-4" />
+                مشاور حقوقی
+              </TabsTrigger>
+              <TabsTrigger value="defense" className="gap-2">
+                <Shield className="w-4 h-4" />
+                تحلیل پرونده
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="defense">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card p-6"
+              >
+                <DefenseBuilder />
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="chat">
           <div className="flex gap-4">
             {/* Sidebar - Conversation History */}
             {canSaveHistory() && (
@@ -660,6 +686,8 @@ const LegalAdvisor = () => {
               </div>
             </motion.div>
           </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
 
