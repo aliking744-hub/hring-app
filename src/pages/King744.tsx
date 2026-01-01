@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Settings, Users, FileText, Diamond, Database, Shield, Loader2, Lock, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Settings, Users, FileText, Diamond, Database, Shield, Loader2, Lock, AlertTriangle, HeadphonesIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { toast } from 'sonner';
@@ -23,6 +23,7 @@ import CreditAnalytics from '@/components/admin/CreditAnalytics';
 import AuditLogsViewer from '@/components/admin/AuditLogsViewer';
 import KnowledgeBaseStatus from '@/components/admin/KnowledgeBaseStatus';
 import LegalImporter from '@/components/admin/LegalImporter';
+import ChatbotManager from '@/components/admin/ChatbotManager';
 
 // Super Admin credentials
 const SUPER_ADMIN_EMAIL = 'ali_king744@yahoo.com';
@@ -374,6 +375,14 @@ const King744 = () => {
                   <span className="hidden sm:inline">لاگ‌ها</span>
                   <span className="sm:hidden">لاگ</span>
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="chatbot" 
+                  className="flex items-center gap-2 px-4 py-2"
+                >
+                  <HeadphonesIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">چت‌بات</span>
+                  <span className="sm:hidden">چت</span>
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -418,6 +427,10 @@ const King744 = () => {
 
             <TabsContent value="logs" className="space-y-6">
               <AuditLogsViewer />
+            </TabsContent>
+
+            <TabsContent value="chatbot" className="space-y-6">
+              <ChatbotManager />
             </TabsContent>
           </Tabs>
         </main>
