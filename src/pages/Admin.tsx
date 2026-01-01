@@ -14,6 +14,7 @@ import TestimonialsManager from '@/components/admin/TestimonialsManager';
 import CreditAnalytics from '@/components/admin/CreditAnalytics';
 import AuditLogsViewer from '@/components/admin/AuditLogsViewer';
 import KnowledgeBaseStatus from '@/components/admin/KnowledgeBaseStatus';
+import ChatbotManager from '@/components/admin/ChatbotManager';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -26,14 +27,6 @@ const Admin = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">پنل سوپر ادمین</h1>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/admin/support-manager')}
-              className="gap-2"
-            >
-              <HeadphonesIcon className="w-4 h-4" />
-              <span>مدیریت چت‌بات</span>
-            </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate('/admin/legal-importer')}
@@ -57,10 +50,14 @@ const Admin = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-10 mb-8">
+          <TabsList className="grid w-full grid-cols-11 mb-8">
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">آنالیتیکس</span>
+            </TabsTrigger>
+            <TabsTrigger value="chatbot" className="gap-2">
+              <HeadphonesIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">چت‌بات</span>
             </TabsTrigger>
             <TabsTrigger value="audit-logs" className="gap-2">
               <Shield className="w-4 h-4" />
@@ -105,6 +102,10 @@ const Admin = () => {
               <KnowledgeBaseStatus />
               <CreditAnalytics />
             </div>
+          </TabsContent>
+
+          <TabsContent value="chatbot">
+            <ChatbotManager />
           </TabsContent>
 
           <TabsContent value="audit-logs">
