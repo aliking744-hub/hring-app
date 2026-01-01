@@ -21,7 +21,8 @@ import {
   FileText,
   Shield,
   Building2,
-  Loader2
+  Loader2,
+  Crown
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
@@ -175,6 +176,16 @@ const Dashboard = () => {
                   ))}
                 </nav>
 
+                {/* Upgrade Button */}
+                <Link 
+                  to="/upgrade" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg bg-gradient-to-l from-primary/20 to-primary/10 text-primary border border-primary/30 hover:from-primary/30 hover:to-primary/20 transition-all"
+                >
+                  <Crown className="w-5 h-5" />
+                  <span className="font-medium">ارتقای پلن</span>
+                </Link>
+
                 {/* Logout */}
                 <button 
                   onClick={() => {
@@ -237,6 +248,15 @@ const Dashboard = () => {
               </Link>
             ))}
           </nav>
+
+          {/* Upgrade Button */}
+          <Link 
+            to="/upgrade" 
+            className="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg bg-gradient-to-l from-primary/20 to-primary/10 text-primary border border-primary/30 hover:from-primary/30 hover:to-primary/20 transition-all"
+          >
+            <Crown className="w-5 h-5" />
+            <span className="font-medium">ارتقای پلن</span>
+          </Link>
 
           {/* Logout */}
           <button 
