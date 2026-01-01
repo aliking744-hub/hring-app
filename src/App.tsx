@@ -41,7 +41,8 @@ import Upgrade from "./pages/Upgrade";
 import PaymentHistory from "./pages/PaymentHistory";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-
+import SupportManager from "./pages/SupportManager";
+import SupportChatWidget from "./components/SupportChatWidget";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -248,6 +249,14 @@ const App = () => (
                 } 
               />
               <Route 
+                path="/admin/support-manager" 
+                element={
+                  <AdminRoute>
+                    <SupportManager />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
                 path="/legal-search" 
                 element={
                   <ProtectedRoute>
@@ -266,6 +275,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
                 </Routes>
+                <SupportChatWidget />
               </SiteSettingsProvider>
             </UserContextProvider>
           </AuthProvider>
