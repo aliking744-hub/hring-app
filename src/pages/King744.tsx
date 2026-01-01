@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Settings, Users, FileText, Diamond, Database, Shield, Loader2, Lock } from 'lucide-react';
+import { ArrowRight, Settings, Users, FileText, Diamond, Database, Shield, Loader2, Lock, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { toast } from 'sonner';
@@ -27,6 +27,36 @@ import LegalImporter from '@/components/admin/LegalImporter';
 // Super Admin credentials
 const SUPER_ADMIN_EMAIL = 'ali_king744@yahoo.com';
 
+// Lockout settings
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const STORAGE_KEY = 'king744_auth_state';
+
+interface AuthState {
+  attempts: number;
+  lockoutUntil: number | null;
+}
+
+const getAuthState = (): AuthState => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {
+    // Ignore parsing errors
+  }
+  return { attempts: 0, lockoutUntil: null };
+};
+
+const setAuthState = (state: AuthState) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+};
+
+const clearAuthState = () => {
+  localStorage.removeItem(STORAGE_KEY);
+};
+
 const King744 = () => {
   const navigate = useNavigate();
   const { signIn, session, loading: authLoading } = useAuth();
@@ -35,25 +65,94 @@ const King744 = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [authState, setAuthStateLocal] = useState<AuthState>(getAuthState());
+  const [remainingTime, setRemainingTime] = useState<number>(0);
+
+  // Check and update lockout timer
+  useEffect(() => {
+    const checkLockout = () => {
+      const state = getAuthState();
+      if (state.lockoutUntil) {
+        const remaining = state.lockoutUntil - Date.now();
+        if (remaining <= 0) {
+          // Lockout expired, reset
+          clearAuthState();
+          setAuthStateLocal({ attempts: 0, lockoutUntil: null });
+          setRemainingTime(0);
+        } else {
+          setRemainingTime(remaining);
+        }
+      }
+    };
+
+    checkLockout();
+    const interval = setInterval(checkLockout, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isLockedOut = authState.lockoutUntil && authState.lockoutUntil > Date.now();
+  const remainingAttempts = MAX_ATTEMPTS - authState.attempts;
+
+  const formatRemainingTime = (ms: number) => {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if locked out
+    if (isLockedOut) {
+      toast.error('حساب قفل شده است. لطفاً صبر کنید.');
+      return;
+    }
+
     setLoginLoading(true);
 
     try {
       const { error } = await signIn(email, password);
       
       if (error) {
-        toast.error('خطا در ورود: ' + error.message);
+        // Increment failed attempts
+        const newAttempts = authState.attempts + 1;
+        let newLockoutUntil = null;
+
+        if (newAttempts >= MAX_ATTEMPTS) {
+          newLockoutUntil = Date.now() + LOCKOUT_DURATION_MS;
+          toast.error(`تعداد تلاش‌ها به حداکثر رسید. حساب برای ۱۵ دقیقه قفل شد.`);
+        } else {
+          toast.error(`خطا در ورود. ${MAX_ATTEMPTS - newAttempts} تلاش باقی‌مانده.`);
+        }
+
+        const newState = { attempts: newAttempts, lockoutUntil: newLockoutUntil };
+        setAuthState(newState);
+        setAuthStateLocal(newState);
         return;
       }
 
       // Check if the logged in user is super admin
       if (email.toLowerCase() !== SUPER_ADMIN_EMAIL.toLowerCase()) {
-        toast.error('دسترسی غیرمجاز');
+        // Increment failed attempts for wrong email too
+        const newAttempts = authState.attempts + 1;
+        let newLockoutUntil = null;
+
+        if (newAttempts >= MAX_ATTEMPTS) {
+          newLockoutUntil = Date.now() + LOCKOUT_DURATION_MS;
+          toast.error(`دسترسی غیرمجاز. حساب برای ۱۵ دقیقه قفل شد.`);
+        } else {
+          toast.error(`دسترسی غیرمجاز. ${MAX_ATTEMPTS - newAttempts} تلاش باقی‌مانده.`);
+        }
+
+        const newState = { attempts: newAttempts, lockoutUntil: newLockoutUntil };
+        setAuthState(newState);
+        setAuthStateLocal(newState);
         return;
       }
 
+      // Successful login - clear attempts
+      clearAuthState();
+      setAuthStateLocal({ attempts: 0, lockoutUntil: null });
       toast.success('ورود موفق');
     } catch (err) {
       toast.error('خطا در ورود');
@@ -88,14 +187,21 @@ const King744 = () => {
           >
             <Card className="w-full max-w-md glass-card border-border/50">
               <CardHeader className="text-center space-y-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Lock className="w-8 h-8 text-primary" />
+                <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${isLockedOut ? 'bg-destructive/10' : 'bg-primary/10'}`}>
+                  {isLockedOut ? (
+                    <AlertTriangle className="w-8 h-8 text-destructive" />
+                  ) : (
+                    <Lock className="w-8 h-8 text-primary" />
+                  )}
                 </div>
-                <CardTitle className="text-2xl gradient-text-primary">
-                  دسترسی سیستم
+                <CardTitle className={`text-2xl ${isLockedOut ? 'text-destructive' : 'gradient-text-primary'}`}>
+                  {isLockedOut ? 'حساب قفل شده' : 'دسترسی سیستم'}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  فقط مدیر سیستم می‌تواند وارد شود
+                  {isLockedOut 
+                    ? `زمان باقی‌مانده: ${formatRemainingTime(remainingTime)}`
+                    : 'فقط مدیر سیستم می‌تواند وارد شود'
+                  }
                 </p>
               </CardHeader>
               <CardContent>
@@ -111,6 +217,7 @@ const King744 = () => {
                       required
                       className="text-left"
                       dir="ltr"
+                      disabled={isLockedOut}
                     />
                   </div>
                   <div className="space-y-2">
@@ -124,19 +231,33 @@ const King744 = () => {
                       required
                       className="text-left"
                       dir="ltr"
+                      disabled={isLockedOut}
                     />
                   </div>
+
+                  {/* Warning for remaining attempts */}
+                  {!isLockedOut && authState.attempts > 0 && (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                      <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span className="text-sm text-amber-500">
+                        {remainingAttempts} تلاش باقی‌مانده
+                      </span>
+                    </div>
+                  )}
+
                   <Button 
                     type="submit" 
                     className="w-full glow-button"
-                    disabled={loginLoading}
+                    disabled={loginLoading || isLockedOut}
                   >
                     {loginLoading ? (
                       <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                    ) : isLockedOut ? (
+                      <AlertTriangle className="w-4 h-4 ml-2" />
                     ) : (
                       <Shield className="w-4 h-4 ml-2" />
                     )}
-                    ورود به سیستم
+                    {isLockedOut ? 'حساب قفل شده' : 'ورود به سیستم'}
                   </Button>
                 </form>
               </CardContent>
