@@ -630,6 +630,39 @@ export type Database = {
           },
         ]
       }
+      legal_docs: {
+        Row: {
+          article_number: string | null
+          category: string
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          source_url: string
+          updated_at: string
+        }
+        Insert: {
+          article_number?: string | null
+          category: string
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          source_url: string
+          updated_at?: string
+        }
+        Update: {
+          article_number?: string | null
+          category?: string
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          source_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

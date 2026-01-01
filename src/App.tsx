@@ -29,6 +29,7 @@ import SmartHeadhunting from "./pages/SmartHeadhunting";
 import CampaignDetail from "./pages/CampaignDetail";
 import CandidateDetail from "./pages/CandidateDetail";
 import Admin from "./pages/Admin";
+import AdminLegalImporter from "./pages/AdminLegalImporter";
 import StrategicCompass from "./pages/StrategicCompass";
 import CompanyMembers from "./pages/CompanyMembers";
 import CompanySettings from "./pages/CompanySettings";
@@ -227,6 +228,14 @@ const App = () => (
                 element={
                   <AdminRoute>
                     <Admin />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/admin/legal-importer" 
+                element={
+                  <AdminRoute>
+                    <AdminLegalImporter />
                   </AdminRoute>
                 } 
               />

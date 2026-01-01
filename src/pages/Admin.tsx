@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, FileText, Package, Users, Settings, Building2, ToggleRight, MessageSquare, BarChart3, Shield } from 'lucide-react';
+import { ArrowRight, FileText, Package, Users, Settings, Building2, ToggleRight, MessageSquare, BarChart3, Shield, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BlogManager from '@/components/admin/BlogManager';
 import ProductManager from '@/components/admin/ProductManager';
@@ -24,14 +24,24 @@ const Admin = () => {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">پنل سوپر ادمین</h1>
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/dashboard')}
-            className="gap-2"
-          >
-            <span>بازگشت به داشبورد</span>
-            <ArrowRight className="w-4 h-4" />
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/admin/legal-importer')}
+              className="gap-2"
+            >
+              <Scale className="w-4 h-4" />
+              <span>وارد کردن قوانین</span>
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/dashboard')}
+              className="gap-2"
+            >
+              <span>بازگشت به داشبورد</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
