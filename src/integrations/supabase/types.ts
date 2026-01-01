@@ -221,6 +221,136 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          domain: string | null
+          id: string
+          max_members: number
+          monthly_credits: number
+          name: string
+          status: Database["public"]["Enums"]["company_status"]
+          subscription_tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string
+          used_credits: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          domain?: string | null
+          id?: string
+          max_members?: number
+          monthly_credits?: number
+          name: string
+          status?: Database["public"]["Enums"]["company_status"]
+          subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          used_credits?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          domain?: string | null
+          id?: string
+          max_members?: number
+          monthly_credits?: number
+          name?: string
+          status?: Database["public"]["Enums"]["company_status"]
+          subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          used_credits?: number
+        }
+        Relationships: []
+      }
+      company_invites: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          invite_code: string
+          is_active: boolean
+          max_uses: number | null
+          role: Database["public"]["Enums"]["company_role"]
+          used_count: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          invite_code: string
+          is_active?: boolean
+          max_uses?: number | null
+          role?: Database["public"]["Enums"]["company_role"]
+          used_count?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          invite_code?: string
+          is_active?: boolean
+          max_uses?: number | null
+          role?: Database["public"]["Enums"]["company_role"]
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_members: {
+        Row: {
+          can_invite: boolean
+          company_id: string
+          id: string
+          invited_by: string | null
+          is_active: boolean
+          joined_at: string
+          role: Database["public"]["Enums"]["company_role"]
+          user_id: string
+        }
+        Insert: {
+          can_invite?: boolean
+          company_id: string
+          id?: string
+          invited_by?: string | null
+          is_active?: boolean
+          joined_at?: string
+          role?: Database["public"]["Enums"]["company_role"]
+          user_id: string
+        }
+        Update: {
+          can_invite?: boolean
+          company_id?: string
+          id?: string
+          invited_by?: string | null
+          is_active?: boolean
+          joined_at?: string
+          role?: Database["public"]["Enums"]["company_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compass_user_roles: {
         Row: {
           accessible_sections: string[] | null
@@ -256,6 +386,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          company_id: string | null
+          created_at: string
+          description: string | null
+          feature_key: string | null
+          id: string
+          transaction_type: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          feature_key?: string | null
+          id?: string
+          transaction_type: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          feature_key?: string | null
+          id?: string
+          transaction_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       decision_journals: {
         Row: {
@@ -334,6 +505,60 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_permissions: {
+        Row: {
+          allow_edit: boolean
+          allow_view: boolean
+          allowed_company_roles:
+            | Database["public"]["Enums"]["company_role"][]
+            | null
+          allowed_tiers: Database["public"]["Enums"]["subscription_tier"][]
+          created_at: string
+          credit_cost: number
+          description: string | null
+          feature_category: string
+          feature_key: string
+          feature_name: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          allow_edit?: boolean
+          allow_view?: boolean
+          allowed_company_roles?:
+            | Database["public"]["Enums"]["company_role"][]
+            | null
+          allowed_tiers?: Database["public"]["Enums"]["subscription_tier"][]
+          created_at?: string
+          credit_cost?: number
+          description?: string | null
+          feature_category?: string
+          feature_key: string
+          feature_name: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          allow_edit?: boolean
+          allow_view?: boolean
+          allowed_company_roles?:
+            | Database["public"]["Enums"]["company_role"][]
+            | null
+          allowed_tiers?: Database["public"]["Enums"]["subscription_tier"][]
+          created_at?: string
+          credit_cost?: number
+          description?: string | null
+          feature_category?: string
+          feature_key?: string
+          feature_name?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       intent_assignments: {
         Row: {
           created_at: string
@@ -406,7 +631,14 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_active: boolean
+          monthly_credits: number
+          subscription_tier:
+            | Database["public"]["Enums"]["subscription_tier"]
+            | null
           title: string | null
+          used_credits: number
+          user_type: string
         }
         Insert: {
           avatar_url?: string | null
@@ -414,7 +646,14 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_active?: boolean
+          monthly_credits?: number
+          subscription_tier?:
+            | Database["public"]["Enums"]["subscription_tier"]
+            | null
           title?: string | null
+          used_credits?: number
+          user_type?: string
         }
         Update: {
           avatar_url?: string | null
@@ -422,7 +661,14 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_active?: boolean
+          monthly_credits?: number
+          subscription_tier?:
+            | Database["public"]["Enums"]["subscription_tier"]
+            | null
           title?: string | null
+          used_credits?: number
+          user_type?: string
         }
         Relationships: []
       }
@@ -714,6 +960,11 @@ export type Database = {
     }
     Functions: {
       deduct_credits: { Args: { amount: number }; Returns: boolean }
+      get_company_role: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: Database["public"]["Enums"]["company_role"]
+      }
+      get_user_company_id: { Args: { _user_id: string }; Returns: string }
       get_user_credits: { Args: never; Returns: number }
       has_compass_role: {
         Args: {
@@ -730,10 +981,25 @@ export type Database = {
         Returns: boolean
       }
       is_ceo: { Args: { _user_id: string }; Returns: boolean }
+      is_company_ceo: { Args: { _user_id: string }; Returns: boolean }
+      is_company_member: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      company_role: "ceo" | "deputy" | "manager" | "employee"
+      company_status: "active" | "suspended" | "trial"
       compass_role: "ceo" | "deputy" | "manager" | "expert"
+      subscription_tier:
+        | "individual_free"
+        | "individual_expert"
+        | "individual_pro"
+        | "individual_plus"
+        | "corporate_expert"
+        | "corporate_decision_support"
+        | "corporate_decision_making"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -862,7 +1128,18 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      company_role: ["ceo", "deputy", "manager", "employee"],
+      company_status: ["active", "suspended", "trial"],
       compass_role: ["ceo", "deputy", "manager", "expert"],
+      subscription_tier: [
+        "individual_free",
+        "individual_expert",
+        "individual_pro",
+        "individual_plus",
+        "corporate_expert",
+        "corporate_decision_support",
+        "corporate_decision_making",
+      ],
     },
   },
 } as const
