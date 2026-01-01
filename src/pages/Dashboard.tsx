@@ -77,6 +77,10 @@ const Dashboard = () => {
 
   const sidebarItems = getSidebarItems();
 
+  // Get max credits based on user's plan
+  const maxCredits = context?.credits || 50;
+  const creditPercentage = maxCredits > 0 ? Math.min((credits / maxCredits) * 100, 100) : 0;
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
@@ -158,8 +162,10 @@ const Dashboard = () => {
                         تاریخچه
                       </Link>
                     </div>
-                    <div className="text-lg font-bold text-primary mb-2">{credits} <span className="text-xs font-normal text-muted-foreground">/ ۵۰ واحد</span></div>
-                    <Progress value={Math.min((credits / 50) * 100, 100)} className="h-2" />
+                    <div className="text-lg font-bold text-primary mb-2">
+                      {credits} <span className="text-xs font-normal text-muted-foreground">/ {maxCredits} واحد</span>
+                    </div>
+                    <Progress value={creditPercentage} className="h-2" />
                   </div>
                 </div>
 
@@ -245,8 +251,10 @@ const Dashboard = () => {
                   تاریخچه
                 </Link>
               </div>
-              <div className="text-lg font-bold text-primary mb-2">{credits} <span className="text-xs font-normal text-muted-foreground">/ ۵۰ واحد</span></div>
-              <Progress value={Math.min((credits / 50) * 100, 100)} className="h-2" />
+              <div className="text-lg font-bold text-primary mb-2">
+                {credits} <span className="text-xs font-normal text-muted-foreground">/ {maxCredits} واحد</span>
+              </div>
+              <Progress value={creditPercentage} className="h-2" />
             </div>
           </div>
 
