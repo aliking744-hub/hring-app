@@ -22,14 +22,44 @@ const SupportChatWidget = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [isTyping, setIsTyping] = useState(false);
+  const [feedbackOffered, setFeedbackOffered] = useState(false);
+  const [hasReceivedReward, setHasReceivedReward] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const followUpTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const messagesRef = useRef<Message[]>([]);
+  const isTypingRef = useRef(false);
   const { user } = useAuth();
 
   // Feedback state
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+
+  // Keep refs in sync
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    isTypingRef.current = isTyping;
+  }, [isTyping]);
+
+  // Check if user already received reward
+  useEffect(() => {
+    const checkRewardStatus = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('site_feedback')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('rewarded', true)
+        .limit(1);
+      if (data && data.length > 0) {
+        setHasReceivedReward(true);
+      }
+    };
+    checkRewardStatus();
+  }, [user]);
 
   useEffect(() => {
     // ScrollArea viewport is the actual scrollable element
@@ -39,7 +69,67 @@ const SupportChatWidget = () => {
     }
   }, [messages]);
 
+  const startFollowUpTimer = () => {
+    // Clear any existing timer
+    if (followUpTimerRef.current) {
+      clearTimeout(followUpTimerRef.current);
+    }
+    
+    // Set a 5-second timer
+    followUpTimerRef.current = setTimeout(() => {
+      // Use refs to get current values
+      const currentMessages = messagesRef.current;
+      const currentIsTyping = isTypingRef.current;
+      
+      // Only add follow-up if user is not typing and there are messages
+      if (!currentIsTyping && currentMessages.length > 0) {
+        const lastMessage = currentMessages[currentMessages.length - 1];
+        // Only ask if last message was from assistant and doesn't already contain follow-up
+        if (lastMessage?.role === 'assistant' && 
+            !lastMessage.content.includes('کار دیگه‌ای')) {
+          setMessages(prev => [
+            ...prev,
+            { role: 'assistant', content: 'کار دیگه‌ای هست بتونم براتون انجام بدم؟ 😊' }
+          ]);
+        }
+      }
+    }, 5000);
+  };
+
+  // Detect thank-you responses and offer feedback
+  const checkForThanks = (userMessage: string) => {
+    const thanksPatterns = ['نه', 'ممنون', 'تشکر', 'مرسی', 'خیر', 'نه ممنون', 'نخیر', 'ممنونم', 'متشکر', 'سپاس'];
+    const lowerMessage = userMessage.trim();
+    
+    const isThanks = thanksPatterns.some(pattern => 
+      lowerMessage === pattern || 
+      lowerMessage.startsWith(pattern + ' ') ||
+      lowerMessage.includes(pattern)
+    );
+    
+    if (isThanks && !feedbackOffered && !hasReceivedReward && user) {
+      setFeedbackOffered(true);
+      // Add feedback offer message after a short delay
+      setTimeout(() => {
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: 'ممنون میشم نظرتون در مورد سایت رو با ما به اشتراک بذارین و ۵۰ سکه ناقابل دریافت کنید! 🎁' }
+        ]);
+        // Open feedback modal
+        setTimeout(() => setShowFeedback(true), 1500);
+      }, 500);
+      return true;
+    }
+    return false;
+  };
+
   const streamChat = async (userMessage: string) => {
+    // Check if this is a thanks message first
+    if (checkForThanks(userMessage)) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      return;
+    }
+
     const newMessages = [...messages, { role: 'user' as const, content: userMessage }];
     setMessages(newMessages);
     setIsLoading(true);
@@ -121,29 +211,6 @@ const SupportChatWidget = () => {
       // Start follow-up timer after response is complete
       startFollowUpTimer();
     }
-  };
-
-  const startFollowUpTimer = () => {
-    // Clear any existing timer
-    if (followUpTimerRef.current) {
-      clearTimeout(followUpTimerRef.current);
-    }
-    
-    // Set a 5-second timer
-    followUpTimerRef.current = setTimeout(() => {
-      // Only add follow-up if user is not typing and chat is open
-      if (!isTyping && isOpen && messages.length > 0) {
-        const lastMessage = messages[messages.length - 1];
-        // Only ask if last message was from assistant and doesn't already contain follow-up
-        if (lastMessage?.role === 'assistant' && 
-            !lastMessage.content.includes('کار دیگه‌ای')) {
-          setMessages(prev => [
-            ...prev,
-            { role: 'assistant', content: 'کار دیگه‌ای هست بتونم براتون انجام بدم؟ 😊' }
-          ]);
-        }
-      }
-    }, 5000);
   };
 
   // Clear timer when user starts typing
