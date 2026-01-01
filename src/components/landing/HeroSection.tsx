@@ -8,8 +8,12 @@ const HeroSection = () => {
   const { fonts, getSetting } = useSiteSettings();
   
   // Get dynamic texts or use defaults
+  const heroPrefix = getSetting('hero_prefix', 'hring:');
   const heroTitle = getSetting('hero_title', 'سیستم مدیریت منابع انسانی');
+  const heroSuffix = getSetting('hero_suffix', 'نسل جدید');
   const heroSubtitle = getSetting('hero_subtitle', 'قدرت گرفته از هوش مصنوعی. استخدام، مصاحبه و آنبوردینگ را به صورت خودکار و هوشمند مدیریت کنید.');
+  const ctaPrimary = getSetting('hero_cta_primary', 'شروع کنید');
+  const ctaSecondary = getSetting('hero_cta_secondary', 'مشاهده پلن‌ها');
 
   return (
     <section className="min-h-screen flex items-center justify-center pt-24 pb-16 px-4" dir="rtl">
@@ -28,13 +32,13 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            <span className="text-foreground">hring:</span>
+            <span className="text-foreground">{heroPrefix}</span>
             <br />
             <span className="gradient-text-primary">
               {heroTitle}
             </span>
             <br />
-            <span className="text-foreground">نسل جدید</span>
+            <span className="text-foreground">{heroSuffix}</span>
           </motion.h1>
 
           {/* Subtitle - Using Dynamic Body Font */}
@@ -61,7 +65,7 @@ const HeroSection = () => {
                 className="glow-button text-foreground font-semibold px-8 py-6 text-lg gap-2"
                 style={{ fontFamily: fonts.button }}
               >
-                شروع کنید
+                {ctaPrimary}
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
@@ -71,7 +75,7 @@ const HeroSection = () => {
                 size="lg" 
                 className="border-primary/50 bg-primary/10 hover:bg-primary/20 text-foreground font-medium px-8 py-6 text-lg shadow-[0_0_15px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.5)] transition-all duration-500"
               >
-                مشاهده پلن‌ها
+                {ctaSecondary}
               </Button>
             </Link>
           </motion.div>

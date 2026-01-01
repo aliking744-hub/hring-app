@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import ScrollReveal from "@/components/ScrollReveal";
 import { Button } from "@/components/ui/button";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const documents = [
   { title: "قرارداد کار تمام‌وقت", category: "قراردادها", downloads: "۲.۴k" },
@@ -14,6 +15,11 @@ const documents = [
 ];
 
 const ShopTeaser = () => {
+  const { getSetting } = useSiteSettings();
+  
+  const shopTitle = getSetting('shop_title', 'فروشگاه اسناد HR');
+  const shopSubtitle = getSetting('shop_subtitle', 'قالب‌های آماده قرارداد و مستندات منابع انسانی');
+
   return (
     <section className="py-24 px-4" dir="rtl">
       <div className="container mx-auto">
@@ -21,10 +27,10 @@ const ShopTeaser = () => {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-4">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                فروشگاه اسناد HR
+                {shopTitle}
               </h2>
               <p className="text-muted-foreground text-lg">
-                قالب‌های آماده قرارداد و مستندات منابع انسانی
+                {shopSubtitle}
               </p>
             </div>
             <Link to="/shop">

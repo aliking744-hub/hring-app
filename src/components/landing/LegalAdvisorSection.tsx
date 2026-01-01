@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ScrollReveal from "@/components/ScrollReveal";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 interface Message {
   id: string;
@@ -26,6 +27,11 @@ const LegalAdvisorSection = () => {
   const [attachments, setAttachments] = useState<{ file: File; type: "image" | "pdf"; preview?: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { getSetting } = useSiteSettings();
+
+  const legalBadge = getSetting('legal_badge', 'مجهز به هوش مصنوعی');
+  const legalTitle = getSetting('legal_title', 'مشاور حقوقی هوشمند');
+  const legalSubtitle = getSetting('legal_subtitle', 'سوالات حقوقی خود در زمینه قانون کار را بپرسید. می‌توانید تصویر یا PDF نیز پیوست کنید.');
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -160,13 +166,13 @@ const LegalAdvisorSection = () => {
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
               <Sparkles className="w-4 h-4" />
-              <span className="text-sm font-medium">مجهز به هوش مصنوعی</span>
+              <span className="text-sm font-medium">{legalBadge}</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              مشاور حقوقی هوشمند
+              {legalTitle}
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              سوالات حقوقی خود در زمینه قانون کار را بپرسید. می‌توانید تصویر یا PDF نیز پیوست کنید.
+              {legalSubtitle}
             </p>
           </div>
         </ScrollReveal>

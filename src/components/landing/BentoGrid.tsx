@@ -1,6 +1,7 @@
 import { Briefcase, Megaphone, Users, UserPlus } from "lucide-react";
 import SpotlightCard from "@/components/SpotlightCard";
 import ScrollReveal from "@/components/ScrollReveal";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const features = [
   {
@@ -34,16 +35,21 @@ const features = [
 ];
 
 const BentoGrid = () => {
+  const { getSetting } = useSiteSettings();
+  
+  const bentoTitle = getSetting('bento_title', 'همه چیز در یک پلتفرم');
+  const bentoSubtitle = getSetting('bento_subtitle', 'چهار ماژول قدرتمند برای مدیریت کامل چرخه استخدام');
+
   return (
     <section className="py-24 px-4" dir="rtl">
       <div className="container mx-auto">
         <ScrollReveal>
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              همه چیز در یک پلتفرم
+              {bentoTitle}
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              چهار ماژول قدرتمند برای مدیریت کامل چرخه استخدام
+              {bentoSubtitle}
             </p>
           </div>
         </ScrollReveal>

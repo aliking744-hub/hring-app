@@ -5,8 +5,14 @@ import ScrollReveal from "@/components/ScrollReveal";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const BlogTeaser = () => {
+  const { getSetting } = useSiteSettings();
+  
+  const blogTitle = getSetting('blog_title', 'بلاگ و مقالات');
+  const blogSubtitle = getSetting('blog_subtitle', 'آخرین مطالب و مقالات تخصصی منابع انسانی');
+
   const { data: posts = [] } = useQuery({
     queryKey: ['blog-teaser'],
     queryFn: async () => {
@@ -41,10 +47,10 @@ const BlogTeaser = () => {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-4">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                بلاگ و مقالات
+                {blogTitle}
               </h2>
               <p className="text-muted-foreground text-lg">
-                آخرین مطالب و مقالات تخصصی منابع انسانی
+                {blogSubtitle}
               </p>
             </div>
             <Link to="/blog">
