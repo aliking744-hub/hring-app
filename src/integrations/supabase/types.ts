@@ -225,8 +225,11 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          credit_pool: number | null
+          credit_pool_enabled: boolean | null
           domain: string | null
           id: string
+          last_credit_reset: string | null
           max_members: number
           monthly_credits: number
           name: string
@@ -238,8 +241,11 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          credit_pool?: number | null
+          credit_pool_enabled?: boolean | null
           domain?: string | null
           id?: string
+          last_credit_reset?: string | null
           max_members?: number
           monthly_credits?: number
           name: string
@@ -251,8 +257,11 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          credit_pool?: number | null
+          credit_pool_enabled?: boolean | null
           domain?: string | null
           id?: string
+          last_credit_reset?: string | null
           max_members?: number
           monthly_credits?: number
           name?: string
@@ -685,6 +694,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_active: boolean
+          last_credit_reset: string | null
           monthly_credits: number
           subscription_tier:
             | Database["public"]["Enums"]["subscription_tier"]
@@ -700,6 +710,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_active?: boolean
+          last_credit_reset?: string | null
           monthly_credits?: number
           subscription_tier?:
             | Database["public"]["Enums"]["subscription_tier"]
@@ -715,6 +726,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_active?: boolean
+          last_credit_reset?: string | null
           monthly_credits?: number
           subscription_tier?:
             | Database["public"]["Enums"]["subscription_tier"]
@@ -1039,6 +1051,7 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      reset_monthly_credits: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
