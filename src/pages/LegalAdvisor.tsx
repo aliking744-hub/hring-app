@@ -1,17 +1,22 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
-import { Scale, Send, Paperclip, FileText, X, Loader2, Bot, User, ArrowRight, Sparkles, Image } from "lucide-react";
+import { Scale, Send, Paperclip, FileText, X, Loader2, Bot, User, ArrowRight, Sparkles, Plus, MessageSquare, Trash2, Clock, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import AuroraBackground from "@/components/AuroraBackground";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/landing/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserContext } from "@/hooks/useUserContext";
+import { formatDistanceToNow } from "date-fns";
+import { faIR } from "date-fns/locale";
 
 interface Message {
   id: string;
@@ -21,13 +26,166 @@ interface Message {
   sources?: { articleNumber: string | null; category: string; similarity: number }[];
 }
 
+interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const LegalAdvisor = () => {
+  const { user } = useAuth();
+  const { context } = useUserContext();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingConversations, setLoadingConversations] = useState(true);
   const [attachments, setAttachments] = useState<{ file: File; type: "image" | "pdf"; preview?: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Check if user can save history (Plus or Corporate users)
+  const canSaveHistory = () => {
+    if (!context) return false;
+    if (context.userType === 'corporate') return true;
+    return context.subscriptionTier === 'individual_plus';
+  };
+
+  // Load conversations
+  useEffect(() => {
+    if (user && canSaveHistory()) {
+      loadConversations();
+    } else {
+      setLoadingConversations(false);
+    }
+  }, [user, context]);
+
+  const loadConversations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('legal_conversations')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
+
+  // Load messages for a conversation
+  const loadMessages = async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('legal_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const loadedMessages: Message[] = (data || []).map((m: any) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        attachments: m.attachments || [],
+        sources: m.sources || [],
+      }));
+
+      setMessages(loadedMessages);
+      setActiveConversationId(conversationId);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      toast.error('خطا در بارگذاری پیام‌ها');
+    }
+  };
+
+  // Create new conversation
+  const createNewConversation = async () => {
+    if (!user || !canSaveHistory()) {
+      setMessages([]);
+      setActiveConversationId(null);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('legal_conversations')
+        .insert({ user_id: user.id, title: 'مکالمه جدید' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setConversations(prev => [data, ...prev]);
+      setActiveConversationId(data.id);
+      setMessages([]);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+    }
+  };
+
+  // Delete conversation
+  const deleteConversation = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('legal_conversations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setConversations(prev => prev.filter(c => c.id !== id));
+      if (activeConversationId === id) {
+        setActiveConversationId(null);
+        setMessages([]);
+      }
+      toast.success('مکالمه حذف شد');
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      toast.error('خطا در حذف مکالمه');
+    }
+  };
+
+  // Save message to database
+  const saveMessage = async (conversationId: string, message: Message) => {
+    if (!canSaveHistory()) return;
+
+    try {
+      await supabase.from('legal_messages').insert({
+        conversation_id: conversationId,
+        role: message.role,
+        content: message.content,
+        attachments: message.attachments || [],
+        sources: message.sources || [],
+      });
+
+      // Update conversation title if first user message
+      if (message.role === 'user' && messages.length === 0) {
+        const title = message.content.slice(0, 50) + (message.content.length > 50 ? '...' : '');
+        await supabase
+          .from('legal_conversations')
+          .update({ title, updated_at: new Date().toISOString() })
+          .eq('id', conversationId);
+        
+        setConversations(prev => prev.map(c => 
+          c.id === conversationId ? { ...c, title, updated_at: new Date().toISOString() } : c
+        ));
+      } else {
+        await supabase
+          .from('legal_conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', conversationId);
+      }
+    } catch (error) {
+      console.error('Error saving message:', error);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -63,6 +221,22 @@ const LegalAdvisor = () => {
   const sendMessage = async () => {
     if (!input.trim() && attachments.length === 0) return;
 
+    // Create conversation if needed
+    let currentConversationId = activeConversationId;
+    if (!currentConversationId && canSaveHistory() && user) {
+      const { data, error } = await supabase
+        .from('legal_conversations')
+        .insert({ user_id: user.id, title: 'مکالمه جدید' })
+        .select()
+        .single();
+
+      if (!error && data) {
+        currentConversationId = data.id;
+        setConversations(prev => [data, ...prev]);
+        setActiveConversationId(data.id);
+      }
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -79,6 +253,11 @@ const LegalAdvisor = () => {
     const currentAttachments = [...attachments];
     setAttachments([]);
     setIsLoading(true);
+
+    // Save user message
+    if (currentConversationId) {
+      await saveMessage(currentConversationId, userMessage);
+    }
 
     try {
       let fullQuery = input;
@@ -122,6 +301,11 @@ const LegalAdvisor = () => {
 
       setMessages((prev) => [...prev, assistantMessage]);
       
+      // Save assistant message
+      if (currentConversationId) {
+        await saveMessage(currentConversationId, assistantMessage);
+      }
+      
       setTimeout(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
       }, 100);
@@ -157,6 +341,11 @@ const LegalAdvisor = () => {
     "حق سنوات چگونه محاسبه می‌شود؟",
   ];
 
+  const startNewChat = () => {
+    setActiveConversationId(null);
+    setMessages([]);
+  };
+
   return (
     <div className="relative min-h-screen" dir="rtl">
       <Helmet>
@@ -176,7 +365,7 @@ const LegalAdvisor = () => {
       <Navbar />
       
       <main className="pt-32 pb-24 px-4">
-        <div className="container mx-auto max-w-4xl">
+        <div className="container mx-auto max-w-6xl">
           {/* Header */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -195,208 +384,282 @@ const LegalAdvisor = () => {
             </p>
           </motion.div>
 
-          {/* Chat Container */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="glass-card overflow-hidden"
-          >
-            {/* Chat Header */}
-            <div className="px-6 py-4 border-b border-border flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Scale className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-foreground">مشاور حقوقی</h2>
-                <span className="text-sm text-muted-foreground">
-                  پاسخ‌دهی بر اساس قوانین کار ایران
-                </span>
-              </div>
-            </div>
+          <div className="flex gap-4">
+            {/* Sidebar - Conversation History */}
+            {canSaveHistory() && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="hidden lg:block w-72 glass-card p-4 h-[600px] flex flex-col"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-foreground">تاریخچه مکالمات</h3>
+                  <Button variant="ghost" size="icon" onClick={startNewChat}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
 
-            {/* Messages */}
-            <ScrollArea className="h-[500px] px-6 py-4" ref={scrollRef}>
-              <div className="space-y-4">
-                {messages.length === 0 && (
-                  <div className="text-center py-12">
-                    <Bot className="w-20 h-20 mx-auto text-muted-foreground/20 mb-6" />
-                    <p className="text-muted-foreground mb-6">
-                      سوال حقوقی خود را بپرسید یا فایل آپلود کنید
-                    </p>
-                    <div className="flex justify-center gap-2 mb-6 flex-wrap">
-                      <Badge variant="secondary">قانون کار</Badge>
-                      <Badge variant="secondary">تامین اجتماعی</Badge>
-                      <Badge variant="secondary">آرای دیوان</Badge>
+                <ScrollArea className="flex-1">
+                  {loadingConversations ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                     </div>
-                    
-                    {/* Sample Questions */}
-                    <div className="max-w-md mx-auto">
-                      <p className="text-sm text-muted-foreground mb-3">نمونه سوالات:</p>
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {sampleQuestions.map((q, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setInput(q)}
-                            className="px-3 py-2 text-sm bg-secondary/50 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            {q}
-                          </button>
-                        ))}
+                  ) : conversations.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                      <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>هنوز مکالمه‌ای ندارید</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {conversations.map((conv) => (
+                        <div
+                          key={conv.id}
+                          onClick={() => loadMessages(conv.id)}
+                          className={`p-3 rounded-lg cursor-pointer group transition-colors ${
+                            activeConversationId === conv.id
+                              ? 'bg-primary/10 border border-primary/30'
+                              : 'hover:bg-secondary/50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">
+                                {conv.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                <Clock className="w-3 h-3" />
+                                {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true, locale: faIR })}
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteConversation(conv.id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/10 rounded transition-all"
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </motion.div>
+            )}
+
+            {/* Chat Container */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="flex-1 glass-card overflow-hidden"
+            >
+              {/* Chat Header */}
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Scale className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-foreground">مشاور حقوقی</h2>
+                    <span className="text-sm text-muted-foreground">
+                      پاسخ‌دهی بر اساس قوانین کار ایران
+                    </span>
+                  </div>
+                </div>
+
+                {!canSaveHistory() && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Lock className="w-3 h-3" />
+                    ذخیره تاریخچه: ویژه پلن پلاس
+                  </Badge>
+                )}
+              </div>
+
+              {/* Messages */}
+              <ScrollArea className="h-[450px] px-6 py-4" ref={scrollRef}>
+                <div className="space-y-4">
+                  {messages.length === 0 && (
+                    <div className="text-center py-12">
+                      <Bot className="w-20 h-20 mx-auto text-muted-foreground/20 mb-6" />
+                      <p className="text-muted-foreground mb-6">
+                        سوال حقوقی خود را بپرسید یا فایل آپلود کنید
+                      </p>
+                      <div className="flex justify-center gap-2 mb-6 flex-wrap">
+                        <Badge variant="secondary">قانون کار</Badge>
+                        <Badge variant="secondary">تامین اجتماعی</Badge>
+                        <Badge variant="secondary">آرای دیوان</Badge>
+                      </div>
+                      
+                      <div className="max-w-md mx-auto">
+                        <p className="text-sm text-muted-foreground mb-3">نمونه سوالات:</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {sampleQuestions.map((q, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setInput(q)}
+                              className="px-3 py-2 text-sm bg-secondary/50 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              {q}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
+                  )}
+
+                  <AnimatePresence>
+                    {messages.map((message) => (
+                      <motion.div
+                        key={message.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          message.role === "user" 
+                            ? "bg-primary text-primary-foreground" 
+                            : "bg-secondary"
+                        }`}>
+                          {message.role === "user" ? (
+                            <User className="w-5 h-5" />
+                          ) : (
+                            <Bot className="w-5 h-5" />
+                          )}
+                        </div>
+                        <div className={`flex-1 ${message.role === "user" ? "text-left" : "text-right"}`}>
+                          {message.attachments && message.attachments.length > 0 && (
+                            <div className={`flex gap-2 mb-2 flex-wrap ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                              {message.attachments.map((att, i) => (
+                                <div key={i} className="relative">
+                                  {att.type === "image" && att.preview ? (
+                                    <img 
+                                      src={att.preview} 
+                                      alt={att.name}
+                                      className="w-24 h-24 object-cover rounded-xl border"
+                                    />
+                                  ) : (
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg">
+                                      <FileText className="w-4 h-4" />
+                                      <span className="text-sm">{att.name}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className={`inline-block px-5 py-4 rounded-2xl max-w-[85%] ${
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground rounded-tl-sm"
+                              : "bg-secondary rounded-tr-sm"
+                          }`}>
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                              {message.content}
+                            </p>
+                          </div>
+
+                          {message.sources && message.sources.length > 0 && (
+                            <div className="flex gap-1 mt-2 flex-wrap">
+                              {message.sources.map((source, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {getCategoryLabel(source.category)}
+                                  {source.articleNumber && ` - ماده ${source.articleNumber}`}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+
+                  {isLoading && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex gap-3"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                        <Bot className="w-5 h-5" />
+                      </div>
+                      <div className="bg-secondary px-5 py-4 rounded-2xl rounded-tr-sm">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </ScrollArea>
+
+              {/* Input Area */}
+              <div className="border-t border-border px-6 py-4 space-y-3">
+                {attachments.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {attachments.map((att, index) => (
+                      <div key={index} className="relative group">
+                        {att.type === "image" && att.preview ? (
+                          <img 
+                            src={att.preview} 
+                            alt="preview" 
+                            className="w-16 h-16 object-cover rounded-lg border"
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg">
+                            <FileText className="w-4 h-4" />
+                            <span className="text-xs max-w-[100px] truncate">{att.file.name}</span>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => removeAttachment(index)}
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                <AnimatePresence>
-                  {messages.map((message) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
-                    >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                        message.role === "user" 
-                          ? "bg-primary text-primary-foreground" 
-                          : "bg-secondary"
-                      }`}>
-                        {message.role === "user" ? (
-                          <User className="w-5 h-5" />
-                        ) : (
-                          <Bot className="w-5 h-5" />
-                        )}
-                      </div>
-                      <div className={`flex-1 ${message.role === "user" ? "text-left" : "text-right"}`}>
-                        {message.attachments && message.attachments.length > 0 && (
-                          <div className={`flex gap-2 mb-2 flex-wrap ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                            {message.attachments.map((att, i) => (
-                              <div key={i} className="relative">
-                                {att.type === "image" && att.preview ? (
-                                  <img 
-                                    src={att.preview} 
-                                    alt={att.name}
-                                    className="w-24 h-24 object-cover rounded-xl border"
-                                  />
-                                ) : (
-                                  <div className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg">
-                                    <FileText className="w-4 h-4" />
-                                    <span className="text-sm">{att.name}</span>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className={`inline-block px-5 py-4 rounded-2xl max-w-[85%] ${
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground rounded-tl-sm"
-                            : "bg-secondary rounded-tr-sm"
-                        }`}>
-                          <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                            {message.content}
-                          </p>
-                        </div>
-
-                        {message.sources && message.sources.length > 0 && (
-                          <div className="flex gap-1 mt-2 flex-wrap">
-                            {message.sources.map((source, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">
-                                {getCategoryLabel(source.category)}
-                                {source.articleNumber && ` - ماده ${source.articleNumber}`}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-
-                {isLoading && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex gap-3"
+                <div className="flex gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,.pdf"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading}
+                    className="shrink-0"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-                      <Bot className="w-5 h-5" />
-                    </div>
-                    <div className="bg-secondary px-5 py-4 rounded-2xl rounded-tr-sm">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            </ScrollArea>
-
-            {/* Input Area */}
-            <div className="border-t border-border px-6 py-4 space-y-3">
-              {attachments.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {attachments.map((att, index) => (
-                    <div key={index} className="relative group">
-                      {att.type === "image" && att.preview ? (
-                        <img 
-                          src={att.preview} 
-                          alt="preview" 
-                          className="w-16 h-16 object-cover rounded-lg border"
-                        />
-                      ) : (
-                        <div className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg">
-                          <FileText className="w-4 h-4" />
-                          <span className="text-xs max-w-[100px] truncate">{att.file.name}</span>
-                        </div>
-                      )}
-                      <button
-                        onClick={() => removeAttachment(index)}
-                        className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
+                    <Paperclip className="w-5 h-5" />
+                  </Button>
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                    placeholder="سوال حقوقی خود را بنویسید..."
+                    disabled={isLoading}
+                    className="flex-1 text-base"
+                  />
+                  <Button 
+                    onClick={sendMessage} 
+                    disabled={isLoading || (!input.trim() && attachments.length === 0)}
+                    size="icon"
+                    className="shrink-0"
+                  >
+                    <Send className="w-5 h-5" />
+                  </Button>
                 </div>
-              )}
-
-              <div className="flex gap-3">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,.pdf"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
-                  className="shrink-0"
-                >
-                  <Paperclip className="w-5 h-5" />
-                </Button>
-                <Input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                  placeholder="سوال حقوقی خود را بنویسید..."
-                  disabled={isLoading}
-                  className="flex-1 text-base"
-                />
-                <Button 
-                  onClick={sendMessage} 
-                  disabled={isLoading || (!input.trim() && attachments.length === 0)}
-                  size="icon"
-                  className="shrink-0"
-                >
-                  <Send className="w-5 h-5" />
-                </Button>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </main>
 
