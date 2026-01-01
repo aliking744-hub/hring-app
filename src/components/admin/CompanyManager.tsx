@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Building2, Trash2, Edit2 } from 'lucide-react';
+import { Loader2, Plus, Building2, Trash2, Edit2, Search } from 'lucide-react';
 import { TIER_NAMES, STATUS_NAMES } from '@/types/multiTenant';
 import type { Company, SubscriptionTier, CompanyStatus } from '@/types/multiTenant';
 
@@ -38,6 +38,7 @@ const CompanyManager = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     domain: '',
@@ -46,6 +47,17 @@ const CompanyManager = () => {
     monthly_credits: 100,
     max_members: 10,
   });
+
+  // Filter companies based on search query
+  const filteredCompanies = useMemo(() => {
+    if (!searchQuery.trim()) return companies;
+    const query = searchQuery.toLowerCase();
+    return companies.filter(company => 
+      company.name.toLowerCase().includes(query) ||
+      company.domain?.toLowerCase().includes(query) ||
+      company.id.toLowerCase().includes(query)
+    );
+  }, [companies, searchQuery]);
 
   const fetchCompanies = async () => {
     try {
@@ -185,114 +197,130 @@ const CompanyManager = () => {
 
   return (
     <Card className="glass-card">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="w-5 h-5" />
-          مدیریت شرکت‌ها
-        </CardTitle>
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) {
-            setEditingCompany(null);
-            resetForm();
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button className="glow-button gap-2">
-              <Plus className="w-4 h-4" />
-              شرکت جدید
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="glass-card border-border" dir="rtl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingCompany ? 'ویرایش شرکت' : 'ایجاد شرکت جدید'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>نام شرکت</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="نام شرکت"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>دامنه (اختیاری)</Label>
-                <Input
-                  value={formData.domain}
-                  onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                  placeholder="example.com"
-                  dir="ltr"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>وضعیت</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(v) => setFormData({ ...formData, status: v as CompanyStatus })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">فعال</SelectItem>
-                      <SelectItem value="trial">آزمایشی</SelectItem>
-                      <SelectItem value="suspended">معلق</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>اشتراک</Label>
-                  <Select
-                    value={formData.subscription_tier}
-                    onValueChange={(v) => setFormData({ ...formData, subscription_tier: v as SubscriptionTier })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="corporate_expert">کارشناس</SelectItem>
-                      <SelectItem value="corporate_decision_support">پشتیبان تصمیم</SelectItem>
-                      <SelectItem value="corporate_decision_making">تصمیم‌ساز</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>اعتبار ماهانه</Label>
-                  <Input
-                    type="number"
-                    value={formData.monthly_credits}
-                    onChange={(e) => setFormData({ ...formData, monthly_credits: parseInt(e.target.value) || 0 })}
-                    min={0}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>حداکثر اعضا</Label>
-                  <Input
-                    type="number"
-                    value={formData.max_members}
-                    onChange={(e) => setFormData({ ...formData, max_members: parseInt(e.target.value) || 1 })}
-                    min={1}
-                  />
-                </div>
-              </div>
-              <Button type="submit" className="w-full glow-button">
-                {editingCompany ? 'بروزرسانی' : 'ایجاد'}
+      <CardHeader className="flex flex-col gap-4">
+        <div className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="w-5 h-5" />
+            مدیریت شرکت‌ها
+            <span className="text-sm font-normal text-muted-foreground">
+              ({filteredCompanies.length} از {companies.length})
+            </span>
+          </CardTitle>
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) {
+              setEditingCompany(null);
+              resetForm();
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button className="glow-button gap-2">
+                <Plus className="w-4 h-4" />
+                شرکت جدید
               </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="glass-card border-border" dir="rtl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingCompany ? 'ویرایش شرکت' : 'ایجاد شرکت جدید'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>نام شرکت</Label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="نام شرکت"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>دامنه (اختیاری)</Label>
+                  <Input
+                    value={formData.domain}
+                    onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                    placeholder="example.com"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>وضعیت</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(v) => setFormData({ ...formData, status: v as CompanyStatus })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">فعال</SelectItem>
+                        <SelectItem value="trial">آزمایشی</SelectItem>
+                        <SelectItem value="suspended">معلق</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>اشتراک</Label>
+                    <Select
+                      value={formData.subscription_tier}
+                      onValueChange={(v) => setFormData({ ...formData, subscription_tier: v as SubscriptionTier })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="corporate_expert">کارشناس</SelectItem>
+                        <SelectItem value="corporate_decision_support">پشتیبان تصمیم</SelectItem>
+                        <SelectItem value="corporate_decision_making">تصمیم‌ساز</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>اعتبار ماهانه</Label>
+                    <Input
+                      type="number"
+                      value={formData.monthly_credits}
+                      onChange={(e) => setFormData({ ...formData, monthly_credits: parseInt(e.target.value) || 0 })}
+                      min={0}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>حداکثر اعضا</Label>
+                    <Input
+                      type="number"
+                      value={formData.max_members}
+                      onChange={(e) => setFormData({ ...formData, max_members: parseInt(e.target.value) || 1 })}
+                      min={1}
+                    />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full glow-button">
+                  {editingCompany ? 'بروزرسانی' : 'ایجاد'}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+        
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="جستجوی نام یا دامنه شرکت..."
+            className="pr-10"
+          />
+        </div>
       </CardHeader>
       <CardContent>
-        {companies.length === 0 ? (
+        {filteredCompanies.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            هیچ شرکتی ثبت نشده است
+            {searchQuery ? 'شرکتی یافت نشد' : 'هیچ شرکتی ثبت نشده است'}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -308,7 +336,7 @@ const CompanyManager = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {companies.map((company) => (
+                {filteredCompanies.map((company) => (
                   <TableRow key={company.id}>
                     <TableCell className="font-medium">{company.name}</TableCell>
                     <TableCell className="text-muted-foreground" dir="ltr">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, User, Coins, Plus, Minus } from 'lucide-react';
+import { Loader2, User, Coins, Plus, Minus, Search } from 'lucide-react';
 
 interface UserWithCredits {
   id: string;
@@ -22,6 +22,17 @@ const UsersCreditsManager = () => {
   const [editingUser, setEditingUser] = useState<UserWithCredits | null>(null);
   const [creditChange, setCreditChange] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter users based on search query
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return users;
+    const query = searchQuery.toLowerCase();
+    return users.filter(user => 
+      user.email?.toLowerCase().includes(query) ||
+      user.id.toLowerCase().includes(query)
+    );
+  }, [users, searchQuery]);
 
   useEffect(() => {
     fetchUsers();
@@ -162,11 +173,22 @@ const UsersCreditsManager = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold">مدیریت کاربران و اعتبار</h2>
         <span className="text-muted-foreground">
-          {users.length} کاربر
+          {filteredUsers.length} از {users.length} کاربر
         </span>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="جستجوی ایمیل یا شناسه کاربر..."
+          className="pr-10"
+        />
       </div>
 
       {/* Users Table */}
@@ -183,14 +205,14 @@ const UsersCreditsManager = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    هنوز کاربری ثبت‌نام نکرده
+                    {searchQuery ? 'کاربری یافت نشد' : 'هنوز کاربری ثبت‌نام نکرده'}
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((user, index) => (
+                filteredUsers.map((user, index) => (
                   <TableRow key={user.id}>
                     <TableCell className="text-muted-foreground">
                       {index + 1}
