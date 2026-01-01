@@ -1,9 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Settings, Users, FileText, Diamond, Database, Shield } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowRight, Settings, Users, FileText, Diamond, Database, Shield, Loader2, Lock } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
+import { toast } from 'sonner';
 import SiteSettingsManager from '@/components/admin/SiteSettingsManager';
 import UsersCreditsManager from '@/components/admin/UsersCreditsManager';
 import BlogManager from '@/components/admin/BlogManager';
@@ -17,10 +24,130 @@ import AuditLogsViewer from '@/components/admin/AuditLogsViewer';
 import KnowledgeBaseStatus from '@/components/admin/KnowledgeBaseStatus';
 import LegalImporter from '@/components/admin/LegalImporter';
 
+// Super Admin credentials
+const SUPER_ADMIN_EMAIL = 'ali_king744@yahoo.com';
+
 const King744 = () => {
   const navigate = useNavigate();
+  const { signIn, session, loading: authLoading } = useAuth();
+  const { isSuperAdmin, loading: superAdminLoading } = useSuperAdmin();
   const [activeTab, setActiveTab] = useState('settings');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        toast.error('خطا در ورود: ' + error.message);
+        return;
+      }
+
+      // Check if the logged in user is super admin
+      if (email.toLowerCase() !== SUPER_ADMIN_EMAIL.toLowerCase()) {
+        toast.error('دسترسی غیرمجاز');
+        return;
+      }
+
+      toast.success('ورود موفق');
+    } catch (err) {
+      toast.error('خطا در ورود');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // Show loading state
+  if (authLoading || superAdminLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // If not super admin, show login form
+  if (!session || !isSuperAdmin) {
+    return (
+      <>
+        <Helmet>
+          <title>System Access | HRing</title>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
+        
+        <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card className="w-full max-w-md glass-card border-border/50">
+              <CardHeader className="text-center space-y-4">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Lock className="w-8 h-8 text-primary" />
+                </div>
+                <CardTitle className="text-2xl gradient-text-primary">
+                  دسترسی سیستم
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  فقط مدیر سیستم می‌تواند وارد شود
+                </p>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">ایمیل</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@example.com"
+                      required
+                      className="text-left"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">رمز عبور</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="text-left"
+                      dir="ltr"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full glow-button"
+                    disabled={loginLoading}
+                  >
+                    {loginLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                    ) : (
+                      <Shield className="w-4 h-4 ml-2" />
+                    )}
+                    ورود به سیستم
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </>
+    );
+  }
+
+  // Super admin dashboard
   return (
     <>
       <Helmet>

@@ -237,11 +237,7 @@ const App = () => (
               />
               <Route 
                 path="/king744" 
-                element={
-                  <SuperAdminRoute>
-                    <King744 />
-                  </SuperAdminRoute>
-                } 
+                element={<King744 />}
               />
               <Route 
                 path="/admin/legal-importer" 
