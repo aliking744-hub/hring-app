@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, FileText, Package, Users, Settings, Building2, ToggleRight } from 'lucide-react';
+import { ArrowRight, FileText, Package, Users, Settings, Building2, ToggleRight, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BlogManager from '@/components/admin/BlogManager';
 import ProductManager from '@/components/admin/ProductManager';
@@ -10,6 +10,7 @@ import SiteSettingsManager from '@/components/admin/SiteSettingsManager';
 import CompanyManager from '@/components/admin/CompanyManager';
 import FeatureFlagsManager from '@/components/admin/FeatureFlagsManager';
 import CorporateUserManager from '@/components/admin/CorporateUserManager';
+import TestimonialsManager from '@/components/admin/TestimonialsManager';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const Admin = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-8">
+          <TabsList className="grid w-full grid-cols-8 mb-8">
             <TabsTrigger value="companies" className="gap-2">
               <Building2 className="w-4 h-4" />
               <span className="hidden sm:inline">شرکت‌ها</span>
@@ -47,6 +48,10 @@ const Admin = () => {
             <TabsTrigger value="features" className="gap-2">
               <ToggleRight className="w-4 h-4" />
               <span className="hidden sm:inline">دسترسی‌ها</span>
+            </TabsTrigger>
+            <TabsTrigger value="testimonials" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              <span className="hidden sm:inline">نظرات</span>
             </TabsTrigger>
             <TabsTrigger value="blog" className="gap-2">
               <FileText className="w-4 h-4" />
@@ -76,6 +81,10 @@ const Admin = () => {
 
           <TabsContent value="features">
             <FeatureFlagsManager />
+          </TabsContent>
+
+          <TabsContent value="testimonials">
+            <TestimonialsManager />
           </TabsContent>
 
           <TabsContent value="blog">

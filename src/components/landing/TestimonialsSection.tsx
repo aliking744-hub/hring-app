@@ -1,44 +1,34 @@
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star, Quote } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const testimonials = [
-  {
-    name: "سارا احمدی",
-    role: "مدیر منابع انسانی",
-    company: "شرکت فناوران نوین",
-    avatar: "",
-    content: "با استفاده از HRing، زمان استخدام ما از ۴۵ روز به ۱۲ روز کاهش یافت. ابزار هدهانتینگ هوشمند واقعاً بی‌نظیر است.",
-    rating: 5,
-  },
-  {
-    name: "محمد رضایی",
-    role: "مدیرعامل",
-    company: "استارتاپ دیجیتال",
-    avatar: "",
-    content: "قطب‌نمای استراتژیک به ما کمک کرد تا تصمیمات بهتری بگیریم. اکنون تیم ما هماهنگ‌تر از همیشه کار می‌کند.",
-    rating: 5,
-  },
-  {
-    name: "مریم حسینی",
-    role: "رئیس واحد جذب",
-    company: "هلدینگ پارسیان",
-    avatar: "",
-    content: "ماژول آنبوردینگ HRing فرآیند ورود کارمندان جدید را کاملاً متحول کرد. نرخ ماندگاری ما ۳۰٪ افزایش یافته.",
-    rating: 5,
-  },
-  {
-    name: "علی کریمی",
-    role: "مدیر عملیات",
-    company: "گروه صنعتی آریا",
-    avatar: "",
-    content: "ماشین‌حساب هزینه و ابزارهای تحلیلی HRing به ما دید کاملی از هزینه‌های منابع انسانی داده است.",
-    rating: 4,
-  },
-];
+interface Testimonial {
+  id: string;
+  name: string;
+  role: string;
+  company: string;
+  avatar_url: string | null;
+  content: string;
+  rating: number;
+}
 
 const TestimonialsSection = () => {
+  const { data: testimonials, isLoading } = useQuery({
+    queryKey: ["testimonials"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("testimonials")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data as Testimonial[];
+    },
+  });
   return (
     <section className="py-20 px-4" dir="rtl">
       <div className="container mx-auto">
@@ -57,8 +47,21 @@ const TestimonialsSection = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-          {testimonials.map((testimonial, index) => (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="h-48 bg-card/50">
+                <CardContent className="p-6">
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-3/4 mb-4" />
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+            {testimonials?.map((testimonial, index) => (
             <motion.div
               key={testimonial.name}
               initial={{ opacity: 0, y: 20 }}
@@ -90,7 +93,7 @@ const TestimonialsSection = () => {
 
                   <div className="flex items-center gap-3 pt-4 border-t border-border/50">
                     <Avatar className="w-10 h-10">
-                      <AvatarImage src={testimonial.avatar} />
+                      <AvatarImage src={testimonial.avatar_url || ""} />
                       <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
                         {testimonial.name.slice(0, 2)}
                       </AvatarFallback>
@@ -109,6 +112,7 @@ const TestimonialsSection = () => {
             </motion.div>
           ))}
         </div>
+        )}
 
         {/* Stats */}
         <motion.div
