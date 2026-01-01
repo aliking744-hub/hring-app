@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,10 +36,9 @@ serve(async (req) => {
 
     // Read file content
     const arrayBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
     
-    // Convert to base64 for AI processing
-    const base64 = btoa(String.fromCharCode(...uint8Array));
+    // Convert to base64 using proper encoding (handles large files)
+    const base64 = base64Encode(arrayBuffer);
     
     log('🤖 ارسال به هوش مصنوعی برای استخراج متن...');
 
