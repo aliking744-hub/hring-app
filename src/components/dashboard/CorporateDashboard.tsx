@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCompany } from '@/hooks/useCompany';
 import { useUserContext } from '@/hooks/useUserContext';
 import { ROLE_NAMES, TIER_NAMES } from '@/types/multiTenant';
+import LegalAdvisorWidget from '@/components/LegalAdvisorWidget';
 
 const CorporateDashboard = () => {
   const navigate = useNavigate();
@@ -222,6 +223,12 @@ const CorporateDashboard = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Legal Advisor Widget - for Decision Support and Decision Making tiers */}
+      {(company?.subscription_tier === 'corporate_decision_support' || 
+        company?.subscription_tier === 'corporate_decision_making') && (
+        <LegalAdvisorWidget />
+      )}
     </div>
   );
 };

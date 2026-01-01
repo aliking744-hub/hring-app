@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.generate-mental-prism]
 verify_jwt = false
+
+[functions.legal-advisor-chat]
+verify_jwt = false
