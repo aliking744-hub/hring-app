@@ -100,7 +100,6 @@ const StrategicCompassContent = () => {
     if (isCEO) {
       // CEO has full access - ترتیب از راست به چپ
       baseTabs.push(
-        { id: "users", label: "مدیریت کاربران", icon: Users },
         { id: "dream", label: "تجلی رویا", icon: Sparkles, isGolden: true },
         { id: "betting", label: "بازی استراتژیک", icon: Coins },
         { id: "mental-prism", label: "منشور ذهنی", icon: Eye },
@@ -371,9 +370,6 @@ const StrategicCompassContent = () => {
                   </TabsContent>
                   <TabsContent value="dream">
                     <DreamManifestation />
-                  </TabsContent>
-                  <TabsContent value="users">
-                    <UserManagement />
                   </TabsContent>
                 </>
               )}
