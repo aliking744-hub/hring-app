@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useCredits } from "@/hooks/useCredits";
 import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 import CorporateDashboard from "@/components/dashboard/CorporateDashboard";
 
@@ -39,6 +40,7 @@ const Dashboard = () => {
   const { signOut, user } = useAuth();
   const { context, loading: contextLoading } = useUserContext();
   const { isAdmin } = useAdmin();
+  const { credits } = useCredits();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -145,6 +147,11 @@ const Dashboard = () => {
                       <span className="text-sm text-muted-foreground">حساب شرکتی</span>
                     </div>
                   )}
+                  {/* Credits Display */}
+                  <div className="mt-3 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50">
+                    <div className="text-xs text-muted-foreground">اعتبار باقی‌مانده</div>
+                    <div className="text-lg font-bold text-primary">{credits} <span className="text-xs font-normal text-muted-foreground">واحد</span></div>
+                  </div>
                 </div>
 
                 {/* Back to Home */}
@@ -220,6 +227,11 @@ const Dashboard = () => {
                 <span className="text-sm text-muted-foreground">حساب شرکتی</span>
               </div>
             )}
+            {/* Credits Display */}
+            <div className="mt-3 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50">
+              <div className="text-xs text-muted-foreground">اعتبار باقی‌مانده</div>
+              <div className="text-lg font-bold text-primary">{credits} <span className="text-xs font-normal text-muted-foreground">واحد</span></div>
+            </div>
           </div>
 
           {/* Back to Home */}
