@@ -69,70 +69,117 @@ const SupportChatWidget = () => {
     }
   }, [messages]);
 
-  const startFollowUpTimer = () => {
-    // Clear any existing timer
+  const clearFollowUpTimer = () => {
     if (followUpTimerRef.current) {
       clearTimeout(followUpTimerRef.current);
+      followUpTimerRef.current = null;
     }
-    
-    // Set a 5-second timer
+  };
+
+  const normalizeFa = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      // ZWNJ
+      .replace(/[\u200c]/g, ' ')
+      // punctuation
+      .replace(/[.,!?؛:()"'\[\]{}<>…،؟!]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const isConversationEndMessage = (value: string) => {
+    const v = normalizeFa(value);
+    if (!v) return false;
+
+    const direct = new Set([
+      'نه',
+      'نه ممنون',
+      'خیر',
+      'نخیر',
+      'مرسی',
+      'ممنون',
+      'ممنونم',
+      'متشکر',
+      'متشکرم',
+      'تشکر',
+      'سپاس',
+      'سپاسگزارم',
+    ]);
+
+    if (direct.has(v)) return true;
+
+    // Also accept short variants like "ممنون از شما" / "نه دیگه" but avoid triggering on long sentences
+    const starters = ['نه', 'خیر', 'نخیر', 'مرسی', 'ممنون', 'متشکر', 'تشکر', 'سپاس'];
+    return v.length <= 40 && starters.some((s) => v === s || v.startsWith(`${s} `));
+  };
+
+  const isFollowUpMessage = (value: string) => normalizeFa(value).includes('کار دیگه');
+
+  const handleConversationEnd = (userMessage: string) => {
+    if (!isConversationEndMessage(userMessage)) return false;
+
+    clearFollowUpTimer();
+    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+
+    // Offer feedback only once (reward is enforced server-side)
+    if (!feedbackOffered && !hasReceivedReward) {
+      setFeedbackOffered(true);
+
+      if (user) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content:
+              'ممنون میشم نظرتون در مورد سایت رو با ما به اشتراک بذارین و ۵۰ الماس ناقابل دریافت کنید.',
+          },
+        ]);
+        setShowFeedback(true);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'برای ثبت نظر و دریافت ۵۰ الماس، لطفاً اول وارد حساب کاربری‌تون بشید.',
+          },
+        ]);
+      }
+    }
+
+    return true;
+  };
+
+  const startFollowUpTimer = () => {
+    clearFollowUpTimer();
+
     followUpTimerRef.current = setTimeout(() => {
-      // Use refs to get current values
       const currentMessages = messagesRef.current;
       const currentIsTyping = isTypingRef.current;
-      
-      // Only add follow-up if user is not typing and there are messages
-      if (!currentIsTyping && currentMessages.length > 0) {
-        const lastMessage = currentMessages[currentMessages.length - 1];
-        // Only ask if last message was from assistant and doesn't already contain follow-up
-        if (lastMessage?.role === 'assistant' && 
-            !lastMessage.content.includes('کار دیگه‌ای')) {
-          setMessages(prev => [
-            ...prev,
-            { role: 'assistant', content: 'کار دیگه‌ای هست بتونم براتون انجام بدم؟ 😊' }
-          ]);
-        }
+
+      if (currentIsTyping || currentMessages.length === 0) return;
+
+      const lastMessage = currentMessages[currentMessages.length - 1];
+
+      // Only ask if last message was from assistant and doesn't already contain follow-up
+      if (lastMessage?.role === 'assistant' && !isFollowUpMessage(lastMessage.content)) {
+        setMessages((prev) => [...prev, { role: 'assistant', content: 'کار دیگه‌ای هست بتونم براتون انجام بدم؟' }]);
       }
     }, 5000);
   };
 
-  // Detect thank-you responses and offer feedback
-  const checkForThanks = (userMessage: string) => {
-    const thanksPatterns = ['نه', 'ممنون', 'تشکر', 'مرسی', 'خیر', 'نه ممنون', 'نخیر', 'ممنونم', 'متشکر', 'سپاس'];
-    const lowerMessage = userMessage.trim();
-    
-    const isThanks = thanksPatterns.some(pattern => 
-      lowerMessage === pattern || 
-      lowerMessage.startsWith(pattern + ' ') ||
-      lowerMessage.includes(pattern)
-    );
-    
-    if (isThanks && !feedbackOffered && !hasReceivedReward && user) {
-      setFeedbackOffered(true);
-      // Add feedback offer message after a short delay
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev,
-          { role: 'assistant', content: 'ممنون میشم نظرتون در مورد سایت رو با ما به اشتراک بذارین و ۵۰ سکه ناقابل دریافت کنید! 🎁' }
-        ]);
-        // Open feedback modal
-        setTimeout(() => setShowFeedback(true), 1500);
-      }, 500);
-      return true;
-    }
-    return false;
-  };
-
   const streamChat = async (userMessage: string) => {
-    // Check if this is a thanks message first
-    if (checkForThanks(userMessage)) {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-      return;
-    }
+    // End-of-conversation -> offer feedback (no AI call)
+    if (handleConversationEnd(userMessage)) return;
 
-    const newMessages = [...messages, { role: 'user' as const, content: userMessage }];
+    // New message: cancel any pending follow-up
+    clearFollowUpTimer();
+
+    const newMessages = [...messagesRef.current, { role: 'user' as const, content: userMessage }];
     setMessages(newMessages);
     setIsLoading(true);
+
+    let assistantContent = '';
+    let didStreamAnyContent = false;
 
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/hring-support`, {
@@ -157,7 +204,6 @@ const SupportChatWidget = () => {
       if (!reader) throw new Error('No reader');
 
       const decoder = new TextDecoder();
-      let assistantContent = '';
       let buffer = '';
 
       while (true) {
@@ -182,13 +228,12 @@ const SupportChatWidget = () => {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) {
+              didStreamAnyContent = true;
               assistantContent += content;
-              setMessages(prev => {
+              setMessages((prev) => {
                 const last = prev[prev.length - 1];
                 if (last?.role === 'assistant') {
-                  return prev.map((m, i) => 
-                    i === prev.length - 1 ? { ...m, content: assistantContent } : m
-                  );
+                  return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantContent } : m));
                 }
                 return [...prev, { role: 'assistant', content: assistantContent }];
               });
@@ -199,17 +244,19 @@ const SupportChatWidget = () => {
           }
         }
       }
+
+      if (didStreamAnyContent) {
+        startFollowUpTimer();
+      }
     } catch (error) {
       console.error('Chat error:', error);
       toast.error(error instanceof Error ? error.message : 'خطا در ارتباط با پشتیبانی');
-      setMessages(prev => [
+      setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'عذر میخوام، مشکلی پیش اومد. لطفاً دوباره امتحان کنید.' }
+        { role: 'assistant', content: 'عذر میخوام، مشکلی پیش اومد. لطفاً دوباره امتحان کنید.' },
       ]);
     } finally {
       setIsLoading(false);
-      // Start follow-up timer after response is complete
-      startFollowUpTimer();
     }
   };
 
@@ -217,12 +264,7 @@ const SupportChatWidget = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
     setIsTyping(true);
-    
-    // Clear follow-up timer when typing
-    if (followUpTimerRef.current) {
-      clearTimeout(followUpTimerRef.current);
-      followUpTimerRef.current = null;
-    }
+    clearFollowUpTimer();
   };
 
   // Reset typing state after user stops
@@ -268,12 +310,18 @@ const SupportChatWidget = () => {
     setSubmittingFeedback(true);
     try {
       const { data, error } = await supabase.functions.invoke('submit-feedback', {
-        body: { userId: user.id, rating, comment }
+        body: { userId: user.id, rating, comment },
       });
 
       if (error) throw error;
 
       toast.success(data.message);
+
+      // Keep client state in sync so we don't offer the reward again in this session.
+      if (data?.isFirstFeedback || (typeof data?.diamondsAwarded === 'number' && data.diamondsAwarded > 0)) {
+        setHasReceivedReward(true);
+      }
+
       setShowFeedback(false);
       setRating(0);
       setComment('');
