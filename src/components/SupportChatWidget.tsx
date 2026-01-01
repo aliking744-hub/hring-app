@@ -21,7 +21,9 @@ const SupportChatWidget = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const followUpTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { user } = useAuth();
 
   // Feedback state
@@ -116,8 +118,61 @@ const SupportChatWidget = () => {
       ]);
     } finally {
       setIsLoading(false);
+      // Start follow-up timer after response is complete
+      startFollowUpTimer();
     }
   };
+
+  const startFollowUpTimer = () => {
+    // Clear any existing timer
+    if (followUpTimerRef.current) {
+      clearTimeout(followUpTimerRef.current);
+    }
+    
+    // Set a 5-second timer
+    followUpTimerRef.current = setTimeout(() => {
+      // Only add follow-up if user is not typing and chat is open
+      if (!isTyping && isOpen && messages.length > 0) {
+        const lastMessage = messages[messages.length - 1];
+        // Only ask if last message was from assistant and doesn't already contain follow-up
+        if (lastMessage?.role === 'assistant' && 
+            !lastMessage.content.includes('کار دیگه‌ای')) {
+          setMessages(prev => [
+            ...prev,
+            { role: 'assistant', content: 'کار دیگه‌ای هست بتونم براتون انجام بدم؟ 😊' }
+          ]);
+        }
+      }
+    }, 5000);
+  };
+
+  // Clear timer when user starts typing
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+    setIsTyping(true);
+    
+    // Clear follow-up timer when typing
+    if (followUpTimerRef.current) {
+      clearTimeout(followUpTimerRef.current);
+      followUpTimerRef.current = null;
+    }
+  };
+
+  // Reset typing state after user stops
+  useEffect(() => {
+    if (!input) {
+      setIsTyping(false);
+    }
+  }, [input]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (followUpTimerRef.current) {
+        clearTimeout(followUpTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
@@ -256,12 +311,11 @@ const SupportChatWidget = () => {
               </div>
             </ScrollArea>
 
-            {/* Input Area */}
             <div className="p-3 border-t border-border">
               <div className="flex gap-2">
                 <Input
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={handleInputChange}
                   onKeyPress={handleKeyPress}
                   placeholder="پیام خود را بنویسید..."
                   disabled={isLoading}
