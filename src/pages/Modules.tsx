@@ -2,9 +2,11 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, ArrowRight, Sparkles, Megaphone, MessageSquareMore, Route, Users, Building2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { FileText, ArrowRight, Sparkles, Megaphone, MessageSquareMore, Route, Users, Building2, Lock, Gem } from "lucide-react";
 import logo from "@/assets/logo.png";
 import AuroraBackground from "@/components/AuroraBackground";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const modules = [
   {
@@ -12,6 +14,7 @@ const modules = [
     description: "تولید هوشمند پروفایل شغلی با استفاده از هوش مصنوعی",
     icon: FileText,
     path: "/job-description",
+    featureKey: "job_profile",
     color: "primary",
     bgColor: "bg-primary/20",
     hoverBg: "group-hover:bg-primary/30",
@@ -22,6 +25,7 @@ const modules = [
     description: "نوشتن آگهی‌های شغلی جذاب برای لینکدین و سایت‌های کاریابی",
     icon: Megaphone,
     path: "/smart-ad-generator",
+    featureKey: "smart_ad",
     color: "purple-500",
     bgColor: "bg-purple-500/20",
     hoverBg: "group-hover:bg-purple-500/30",
@@ -32,6 +36,7 @@ const modules = [
     description: "تولید راهنمای جامع مصاحبه، سوالات تخصصی و کلید ارزیابی داوطلب",
     icon: MessageSquareMore,
     path: "/interview-assistant",
+    featureKey: "interview_kit",
     color: "orange-500",
     bgColor: "bg-orange-500/20",
     hoverBg: "group-hover:bg-orange-500/30",
@@ -42,6 +47,7 @@ const modules = [
     description: "طراحی نقشه راه ۹۰ روزه برای موفقیت و تثبیت نیروی جدید در سازمان",
     icon: Route,
     path: "/success-architect",
+    featureKey: "onboarding_plan",
     color: "green-500",
     bgColor: "bg-green-500/20",
     hoverBg: "group-hover:bg-green-500/30",
@@ -74,6 +80,8 @@ const itemVariants = {
 };
 
 const Modules = () => {
+  const { checkAccess, getCreditCost } = useFeaturePermissions();
+
   return (
     <div className="relative min-h-screen" dir="rtl">
       <AuroraBackground />
@@ -135,38 +143,88 @@ const Modules = () => {
             animate="visible"
             className="grid md:grid-cols-2 lg:grid-cols-2 gap-6"
           >
-            {modules.map((module) => (
-              <motion.div key={module.path} variants={itemVariants}>
-                <Link to={module.path} className="group block">
-                  <Card className="h-full glass-card border-border/50 hover:border-primary/50 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-primary/10">
-                    <CardHeader>
-                      <div className={`w-14 h-14 rounded-2xl ${module.bgColor} ${module.hoverBg} flex items-center justify-center mb-4 transition-all duration-300`}>
-                        <module.icon className={`w-7 h-7 text-${module.color}`} />
+            {modules.map((module) => {
+              const access = checkAccess(module.featureKey);
+              const creditCost = getCreditCost(module.featureKey);
+              const isLocked = !access.hasAccess;
+
+              return (
+                <motion.div key={module.path} variants={itemVariants}>
+                  {isLocked ? (
+                    <Card className="h-full glass-card border-border/30 relative overflow-hidden">
+                      {/* Locked overlay */}
+                      <div className="absolute inset-0 bg-background/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                          <Lock className="w-7 h-7 text-muted-foreground" />
+                        </div>
+                        <p className="text-muted-foreground font-medium mb-2">قفل شده</p>
+                        <Link to="/shop">
+                          <Button size="sm" variant="outline" className="gap-2">
+                            ارتقای پلن
+                          </Button>
+                        </Link>
                       </div>
-                      <CardTitle className="text-xl text-foreground group-hover:text-primary transition-colors">
-                        {module.title}
-                      </CardTitle>
-                      <CardDescription className="text-base text-muted-foreground">
-                        {module.description}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2 text-sm text-muted-foreground">
-                        {module.features.map((feature, index) => (
-                          <li key={index} className="flex items-center gap-2">
-                            <Sparkles className={`w-4 h-4 text-${module.color}`} />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </Link>
-              </motion.div>
-            ))}
+                      <CardHeader>
+                        <div className={`w-14 h-14 rounded-2xl ${module.bgColor} flex items-center justify-center mb-4`}>
+                          <module.icon className={`w-7 h-7 text-${module.color}`} />
+                        </div>
+                        <CardTitle className="text-xl text-foreground">{module.title}</CardTitle>
+                        <CardDescription className="text-base text-muted-foreground">
+                          {module.description}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          {module.features.map((feature, index) => (
+                            <li key={index} className="flex items-center gap-2">
+                              <Sparkles className={`w-4 h-4 text-${module.color}`} />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Link to={module.path} className="group block">
+                      <Card className="h-full glass-card border-border/50 hover:border-primary/50 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-primary/10">
+                        <CardHeader>
+                          <div className="flex items-center justify-between mb-4">
+                            <div className={`w-14 h-14 rounded-2xl ${module.bgColor} ${module.hoverBg} flex items-center justify-center transition-all duration-300`}>
+                              <module.icon className={`w-7 h-7 text-${module.color}`} />
+                            </div>
+                            {creditCost > 0 && (
+                              <Badge variant="secondary" className="gap-1">
+                                <Gem className="w-3 h-3" />
+                                {creditCost}
+                              </Badge>
+                            )}
+                          </div>
+                          <CardTitle className="text-xl text-foreground group-hover:text-primary transition-colors">
+                            {module.title}
+                          </CardTitle>
+                          <CardDescription className="text-base text-muted-foreground">
+                            {module.description}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <ul className="space-y-2 text-sm text-muted-foreground">
+                            {module.features.map((feature, index) => (
+                              <li key={index} className="flex items-center gap-2">
+                                <Sparkles className={`w-4 h-4 text-${module.color}`} />
+                                {feature}
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  )}
+                </motion.div>
+              );
+            })}
 
             {/* Upcoming Modules */}
-            {upcomingModules.map((module, index) => (
+            {upcomingModules.map((module) => (
               <motion.div key={module.title} variants={itemVariants}>
                 <Card className="h-full glass-card border-border/30 opacity-50 cursor-not-allowed">
                   <CardHeader>
