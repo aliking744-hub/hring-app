@@ -2,7 +2,6 @@ import { Helmet } from "react-helmet-async";
 import AuroraBackground from "@/components/AuroraBackground";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
-import PricingSection from "@/components/landing/PricingSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import BentoGrid from "@/components/landing/BentoGrid";
 import DashboardPreview from "@/components/landing/DashboardPreview";
@@ -27,11 +26,10 @@ const Index = () => {
         <Navbar />
         <main>
           <HeroSection />
-          <PricingSection />
-          <TestimonialsSection />
           <DashboardPreview />
           <BentoGrid />
           <ShopTeaser />
+          <TestimonialsSection />
           <BlogTeaser />
         </main>
         <Footer />
