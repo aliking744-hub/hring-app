@@ -163,14 +163,20 @@ const SupportChatWidget = () => {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button - Glassy Neon Blue */}
       <motion.button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center ${isOpen ? 'hidden' : ''}`}
-        whileHover={{ scale: 1.1 }}
+        className={`fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full flex items-center justify-center ${isOpen ? 'hidden' : ''}`}
+        style={{
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.5) 100%)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(59, 130, 246, 0.4)',
+          boxShadow: '0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.1)',
+        }}
+        whileHover={{ scale: 1.1, boxShadow: '0 0 30px rgba(59, 130, 246, 0.6), 0 0 60px rgba(59, 130, 246, 0.3)' }}
         whileTap={{ scale: 0.95 }}
       >
-        <MessageCircle className="w-6 h-6" />
+        <MessageCircle className="w-6 h-6 text-blue-400" />
       </motion.button>
 
       {/* Chat Window */}
@@ -213,9 +219,9 @@ const SupportChatWidget = () => {
             {/* Messages Area */}
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
               {messages.length === 0 && (
-                <div className="text-center text-muted-foreground py-8">
+                <div className="text-center text-muted-foreground py-8" style={{ fontFamily: 'BNazanin, sans-serif' }}>
                   <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">سلام! چطور میتونم کمکتون کنم؟</p>
+                  <p className="text-sm leading-7">سلام! چطور کمکتون کنم؟</p>
                 </div>
               )}
               <div className="space-y-4">
@@ -225,11 +231,12 @@ const SupportChatWidget = () => {
                     className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}
                   >
                     <div
-                      className={`max-w-[80%] p-3 rounded-2xl text-sm ${
+                      className={`max-w-[80%] p-3 rounded-2xl text-sm leading-7 ${
                         msg.role === 'user'
                           ? 'bg-primary text-primary-foreground rounded-tr-sm'
                           : 'bg-secondary text-secondary-foreground rounded-tl-sm'
                       }`}
+                      style={{ fontFamily: 'BNazanin, sans-serif' }}
                     >
                       {msg.content}
                     </div>
