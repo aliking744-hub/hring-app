@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, FileText, Package, Users, Settings, Building2, ToggleRight, MessageSquare, BarChart3, Shield, Scale } from 'lucide-react';
+import { ArrowRight, FileText, Package, Users, Settings, Building2, ToggleRight, MessageSquare, BarChart3, Shield, Scale, HeadphonesIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BlogManager from '@/components/admin/BlogManager';
 import ProductManager from '@/components/admin/ProductManager';
@@ -26,6 +26,14 @@ const Admin = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">پنل سوپر ادمین</h1>
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/admin/support-manager')}
+              className="gap-2"
+            >
+              <HeadphonesIcon className="w-4 h-4" />
+              <span>مدیریت چت‌بات</span>
+            </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate('/admin/legal-importer')}
