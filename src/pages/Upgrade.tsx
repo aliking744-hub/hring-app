@@ -1,0 +1,440 @@
+import { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Check, Crown, Sparkles, Zap, Building2, ArrowRight, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { useUserContext } from '@/hooks/useUserContext';
+import { supabase } from '@/integrations/supabase/client';
+import Navbar from '@/components/Navbar';
+import AuroraBackground from '@/components/AuroraBackground';
+
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  period: string;
+  description: string;
+  features: string[];
+  icon: React.ReactNode;
+  popular?: boolean;
+  corporate?: boolean;
+}
+
+const individualPlans: Plan[] = [
+  {
+    id: 'individual_free',
+    name: 'رایگان',
+    price: 0,
+    period: 'ماهانه',
+    description: 'برای شروع و آشنایی با پلتفرم',
+    features: [
+      '۵۰ اعتبار ماهانه',
+      'دسترسی به ابزارهای پایه',
+      'تولید شرح شغل',
+      'پشتیبانی ایمیلی',
+    ],
+    icon: <Zap className="h-6 w-6" />,
+  },
+  {
+    id: 'individual_expert',
+    name: 'کارشناس',
+    price: 199000,
+    period: 'ماهانه',
+    description: 'برای متخصصان HR',
+    features: [
+      '۲۰۰ اعتبار ماهانه',
+      'تمام ابزارهای پایه',
+      'دستیار مصاحبه',
+      'آگهی‌نویس هوشمند',
+      'پشتیبانی اولویت‌دار',
+    ],
+    icon: <Sparkles className="h-6 w-6" />,
+  },
+  {
+    id: 'individual_pro',
+    name: 'حرفه‌ای',
+    price: 399000,
+    period: 'ماهانه',
+    description: 'برای استخدام‌کنندگان حرفه‌ای',
+    features: [
+      '۵۰۰ اعتبار ماهانه',
+      'تمام ابزارهای Expert',
+      'داشبورد HR',
+      'معمار موفقیت ۹۰ روزه',
+      'استخدام هوشمند',
+      'گزارش‌های پیشرفته',
+    ],
+    icon: <Crown className="h-6 w-6" />,
+    popular: true,
+  },
+  {
+    id: 'individual_plus',
+    name: 'پلاس',
+    price: 699000,
+    period: 'ماهانه',
+    description: 'برای کاربران پیشرفته',
+    features: [
+      '۱۰۰۰ اعتبار ماهانه',
+      'تمام ابزارهای Pro',
+      'دسترسی API',
+      'پشتیبانی VIP',
+      'اولویت در ویژگی‌های جدید',
+    ],
+    icon: <Sparkles className="h-6 w-6" />,
+  },
+];
+
+const corporatePlans: Plan[] = [
+  {
+    id: 'corporate_expert',
+    name: 'شرکتی - کارشناس',
+    price: 999000,
+    period: 'ماهانه',
+    description: 'برای تیم‌های کوچک',
+    features: [
+      '۵۰۰ اعتبار ماهانه تیمی',
+      'تا ۵ عضو تیم',
+      'تمام ابزارهای HR',
+      'مدیریت تیم',
+      'گزارش‌های تیمی',
+    ],
+    icon: <Building2 className="h-6 w-6" />,
+    corporate: true,
+  },
+  {
+    id: 'corporate_decision_support',
+    name: 'پشتیبان تصمیم',
+    price: 1999000,
+    period: 'ماهانه',
+    description: 'برای سازمان‌های متوسط',
+    features: [
+      '۲۰۰۰ اعتبار ماهانه تیمی',
+      'تا ۱۵ عضو تیم',
+      'قطب‌نمای استراتژیک',
+      'تحلیل رفتار تیم',
+      'داشبورد مدیریتی',
+      'پشتیبانی اختصاصی',
+    ],
+    icon: <Crown className="h-6 w-6" />,
+    corporate: true,
+    popular: true,
+  },
+  {
+    id: 'corporate_decision_making',
+    name: 'تصمیم‌ساز',
+    price: 3999000,
+    period: 'ماهانه',
+    description: 'برای سازمان‌های بزرگ',
+    features: [
+      '۵۰۰۰ اعتبار ماهانه تیمی',
+      'تا ۵۰ عضو تیم',
+      'تمام ویژگی‌ها',
+      'منشور ذهنی CEO',
+      'شرط‌بندی استراتژیک',
+      'پشتیبانی ۲۴/۷',
+      'مشاور اختصاصی',
+    ],
+    icon: <Sparkles className="h-6 w-6" />,
+    corporate: true,
+  },
+];
+
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('fa-IR').format(price);
+};
+
+export default function Upgrade() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { context, loading: contextLoading } = useUserContext();
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+  
+  const status = searchParams.get('Status');
+  const authority = searchParams.get('Authority');
+
+  // Handle payment callback
+  useState(() => {
+    if (status && authority) {
+      verifyPayment(authority, status);
+    }
+  });
+
+  const verifyPayment = async (authority: string, status: string) => {
+    if (status !== 'OK') {
+      toast({
+        title: 'پرداخت ناموفق',
+        description: 'پرداخت شما انجام نشد یا لغو شد',
+        variant: 'destructive',
+      });
+      navigate('/upgrade', { replace: true });
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const response = await supabase.functions.invoke('zarinpal-payment', {
+        body: { action: 'verify', authority },
+      });
+
+      if (response.error) throw response.error;
+
+      if (response.data?.success) {
+        toast({
+          title: 'پرداخت موفق',
+          description: `کد پیگیری: ${response.data.ref_id}`,
+        });
+        navigate('/dashboard', { replace: true });
+      } else {
+        throw new Error(response.data?.error || 'Verification failed');
+      }
+    } catch (error: any) {
+      console.error('Verify error:', error);
+      toast({
+        title: 'خطا در تأیید پرداخت',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessing(false);
+      navigate('/upgrade', { replace: true });
+    }
+  };
+
+  const handleUpgrade = async (planId: string) => {
+    if (planId === 'individual_free') {
+      toast({ title: 'شما در حال حاضر پلن رایگان دارید' });
+      return;
+    }
+
+    if (context?.subscriptionTier === planId || context?.companyTier === planId) {
+      toast({ title: 'شما در حال حاضر این پلن را دارید' });
+      return;
+    }
+
+    setSelectedPlan(planId);
+    setProcessing(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/auth');
+        return;
+      }
+
+      const callbackUrl = `${window.location.origin}/upgrade`;
+
+      const response = await supabase.functions.invoke('zarinpal-payment', {
+        body: {
+          action: 'init',
+          plan_type: planId,
+          callback_url: callbackUrl,
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      if (response.data?.success && response.data?.payment_url) {
+        window.location.href = response.data.payment_url;
+      } else {
+        throw new Error(response.data?.error || 'Failed to initialize payment');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast({
+        title: 'خطا در شروع پرداخت',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessing(false);
+      setSelectedPlan(null);
+    }
+  };
+
+  const currentTier = context?.companyTier || context?.subscriptionTier;
+  const isCorporate = context?.userType === 'corporate';
+  const plansToShow = isCorporate ? corporatePlans : individualPlans;
+
+  if (processing && authority) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+          <p className="mt-4 text-lg">در حال تأیید پرداخت...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Helmet>
+        <title>ارتقای پلن | HRing</title>
+        <meta name="description" content="ارتقای پلن اشتراک HRing" />
+      </Helmet>
+
+      <div className="min-h-screen bg-background" dir="rtl">
+        <AuroraBackground />
+        <div className="relative z-10">
+          <Navbar />
+          
+          <div className="container mx-auto px-4 py-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center mb-12"
+            >
+              <h1 className="text-4xl font-bold mb-4">ارتقای پلن</h1>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                پلن مناسب خود را انتخاب کنید و از تمام امکانات HRing بهره‌مند شوید
+              </p>
+              {currentTier && (
+                <Badge variant="outline" className="mt-4">
+                  پلن فعلی: {currentTier}
+                </Badge>
+              )}
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+              {plansToShow.map((plan, index) => (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <Card 
+                    className={`relative h-full flex flex-col ${
+                      plan.popular 
+                        ? 'border-primary shadow-lg shadow-primary/20' 
+                        : 'border-border'
+                    } ${currentTier === plan.id ? 'ring-2 ring-green-500' : ''}`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <Badge className="bg-primary text-primary-foreground">
+                          محبوب‌ترین
+                        </Badge>
+                      </div>
+                    )}
+
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto mb-3 p-3 rounded-full bg-primary/10 text-primary w-fit">
+                        {plan.icon}
+                      </div>
+                      <CardTitle className="text-xl">{plan.name}</CardTitle>
+                      <CardDescription>{plan.description}</CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="flex-1 flex flex-col">
+                      <div className="text-center mb-6">
+                        {plan.price === 0 ? (
+                          <span className="text-3xl font-bold">رایگان</span>
+                        ) : (
+                          <>
+                            <span className="text-3xl font-bold">
+                              {formatPrice(plan.price)}
+                            </span>
+                            <span className="text-muted-foreground text-sm mr-1">
+                              تومان / {plan.period}
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      <ul className="space-y-3 flex-1 mb-6">
+                        {plan.features.map((feature, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm">
+                            <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <Button
+                        className="w-full"
+                        variant={currentTier === plan.id ? 'outline' : plan.popular ? 'default' : 'secondary'}
+                        disabled={processing || currentTier === plan.id || plan.price === 0}
+                        onClick={() => handleUpgrade(plan.id)}
+                      >
+                        {processing && selectedPlan === plan.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                        ) : currentTier === plan.id ? (
+                          'پلن فعلی'
+                        ) : plan.price === 0 ? (
+                          'پلن فعلی'
+                        ) : (
+                          <>
+                            ارتقا
+                            <ArrowRight className="h-4 w-4 mr-2" />
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+
+            {!isCorporate && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="mt-16 text-center"
+              >
+                <h2 className="text-2xl font-bold mb-4">پلن‌های شرکتی</h2>
+                <p className="text-muted-foreground mb-8">
+                  برای تیم‌ها و سازمان‌ها با امکانات پیشرفته‌تر
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                  {corporatePlans.map((plan, index) => (
+                    <motion.div
+                      key={plan.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 + index * 0.1 }}
+                    >
+                      <Card className={`${plan.popular ? 'border-primary' : ''}`}>
+                        <CardHeader className="text-center">
+                          <div className="mx-auto mb-2 p-2 rounded-full bg-primary/10 text-primary w-fit">
+                            {plan.icon}
+                          </div>
+                          <CardTitle className="text-lg">{plan.name}</CardTitle>
+                          <div className="text-2xl font-bold">
+                            {formatPrice(plan.price)}
+                            <span className="text-sm text-muted-foreground mr-1">
+                              تومان / ماه
+                            </span>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => navigate('/auth?type=company')}
+                          >
+                            ثبت‌نام شرکتی
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
