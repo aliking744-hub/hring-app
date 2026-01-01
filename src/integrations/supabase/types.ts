@@ -588,6 +588,59 @@ export type Database = {
           },
         ]
       }
+      payment_transactions: {
+        Row: {
+          amount: number
+          authority: string | null
+          company_id: string | null
+          created_at: string
+          description: string | null
+          gateway: string
+          id: string
+          plan_type: string
+          ref_id: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          authority?: string | null
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          gateway?: string
+          id?: string
+          plan_type: string
+          ref_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          authority?: string | null
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          gateway?: string
+          id?: string
+          plan_type?: string
+          ref_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           author_id: string | null
