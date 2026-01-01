@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, Building2, TrendingUp, Calendar, Briefcase, 
-  Target, BarChart3, UserPlus, Gem, Settings
+  Target, BarChart3, UserPlus, Gem, Settings, Coins
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,13 +50,24 @@ const CorporateDashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-4 py-2 glass-card rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
-              <Gem className="w-5 h-5 text-primary" />
-              <span className="font-bold text-foreground">
-                {company ? company.monthly_credits - company.used_credits : 0}
-              </span>
-              <span className="text-sm text-muted-foreground">اعتبار تیم</span>
-            </div>
+            {/* Show Credit Pool if enabled */}
+            {company?.credit_pool_enabled ? (
+              <div className="flex items-center gap-2 px-4 py-2 glass-card rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
+                <Coins className="w-5 h-5 text-amber-500" />
+                <span className="font-bold text-foreground">
+                  {company.credit_pool}
+                </span>
+                <span className="text-sm text-muted-foreground">مخزن تیم</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-2 glass-card rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+                <Gem className="w-5 h-5 text-primary" />
+                <span className="font-bold text-foreground">
+                  {company ? company.monthly_credits - company.used_credits : 0}
+                </span>
+                <span className="text-sm text-muted-foreground">اعتبار تیم</span>
+              </div>
+            )}
             {isCEO && (
               <Button 
                 variant="outline" 
