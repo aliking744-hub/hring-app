@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, FileText, Database, Globe, CheckCircle, AlertCircle, ClipboardPaste } from 'lucide-react';
+import { Loader2, FileText, Database, Globe, CheckCircle, AlertCircle, ClipboardPaste, Upload } from 'lucide-react';
 
 const CATEGORIES = [
   { value: 'labor_law', label: 'قانون کار' },
@@ -27,6 +27,28 @@ const LegalImporter = () => {
   // Manual HTML paste mode
   const [htmlContent, setHtmlContent] = useState('');
   const [manualSourceUrl, setManualSourceUrl] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.html') && !file.name.endsWith('.htm')) {
+      toast.error('لطفاً فقط فایل HTML آپلود کنید');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      setHtmlContent(content);
+      toast.success(`فایل ${file.name} بارگذاری شد`);
+    };
+    reader.onerror = () => {
+      toast.error('خطا در خواندن فایل');
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
 
   const handleProcess = async () => {
     if (!sourceUrl || !category) {
@@ -185,13 +207,35 @@ const LegalImporter = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="htmlContent" className="flex items-center gap-2">
-                  <ClipboardPaste className="w-4 h-4" />
-                  محتوای HTML صفحه
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="htmlContent" className="flex items-center gap-2">
+                    <ClipboardPaste className="w-4 h-4" />
+                    محتوای HTML صفحه
+                  </Label>
+                  <div>
+                    <input
+                      type="file"
+                      accept=".html,.htm"
+                      onChange={handleFileUpload}
+                      ref={fileInputRef}
+                      className="hidden"
+                      disabled={isProcessing}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isProcessing}
+                    >
+                      <Upload className="w-4 h-4 ml-2" />
+                      آپلود فایل HTML
+                    </Button>
+                  </div>
+                </div>
                 <Textarea
                   id="htmlContent"
-                  placeholder="محتوای HTML را اینجا paste کنید..."
+                  placeholder="محتوای HTML را اینجا paste کنید یا فایل آپلود کنید..."
                   value={htmlContent}
                   onChange={(e) => setHtmlContent(e.target.value)}
                   disabled={isProcessing}
