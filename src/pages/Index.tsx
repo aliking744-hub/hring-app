@@ -3,6 +3,7 @@ import AuroraBackground from "@/components/AuroraBackground";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
 import PricingSection from "@/components/landing/PricingSection";
+import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import BentoGrid from "@/components/landing/BentoGrid";
 import DashboardPreview from "@/components/landing/DashboardPreview";
 import ShopTeaser from "@/components/landing/ShopTeaser";
@@ -27,6 +28,7 @@ const Index = () => {
         <main>
           <HeroSection />
           <PricingSection />
+          <TestimonialsSection />
           <DashboardPreview />
           <BentoGrid />
           <ShopTeaser />
