@@ -246,8 +246,10 @@ const SupportChatWidget = () => {
                 ))}
                 {isLoading && messages[messages.length - 1]?.role === 'user' && (
                   <div className="flex justify-end">
-                    <div className="bg-secondary p-3 rounded-2xl rounded-tl-sm">
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                    <div className="bg-secondary p-3 rounded-2xl rounded-tl-sm flex items-center gap-1">
+                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
                 )}
