@@ -1,34 +1,234 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, Loader2, User, Building2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, Loader2, User, Building2, Users, CheckCircle } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { ROLE_NAMES, CompanyRole } from "@/types/multiTenant";
 
 type AccountType = 'person' | 'company';
 
+interface InviteInfo {
+  id: string;
+  invite_code: string;
+  role: CompanyRole;
+  company_id: string;
+  company_name: string;
+  is_valid: boolean;
+  error?: string;
+}
+
 const Auth = () => {
-  const [accountType, setAccountType] = useState<AccountType>('person');
+  const [searchParams] = useSearchParams();
+  const inviteCode = searchParams.get('invite');
+  
+  const [accountType, setAccountType] = useState<AccountType>(inviteCode ? 'company' : 'person');
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(!!inviteCode);
   const { toast } = useToast();
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
 
+  // Fetch invite info on mount
+  useEffect(() => {
+    const fetchInviteInfo = async () => {
+      if (!inviteCode) return;
+      
+      setInviteLoading(true);
+      try {
+        // Fetch invite with company info
+        const { data: invite, error } = await supabase
+          .from('company_invites')
+          .select(`
+            id,
+            invite_code,
+            role,
+            company_id,
+            max_uses,
+            used_count,
+            expires_at,
+            is_active,
+            companies (
+              name,
+              status
+            )
+          `)
+          .eq('invite_code', inviteCode)
+          .eq('is_active', true)
+          .single();
+
+        if (error || !invite) {
+          setInviteInfo({
+            id: '',
+            invite_code: inviteCode,
+            role: 'employee',
+            company_id: '',
+            company_name: '',
+            is_valid: false,
+            error: 'کد دعوت نامعتبر است'
+          });
+          return;
+        }
+
+        // Check if expired
+        if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+          setInviteInfo({
+            id: invite.id,
+            invite_code: inviteCode,
+            role: invite.role,
+            company_id: invite.company_id,
+            company_name: (invite.companies as any)?.name || '',
+            is_valid: false,
+            error: 'کد دعوت منقضی شده است'
+          });
+          return;
+        }
+
+        // Check max uses
+        if (invite.max_uses && invite.used_count >= invite.max_uses) {
+          setInviteInfo({
+            id: invite.id,
+            invite_code: inviteCode,
+            role: invite.role,
+            company_id: invite.company_id,
+            company_name: (invite.companies as any)?.name || '',
+            is_valid: false,
+            error: 'ظرفیت استفاده از این کد دعوت پر شده است'
+          });
+          return;
+        }
+
+        // Check company status
+        if ((invite.companies as any)?.status === 'suspended') {
+          setInviteInfo({
+            id: invite.id,
+            invite_code: inviteCode,
+            role: invite.role,
+            company_id: invite.company_id,
+            company_name: (invite.companies as any)?.name || '',
+            is_valid: false,
+            error: 'این شرکت در حال حاضر غیرفعال است'
+          });
+          return;
+        }
+
+        setInviteInfo({
+          id: invite.id,
+          invite_code: inviteCode,
+          role: invite.role,
+          company_id: invite.company_id,
+          company_name: (invite.companies as any)?.name || '',
+          is_valid: true
+        });
+
+        // Force signup mode for invite
+        setIsLogin(false);
+        setAccountType('company');
+      } catch (err) {
+        console.error('Error fetching invite:', err);
+        setInviteInfo({
+          id: '',
+          invite_code: inviteCode,
+          role: 'employee',
+          company_id: '',
+          company_name: '',
+          is_valid: false,
+          error: 'خطا در بررسی کد دعوت'
+        });
+      } finally {
+        setInviteLoading(false);
+      }
+    };
+
+    fetchInviteInfo();
+  }, [inviteCode]);
+
+  // Handle joining company after authentication
+  const joinCompanyWithInvite = async (userId: string) => {
+    if (!inviteInfo?.is_valid) return;
+
+    try {
+      // Check if user is already a member
+      const { data: existingMember } = await supabase
+        .from('company_members')
+        .select('id')
+        .eq('company_id', inviteInfo.company_id)
+        .eq('user_id', userId)
+        .single();
+
+      if (existingMember) {
+        toast({
+          title: "عضو موجود",
+          description: "شما قبلاً عضو این شرکت هستید",
+        });
+        return;
+      }
+
+      // Add user to company
+      const { error: memberError } = await supabase
+        .from('company_members')
+        .insert({
+          company_id: inviteInfo.company_id,
+          user_id: userId,
+          role: inviteInfo.role,
+          can_invite: false,
+          is_active: true
+        });
+
+      if (memberError) throw memberError;
+
+      // Update invite used count
+      await supabase
+        .from('company_invites')
+        .update({ used_count: (await supabase.from('company_invites').select('used_count').eq('id', inviteInfo.id).single()).data?.used_count + 1 || 1 })
+        .eq('id', inviteInfo.id);
+
+      // Update user profile to corporate
+      await supabase
+        .from('profiles')
+        .update({ user_type: 'corporate' })
+        .eq('id', userId);
+
+      toast({
+        title: "عضویت موفق",
+        description: `شما به ${inviteInfo.company_name} پیوستید`,
+      });
+    } catch (err) {
+      console.error('Error joining company:', err);
+      toast({
+        title: "خطا در عضویت",
+        description: "مشکلی در پیوستن به شرکت پیش آمد",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, navigate]);
+    const handleUserJoin = async () => {
+      if (user && inviteInfo?.is_valid) {
+        await joinCompanyWithInvite(user.id);
+        navigate('/dashboard', { replace: true });
+      } else if (user && !inviteCode) {
+        navigate('/dashboard', { replace: true });
+      }
+    };
+
+    handleUserJoin();
+  }, [user, inviteInfo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +236,7 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error, user: signedInUser } = await signIn(email, password);
         if (error) {
           if (error.message.includes('Email not confirmed')) {
             toast({
@@ -58,18 +258,26 @@ const Auth = () => {
             });
           }
         } else {
+          // Handle invite join for existing user
+          if (inviteInfo?.is_valid && signedInUser) {
+            await joinCompanyWithInvite(signedInUser.id);
+          }
+          
           toast({
             title: "ورود موفق",
-            description: accountType === 'person' 
-              ? "به داشبورد hring خوش آمدید" 
-              : "به پنل شرکت خوش آمدید",
+            description: inviteInfo?.is_valid 
+              ? `به ${inviteInfo.company_name} خوش آمدید`
+              : accountType === 'person' 
+                ? "به داشبورد hring خوش آمدید" 
+                : "به پنل شرکت خوش آمدید",
           });
           navigate('/dashboard');
         }
       } else {
-        const { error } = await signUp(email, password);
-        if (error) {
-          if (error.message.includes('already registered')) {
+        // Sign up with metadata
+        const { error: signUpError, user: signedUpUser } = await signUp(email, password);
+        if (signUpError) {
+          if (signUpError.message.includes('already registered')) {
             toast({
               title: "حساب موجود است",
               description: "این ایمیل قبلاً ثبت‌نام شده. لطفاً وارد شوید",
@@ -78,15 +286,34 @@ const Auth = () => {
           } else {
             toast({
               title: "خطا در ثبت‌نام",
-              description: error.message,
+              description: signUpError.message,
               variant: "destructive",
             });
           }
         } else {
-          toast({
-            title: "ثبت‌نام موفق",
-            description: "لینک تایید به ایمیل شما ارسال شد. لطفاً ایمیل خود را بررسی کنید",
-          });
+          // Update profile with name if provided
+          if (fullName && signedUpUser) {
+            await supabase
+              .from('profiles')
+              .update({ full_name: fullName })
+              .eq('id', signedUpUser.id);
+          }
+
+          // Handle invite join for new user
+          if (inviteInfo?.is_valid && signedUpUser) {
+            await joinCompanyWithInvite(signedUpUser.id);
+            toast({
+              title: "ثبت‌نام موفق",
+              description: `به ${inviteInfo.company_name} خوش آمدید`,
+            });
+            navigate('/dashboard');
+          } else {
+            toast({
+              title: "ثبت‌نام موفق",
+              description: "به HRing خوش آمدید",
+            });
+            navigate('/dashboard');
+          }
         }
       }
     } catch (error: any) {
@@ -103,6 +330,11 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
+      // Store invite code in localStorage for after OAuth redirect
+      if (inviteCode) {
+        localStorage.setItem('pending_invite_code', inviteCode);
+      }
+      
       const { error } = await signInWithGoogle();
       if (error) {
         toast({
@@ -122,15 +354,65 @@ const Auth = () => {
     }
   };
 
+  // Invite Banner Component
+  const InviteBanner = () => {
+    if (!inviteCode) return null;
+
+    if (inviteLoading) {
+      return (
+        <div className="mb-6 p-4 bg-secondary/50 rounded-xl flex items-center justify-center">
+          <Loader2 className="w-5 h-5 animate-spin text-primary ml-2" />
+          <span className="text-muted-foreground">در حال بررسی کد دعوت...</span>
+        </div>
+      );
+    }
+
+    if (!inviteInfo?.is_valid) {
+      return (
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
+          <p className="text-destructive text-center font-medium">
+            {inviteInfo?.error || 'کد دعوت نامعتبر است'}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6 p-4 bg-primary/10 border border-primary/30 rounded-xl"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-bold text-foreground">{inviteInfo.company_name}</p>
+              <CheckCircle className="w-4 h-4 text-green-500" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              دعوت به عنوان <Badge variant="secondary" className="mr-1">{ROLE_NAMES[inviteInfo.role]}</Badge>
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
   const renderLoginForm = () => (
     <>
+      {/* Invite Banner */}
+      <InviteBanner />
+
       {/* Google Sign In */}
       <Button 
         type="button" 
         variant="outline" 
         className="w-full mb-4 gap-2 bg-secondary/50 border-border hover:bg-secondary"
         onClick={handleGoogleSignIn}
-        disabled={isLoading}
+        disabled={isLoading || (!!inviteCode && !inviteInfo?.is_valid)}
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path
@@ -164,6 +446,21 @@ const Auth = () => {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Full Name - only for signup with invite */}
+        {!isLogin && inviteInfo?.is_valid && (
+          <div className="relative">
+            <User className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="نام و نام خانوادگی"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="pr-10 bg-secondary/50 border-border focus:border-primary"
+              disabled={isLoading}
+            />
+          </div>
+        )}
+
         <div className="relative">
           <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
@@ -173,7 +470,7 @@ const Auth = () => {
             onChange={(e) => setEmail(e.target.value)}
             className="pr-10 bg-secondary/50 border-border focus:border-primary"
             required
-            disabled={isLoading}
+            disabled={isLoading || (!!inviteCode && !inviteInfo?.is_valid)}
           />
         </div>
 
@@ -186,7 +483,7 @@ const Auth = () => {
             onChange={(e) => setPassword(e.target.value)}
             className="pr-10 pl-10 bg-secondary/50 border-border focus:border-primary"
             required
-            disabled={isLoading}
+            disabled={isLoading || (!!inviteCode && !inviteInfo?.is_valid)}
             minLength={6}
           />
           <button
@@ -201,20 +498,22 @@ const Auth = () => {
         <Button 
           type="submit" 
           className="w-full glow-button text-foreground font-semibold py-6 gap-2"
-          disabled={isLoading}
+          disabled={isLoading || (!!inviteCode && !inviteInfo?.is_valid)}
         >
           {isLoading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <>
-              {isLogin ? "ورود" : "ثبت‌نام"}
+              {inviteInfo?.is_valid 
+                ? (isLogin ? "ورود و پیوستن به شرکت" : "ثبت‌نام و پیوستن به شرکت")
+                : (isLogin ? "ورود" : "ثبت‌نام")}
               <ArrowLeft className="w-4 h-4" />
             </>
           )}
         </Button>
       </form>
 
-      {!isLogin && (
+      {!isLogin && !inviteInfo?.is_valid && (
         <p className="text-xs text-muted-foreground text-center mt-4">
           پس از ثبت‌نام، لینک تایید به ایمیل شما ارسال می‌شود
         </p>
@@ -239,7 +538,11 @@ const Auth = () => {
   return (
     <>
       <Helmet>
-        <title>{isLogin ? "ورود به حساب" : "ثبت‌نام"} | HRing</title>
+        <title>
+          {inviteInfo?.is_valid 
+            ? `پیوستن به ${inviteInfo.company_name} | HRing`
+            : (isLogin ? "ورود به حساب" : "ثبت‌نام") + " | HRing"}
+        </title>
         <meta 
           name="description" 
           content={isLogin 
@@ -264,46 +567,56 @@ const Auth = () => {
               hring
             </Link>
             <h1 className="text-2xl font-semibold text-foreground">
-              {isLogin ? "ورود به حساب" : "ایجاد حساب کاربری"}
+              {inviteInfo?.is_valid 
+                ? `پیوستن به ${inviteInfo.company_name}`
+                : (isLogin ? "ورود به حساب" : "ایجاد حساب کاربری")}
             </h1>
             <p className="text-muted-foreground mt-2">
-              {isLogin 
-                ? "خوش آمدید! لطفاً وارد شوید" 
-                : "همین حالا شروع کنید"}
+              {inviteInfo?.is_valid 
+                ? "برای پیوستن به شرکت، ثبت‌نام یا وارد شوید"
+                : (isLogin 
+                    ? "خوش آمدید! لطفاً وارد شوید" 
+                    : "همین حالا شروع کنید")}
             </p>
           </div>
 
-          {/* Account Type Tabs */}
-          <Tabs 
-            value={accountType} 
-            onValueChange={(v) => setAccountType(v as AccountType)}
-            className="mb-6"
-          >
-            <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
-              <TabsTrigger 
-                value="person" 
-                className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <User className="w-4 h-4" />
-                اشخاص
-              </TabsTrigger>
-              <TabsTrigger 
-                value="company"
-                className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Building2 className="w-4 h-4" />
-                شرکت‌ها
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="person" className="mt-6">
+          {/* Account Type Tabs - hide when invite is present */}
+          {!inviteCode ? (
+            <Tabs 
+              value={accountType} 
+              onValueChange={(v) => setAccountType(v as AccountType)}
+              className="mb-6"
+            >
+              <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
+                <TabsTrigger 
+                  value="person" 
+                  className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <User className="w-4 h-4" />
+                  اشخاص
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="company"
+                  className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <Building2 className="w-4 h-4" />
+                  شرکت‌ها
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="person" className="mt-6">
+                {renderLoginForm()}
+              </TabsContent>
+              
+              <TabsContent value="company" className="mt-6">
+                {renderLoginForm()}
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="mt-6">
               {renderLoginForm()}
-            </TabsContent>
-            
-            <TabsContent value="company" className="mt-6">
-              {renderLoginForm()}
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
 
           {/* Back Link */}
           <div className="mt-8 text-center">
