@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, User, Coins, Plus, Minus, Search } from 'lucide-react';
+import { Loader2, User, Coins, Plus, Minus, Search, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface UserWithCredits {
   id: string;
@@ -162,6 +163,24 @@ const UsersCreditsManager = () => {
     setSaving(false);
   };
 
+  // Export to Excel
+  const exportToExcel = () => {
+    const exportData = filteredUsers.map((user, index) => ({
+      'ردیف': index + 1,
+      'ایمیل': user.email || 'بدون ایمیل',
+      'اعتبار': user.credits,
+      'تاریخ ثبت‌نام': new Date(user.created_at).toLocaleDateString('fa-IR'),
+      'شناسه کاربر': user.id,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'کاربران');
+    XLSX.writeFile(workbook, `users-${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast.success('فایل اکسل دانلود شد');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -174,10 +193,16 @@ const UsersCreditsManager = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold">مدیریت کاربران و اعتبار</h2>
-        <span className="text-muted-foreground">
-          {filteredUsers.length} از {users.length} کاربر
-        </span>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold">مدیریت کاربران و اعتبار</h2>
+          <span className="text-muted-foreground">
+            ({filteredUsers.length} از {users.length})
+          </span>
+        </div>
+        <Button variant="outline" size="sm" onClick={exportToExcel} className="gap-2">
+          <Download className="w-4 h-4" />
+          صادرات اکسل
+        </Button>
       </div>
 
       {/* Search */}
