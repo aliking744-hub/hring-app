@@ -19,6 +19,7 @@ import {
   Crosshair,
   Compass,
   FileText,
+  Scale,
   Shield,
   Building2,
   Loader2,
@@ -135,6 +136,9 @@ const Dashboard = () => {
         demoMode: isPlus && context?.userType === 'individual'
       });
     }
+
+    // Legal Advisor - Always visible
+    items.push({ icon: Scale, label: "مشاور حقوقی", path: "/legal-advisor" });
 
     // Shop - Always visible
     items.push({ icon: FileText, label: "فروشگاه", path: "/shop" });
