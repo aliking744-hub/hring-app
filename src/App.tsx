@@ -32,6 +32,7 @@ import Admin from "./pages/Admin";
 import StrategicCompass from "./pages/StrategicCompass";
 import CompanyMembers from "./pages/CompanyMembers";
 import CompanySettings from "./pages/CompanySettings";
+import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -192,6 +193,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <CompanySettings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/upgrade" 
+                element={
+                  <ProtectedRoute>
+                    <Upgrade />
                   </ProtectedRoute>
                 } 
               />
