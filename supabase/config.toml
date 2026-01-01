@@ -32,3 +32,21 @@ verify_jwt = false
 
 [functions.process-legal-html]
 verify_jwt = false
+
+[functions.extract-document-text]
+verify_jwt = false
+
+[functions.create-company-user]
+verify_jwt = false
+
+[functions.update-company-user-profile]
+verify_jwt = false
+
+[functions.reset-company-user-password]
+verify_jwt = false
+
+[functions.reset-monthly-credits]
+verify_jwt = false
+
+[functions.generate-mental-prism]
+verify_jwt = false
