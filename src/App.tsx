@@ -9,6 +9,7 @@ import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 import { UserContextProvider } from "@/hooks/useUserContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
+import SuperAdminRoute from "@/components/SuperAdminRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -29,6 +30,7 @@ import SmartHeadhunting from "./pages/SmartHeadhunting";
 import CampaignDetail from "./pages/CampaignDetail";
 import CandidateDetail from "./pages/CandidateDetail";
 import Admin from "./pages/Admin";
+import King744 from "./pages/King744";
 import AdminLegalImporter from "./pages/AdminLegalImporter";
 import LegalSearchPage from "./pages/LegalSearchPage";
 import LegalAdvisor from "./pages/LegalAdvisor";
@@ -231,6 +233,14 @@ const App = () => (
                   <AdminRoute>
                     <Admin />
                   </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/king744" 
+                element={
+                  <SuperAdminRoute>
+                    <King744 />
+                  </SuperAdminRoute>
                 } 
               />
               <Route 
