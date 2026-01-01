@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Loader2, Save, Plus, Trash2, Type, Image, FileText, Upload, ChevronDown, Home, LogIn, LayoutDashboard, User, FolderOpen, Settings } from 'lucide-react';
+import { Loader2, Save, Plus, Trash2, Type, Image, FileText, Upload, ChevronDown, Home, LogIn, LayoutDashboard, User, FolderOpen, Settings, Search } from 'lucide-react';
 
 // Text settings groups configuration
 const TEXT_GROUPS = [
@@ -119,6 +119,9 @@ const SiteSettingsManager = () => {
   // New font form
   const [showNewFontForm, setShowNewFontForm] = useState(false);
   const [newFontName, setNewFontName] = useState('');
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchSettings();
@@ -459,7 +462,18 @@ const SiteSettingsManager = () => {
     s.key !== 'custom_fonts'
   );
 
-  // Group text settings by category
+  // Filter text settings by search query
+  const filteredTextSettings = useMemo(() => {
+    if (!searchQuery.trim()) return textSettings;
+    const query = searchQuery.toLowerCase();
+    return textSettings.filter(s => 
+      s.key.toLowerCase().includes(query) ||
+      s.label?.toLowerCase().includes(query) ||
+      s.value?.toLowerCase().includes(query)
+    );
+  }, [textSettings, searchQuery]);
+
+  // Group text settings by category (using filtered settings)
   const groupedSettings = useMemo(() => {
     const groups: Record<string, SiteSetting[]> = {};
     
@@ -467,7 +481,7 @@ const SiteSettingsManager = () => {
       groups[group.id] = [];
     });
 
-    textSettings.forEach(setting => {
+    filteredTextSettings.forEach(setting => {
       let assigned = false;
       
       for (const group of TEXT_GROUPS) {
@@ -489,7 +503,7 @@ const SiteSettingsManager = () => {
     });
 
     return groups;
-  }, [textSettings]);
+  }, [filteredTextSettings]);
 
   // Track open groups
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
@@ -545,6 +559,17 @@ const SiteSettingsManager = () => {
         {/* Texts Tab */}
         <TabsContent value="texts">
           <div className="space-y-6">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="جستجوی کلید، برچسب یا مقدار..."
+                className="pr-10"
+              />
+            </div>
+
             {/* New Setting Button */}
             <Button
               variant="outline"
@@ -684,11 +709,11 @@ const SiteSettingsManager = () => {
                 );
               })}
               
-              {textSettings.length === 0 && (
+              {filteredTextSettings.length === 0 && (
                 <Card>
                   <CardContent className="py-12">
                     <div className="text-center text-muted-foreground">
-                      هنوز متنی وجود ندارد
+                      {searchQuery ? 'نتیجه‌ای یافت نشد' : 'هنوز متنی وجود ندارد'}
                     </div>
                   </CardContent>
                 </Card>
