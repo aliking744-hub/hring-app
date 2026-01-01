@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.defense-builder]
 verify_jwt = false
+
+[functions.labor-complaint-assistant]
+verify_jwt = false
