@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const { query, images, pdfs, conversationHistory } = await req.json();
 
     if (!query) {
       return new Response(
@@ -22,6 +22,7 @@ serve(async (req) => {
     }
 
     console.log(`Legal advisor query: "${query}"`);
+    console.log(`Attachments - Images: ${images?.length || 0}, PDFs: ${pdfs?.length || 0}`);
 
     // Generate embedding for the query
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
@@ -98,11 +99,52 @@ serve(async (req) => {
 2. اگر اطلاعات کافی در متون نیست، صادقانه بگویید
 3. شماره ماده قانونی را ذکر کنید
 4. پاسخ را ساده و قابل فهم بنویسید
-5. اگر موضوع پیچیده است، توصیه به مشاوره با وکیل کنید`;
+5. اگر موضوع پیچیده است، توصیه به مشاوره با وکیل کنید
+6. اگر کاربر تصویر یا PDF ارسال کرده، آن را تحلیل کنید و در پاسخ خود لحاظ کنید`;
 
+    // Build messages array with conversation history and attachments
+    const messages: any[] = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    // Add conversation history
+    if (conversationHistory && Array.isArray(conversationHistory)) {
+      conversationHistory.forEach((msg: { role: string; content: string }) => {
+        messages.push({ role: msg.role, content: msg.content });
+      });
+    }
+
+    // Build user message content
+    const userContent: any[] = [];
+    
+    // Add text content
     const userPrompt = context 
       ? `متون قانونی مرتبط:\n\n${context}\n\n---\n\nسوال کاربر: ${query}`
       : `سوال کاربر: ${query}\n\nتوجه: متن قانونی مرتبطی یافت نشد. لطفاً بر اساس دانش عمومی حقوقی پاسخ دهید و تأکید کنید که برای پاسخ دقیق‌تر نیاز به بررسی متون قانونی است.`;
+    
+    userContent.push({ type: 'text', text: userPrompt });
+
+    // Add images if present
+    if (images && Array.isArray(images) && images.length > 0) {
+      for (const imageData of images) {
+        if (imageData.startsWith('data:image')) {
+          userContent.push({
+            type: 'image_url',
+            image_url: { url: imageData }
+          });
+        }
+      }
+    }
+
+    // Add PDF content description if present
+    if (pdfs && Array.isArray(pdfs) && pdfs.length > 0) {
+      userContent.push({
+        type: 'text',
+        text: `\n\n[کاربر ${pdfs.length} فایل PDF پیوست کرده است. لطفاً در پاسخ به سوال، این موضوع را در نظر بگیرید.]`
+      });
+    }
+
+    messages.push({ role: 'user', content: userContent });
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -112,10 +154,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
+        messages,
         max_tokens: 2000,
       }),
     });
