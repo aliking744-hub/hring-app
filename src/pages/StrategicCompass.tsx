@@ -72,107 +72,6 @@ const StrategicCompassContent = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      checkCompassRole();
-    } else {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  const checkCompassRole = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('compass_user_roles')
-        .select('role, accessible_sections, can_edit, diamonds')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error checking compass role:', error);
-      }
-
-      if (data) {
-        setCompassRole(data.role as CompassRole);
-        setUserPermissions({
-          role: data.role as CompassRole,
-          accessibleSections: data.accessible_sections || [],
-          canEdit: data.can_edit ?? true,
-          diamonds: data.diamonds ?? 100
-        });
-      }
-    } catch (err) {
-      console.error('Error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-    setCompassRole(null);
-    navigate('/dashboard');
-  };
-
-
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/auth');
-    }
-  }, [isLoading, user, navigate]);
-
-  if (isLoading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" dir="rtl">
-        <AuroraBackground />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="glass-card p-8 flex flex-col items-center gap-4"
-        >
-          <Compass className="w-16 h-16 text-primary animate-spin" />
-          <p className="text-foreground">در حال بارگذاری...</p>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // Show no access message if user has no compass role
-  if (!compassRole) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" dir="rtl">
-        <AuroraBackground />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="glass-card p-8 flex flex-col items-center gap-6 max-w-md text-center"
-        >
-          <div className="w-20 h-20 rounded-full bg-destructive/20 flex items-center justify-center">
-            <Shield className="w-10 h-10 text-destructive" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-foreground mb-2">دسترسی محدود</h2>
-            <p className="text-muted-foreground">
-              شما هنوز نقشی در قطب نمای استراتژی ندارید. لطفاً با مدیر سیستم تماس بگیرید.
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/dashboard')}
-              className="border-border"
-            >
-              بازگشت به داشبورد
-            </Button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   const isCEO = compassRole === 'ceo';
   const isDeputy = compassRole === 'deputy';
   const isManager = compassRole === 'manager';
@@ -238,13 +137,114 @@ const StrategicCompassContent = () => {
 
   const tabs = getTabs();
 
+  useEffect(() => {
+    if (user) {
+      checkCompassRole();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
+
   // Set default active tab when tabs are loaded
   useEffect(() => {
     if (tabs.length > 0 && !activeTab) {
       // Set the last tab as default (rightmost in RTL)
       setActiveTab(tabs[tabs.length - 1].id);
     }
-  }, [tabs, activeTab]);
+  }, [tabs.length, activeTab]);
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate('/auth');
+    }
+  }, [isLoading, user, navigate]);
+
+  const checkCompassRole = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('compass_user_roles')
+        .select('role, accessible_sections, can_edit, diamonds')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking compass role:', error);
+      }
+
+      if (data) {
+        setCompassRole(data.role as CompassRole);
+        setUserPermissions({
+          role: data.role as CompassRole,
+          accessibleSections: data.accessible_sections || [],
+          canEdit: data.can_edit ?? true,
+          diamonds: data.diamonds ?? 100
+        });
+      }
+    } catch (err) {
+      console.error('Error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    setCompassRole(null);
+    navigate('/dashboard');
+  };
+
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" dir="rtl">
+        <AuroraBackground />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-card p-8 flex flex-col items-center gap-4"
+        >
+          <Compass className="w-16 h-16 text-primary animate-spin" />
+          <p className="text-foreground">در حال بارگذاری...</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Show no access message if user has no compass role
+  if (!compassRole) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" dir="rtl">
+        <AuroraBackground />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-card p-8 flex flex-col items-center gap-6 max-w-md text-center"
+        >
+          <div className="w-20 h-20 rounded-full bg-destructive/20 flex items-center justify-center">
+            <Shield className="w-10 h-10 text-destructive" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground mb-2">دسترسی محدود</h2>
+            <p className="text-muted-foreground">
+              شما هنوز نقشی در قطب نمای استراتژی ندارید. لطفاً با مدیر سیستم تماس بگیرید.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard')}
+              className="border-border"
+            >
+              بازگشت به داشبورد
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
 
   return (
     <>
