@@ -401,7 +401,8 @@ const Auth = () => {
     );
   };
 
-  const renderLoginForm = () => (
+  // Form for individuals (with Google, signup option)
+  const renderPersonForm = () => (
     <>
       {/* Invite Banner */}
       <InviteBanner />
@@ -535,6 +536,79 @@ const Auth = () => {
     </>
   );
 
+  // Form for companies (login only, no Google, no signup)
+  const renderCompanyForm = () => (
+    <>
+      {/* Info notice */}
+      <div className="mb-6 p-4 bg-secondary/50 border border-border rounded-xl">
+        <div className="flex items-center gap-3">
+          <Building2 className="w-6 h-6 text-primary shrink-0" />
+          <div>
+            <p className="text-sm text-muted-foreground">
+              ورود با اطلاعات دریافت شده از ادمین شرکت
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Form - Login only */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="relative">
+          <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input
+            type="email"
+            placeholder="ایمیل شرکتی"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="pr-10 bg-secondary/50 border-border focus:border-primary"
+            required
+            disabled={isLoading}
+          />
+        </div>
+
+        <div className="relative">
+          <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="رمز عبور"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="pr-10 pl-10 bg-secondary/50 border-border focus:border-primary"
+            required
+            disabled={isLoading}
+            minLength={6}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
+        </div>
+
+        <Button 
+          type="submit" 
+          className="w-full glow-button text-foreground font-semibold py-6 gap-2"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              ورود به پنل شرکتی
+              <ArrowLeft className="w-4 h-4" />
+            </>
+          )}
+        </Button>
+      </form>
+
+      <p className="text-xs text-muted-foreground text-center mt-4">
+        برای دریافت دسترسی، با ادمین شرکت خود تماس بگیرید
+      </p>
+    </>
+  );
+
   return (
     <>
       <Helmet>
@@ -605,16 +679,16 @@ const Auth = () => {
               </TabsList>
               
               <TabsContent value="person" className="mt-6">
-                {renderLoginForm()}
+                {renderPersonForm()}
               </TabsContent>
               
               <TabsContent value="company" className="mt-6">
-                {renderLoginForm()}
+                {renderCompanyForm()}
               </TabsContent>
             </Tabs>
           ) : (
             <div className="mt-6">
-              {renderLoginForm()}
+              {renderPersonForm()}
             </div>
           )}
 
