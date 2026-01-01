@@ -13,6 +13,7 @@ import CorporateUserManager from '@/components/admin/CorporateUserManager';
 import TestimonialsManager from '@/components/admin/TestimonialsManager';
 import CreditAnalytics from '@/components/admin/CreditAnalytics';
 import AuditLogsViewer from '@/components/admin/AuditLogsViewer';
+import KnowledgeBaseStatus from '@/components/admin/KnowledgeBaseStatus';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -92,7 +93,10 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="analytics">
-            <CreditAnalytics />
+            <div className="space-y-6">
+              <KnowledgeBaseStatus />
+              <CreditAnalytics />
+            </div>
           </TabsContent>
 
           <TabsContent value="audit-logs">

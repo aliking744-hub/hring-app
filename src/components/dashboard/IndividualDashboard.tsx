@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useCredits } from '@/hooks/useCredits';
 import { TIER_NAMES } from '@/types/multiTenant';
+import LegalAdvisorWidget from '@/components/LegalAdvisorWidget';
 
 const stats = [
   { label: "موقعیت‌های فعال", value: "۱۲", change: "+۲", icon: Briefcase },
@@ -225,6 +226,11 @@ const IndividualDashboard = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Legal Advisor Widget - for Pro and Plus users */}
+      {(context?.subscriptionTier === 'individual_pro' || context?.subscriptionTier === 'individual_plus') && (
+        <LegalAdvisorWidget />
+      )}
     </div>
   );
 };
