@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ const ADMIN_EMAIL = "ali_king744@yahoo.com";
 
 const navLinks = [
   { href: "/", label: "خانه" },
-  { href: "/#pricing", label: "پلن‌ها", isAnchor: true },
+  { href: "/upgrade", label: "پلن‌ها" },
   { href: "/shop", label: "فروشگاه" },
   { href: "/blog", label: "بلاگ" },
   { href: "/dashboard", label: "داشبورد" },
@@ -20,23 +20,9 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
-  const location = useLocation();
   const isAdmin = user?.email === ADMIN_EMAIL;
   const logos = useLogos();
   const fonts = useFonts();
-
-  const handleNavClick = (link: typeof navLinks[0]) => {
-    if (link.isAnchor) {
-      // If we're on the home page, scroll to the section
-      if (location.pathname === '/') {
-        const element = document.getElementById('pricing');
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
-      // If we're on another page, navigate to home with hash (handled by Link)
-    }
-  };
   
   // Use dynamic logo or fallback to default
   const logo = logos.main || defaultLogo;
@@ -67,8 +53,7 @@ const Navbar = () => {
             {navLinks.map((link) => (
               <Link
                 key={link.href}
-                to={link.isAnchor && location.pathname === '/' ? '#' : link.href}
-                onClick={() => handleNavClick(link)}
+                to={link.href}
                 className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm font-medium"
                 style={{ fontFamily: fonts.nav }}
               >
@@ -147,11 +132,8 @@ const Navbar = () => {
                     transition={{ delay: index * 0.1 }}
                   >
                     <Link
-                      to={link.isAnchor && location.pathname === '/' ? '#' : link.href}
-                      onClick={() => {
-                        handleNavClick(link);
-                        setIsOpen(false);
-                      }}
+                      to={link.href}
+                      onClick={() => setIsOpen(false)}
                       className="block text-lg py-3 text-muted-foreground hover:text-foreground transition-colors border-b border-border"
                     >
                       {link.label}
