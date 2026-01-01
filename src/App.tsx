@@ -33,6 +33,7 @@ import StrategicCompass from "./pages/StrategicCompass";
 import CompanyMembers from "./pages/CompanyMembers";
 import CompanySettings from "./pages/CompanySettings";
 import Upgrade from "./pages/Upgrade";
+import PaymentHistory from "./pages/PaymentHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -201,6 +202,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Upgrade />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/payment-history" 
+                element={
+                  <ProtectedRoute>
+                    <PaymentHistory />
                   </ProtectedRoute>
                 } 
               />

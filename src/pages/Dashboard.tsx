@@ -22,8 +22,10 @@ import {
   Shield,
   Building2,
   Loader2,
-  Crown
+  Crown,
+  History
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/AuroraBackground";
 import { Button } from "@/components/ui/button";
@@ -147,10 +149,17 @@ const Dashboard = () => {
                       <span className="text-sm text-muted-foreground">حساب شرکتی</span>
                     </div>
                   )}
-                  {/* Credits Display */}
+                  {/* Credits Display with Progress */}
                   <div className="mt-3 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50">
-                    <div className="text-xs text-muted-foreground">اعتبار باقی‌مانده</div>
-                    <div className="text-lg font-bold text-primary">{credits} <span className="text-xs font-normal text-muted-foreground">واحد</span></div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted-foreground">اعتبار باقی‌مانده</span>
+                      <Link to="/payment-history" className="text-xs text-primary hover:underline flex items-center gap-1">
+                        <History className="w-3 h-3" />
+                        تاریخچه
+                      </Link>
+                    </div>
+                    <div className="text-lg font-bold text-primary mb-2">{credits} <span className="text-xs font-normal text-muted-foreground">/ ۵۰ واحد</span></div>
+                    <Progress value={Math.min((credits / 50) * 100, 100)} className="h-2" />
                   </div>
                 </div>
 
@@ -227,10 +236,17 @@ const Dashboard = () => {
                 <span className="text-sm text-muted-foreground">حساب شرکتی</span>
               </div>
             )}
-            {/* Credits Display */}
+            {/* Credits Display with Progress */}
             <div className="mt-3 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50">
-              <div className="text-xs text-muted-foreground">اعتبار باقی‌مانده</div>
-              <div className="text-lg font-bold text-primary">{credits} <span className="text-xs font-normal text-muted-foreground">واحد</span></div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-muted-foreground">اعتبار باقی‌مانده</span>
+                <Link to="/payment-history" className="text-xs text-primary hover:underline flex items-center gap-1">
+                  <History className="w-3 h-3" />
+                  تاریخچه
+                </Link>
+              </div>
+              <div className="text-lg font-bold text-primary mb-2">{credits} <span className="text-xs font-normal text-muted-foreground">/ ۵۰ واحد</span></div>
+              <Progress value={Math.min((credits / 50) * 100, 100)} className="h-2" />
             </div>
           </div>
 
