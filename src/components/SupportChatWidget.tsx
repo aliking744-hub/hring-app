@@ -24,10 +24,12 @@ const SupportChatWidget = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [feedbackOffered, setFeedbackOffered] = useState(false);
   const [hasReceivedReward, setHasReceivedReward] = useState(false);
+  const [awaitingEndConfirmation, setAwaitingEndConfirmation] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const followUpTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesRef = useRef<Message[]>([]);
   const isTypingRef = useRef(false);
+  const lastUserActivityRef = useRef<number>(Date.now());
   const { user } = useAuth();
 
   // Feedback state
@@ -87,76 +89,159 @@ const SupportChatWidget = () => {
       .replace(/\s+/g, ' ')
       .trim();
 
-  const isConversationEndMessage = (value: string) => {
+  // Short message threshold for "end of conversation" detection
+  const SHORT_MESSAGE_THRESHOLD = 30;
+
+  // Direct end keywords - only trigger on short messages
+  const END_KEYWORDS = new Set([
+    'نه',
+    'نه ممنون',
+    'خیر',
+    'نخیر',
+    'مرسی',
+    'ممنون',
+    'ممنونم',
+    'متشکر',
+    'متشکرم',
+    'تشکر',
+    'سپاس',
+    'سپاسگزارم',
+  ]);
+
+  // Ambiguous patterns that need confirmation
+  const AMBIGUOUS_STARTERS = ['نه', 'خیر', 'نخیر', 'مرسی', 'ممنون', 'متشکر', 'تشکر', 'سپاس'];
+
+  // Confirmation keywords
+  const CONFIRMATION_YES = new Set(['آره', 'بله', 'اره', 'yes', 'باشه', 'ok', 'اوکی']);
+  const CONFIRMATION_NO = new Set(['نه', 'خیر', 'نخیر', 'no', 'ادامه', 'سوال دارم']);
+
+  const isDirectEndMessage = (value: string) => {
+    const v = normalizeFa(value);
+    if (!v || v.length > SHORT_MESSAGE_THRESHOLD) return false;
+    return END_KEYWORDS.has(v);
+  };
+
+  const isAmbiguousEndMessage = (value: string) => {
     const v = normalizeFa(value);
     if (!v) return false;
+    // If too long, not ambiguous - it's a real conversation
+    if (v.length > 50) return false;
+    // If very short and direct, not ambiguous
+    if (v.length <= SHORT_MESSAGE_THRESHOLD && END_KEYWORDS.has(v)) return false;
+    // Check if starts with end keywords but has more content
+    return v.length > SHORT_MESSAGE_THRESHOLD && v.length <= 50 && 
+           AMBIGUOUS_STARTERS.some((s) => v === s || v.startsWith(`${s} `));
+  };
 
-    const direct = new Set([
-      'نه',
-      'نه ممنون',
-      'خیر',
-      'نخیر',
-      'مرسی',
-      'ممنون',
-      'ممنونم',
-      'متشکر',
-      'متشکرم',
-      'تشکر',
-      'سپاس',
-      'سپاسگزارم',
-    ]);
+  const isConfirmationYes = (value: string) => {
+    const v = normalizeFa(value);
+    return CONFIRMATION_YES.has(v) || v.includes('دیگه نه') || v.includes('همین بود');
+  };
 
-    if (direct.has(v)) return true;
-
-    // Also accept short variants like "ممنون از شما" / "نه دیگه" but avoid triggering on long sentences
-    const starters = ['نه', 'خیر', 'نخیر', 'مرسی', 'ممنون', 'متشکر', 'تشکر', 'سپاس'];
-    return v.length <= 40 && starters.some((s) => v === s || v.startsWith(`${s} `));
+  const isConfirmationNo = (value: string) => {
+    const v = normalizeFa(value);
+    return CONFIRMATION_NO.has(v) || v.includes('ادامه') || v.includes('سوال');
   };
 
   const isFollowUpMessage = (value: string) => normalizeFa(value).includes('کار دیگه');
 
+  const offerFeedback = () => {
+    if (feedbackOffered || hasReceivedReward) return;
+    setFeedbackOffered(true);
+
+    if (user) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content:
+            'ممنون میشم نظرتون در مورد سایت رو با ما به اشتراک بذارین و ۵۰ الماس ناقابل دریافت کنید.',
+        },
+      ]);
+      setShowFeedback(true);
+    } else {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'برای ثبت نظر و دریافت ۵۰ الماس، لطفاً اول وارد حساب کاربری‌تون بشید.',
+        },
+      ]);
+    }
+  };
+
   const handleConversationEnd = (userMessage: string) => {
-    if (!isConversationEndMessage(userMessage)) return false;
+    // Handle confirmation response if we're waiting for one
+    if (awaitingEndConfirmation) {
+      setAwaitingEndConfirmation(false);
+      clearFollowUpTimer();
+      setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
 
-    clearFollowUpTimer();
-    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
-
-    // Offer feedback only once (reward is enforced server-side)
-    if (!feedbackOffered && !hasReceivedReward) {
-      setFeedbackOffered(true);
-
-      if (user) {
+      if (isConfirmationYes(userMessage)) {
+        offerFeedback();
+        return true;
+      } else if (isConfirmationNo(userMessage)) {
         setMessages((prev) => [
           ...prev,
-          {
-            role: 'assistant',
-            content:
-              'ممنون میشم نظرتون در مورد سایت رو با ما به اشتراک بذارین و ۵۰ الماس ناقابل دریافت کنید.',
-          },
+          { role: 'assistant', content: 'بفرمایید، در خدمتم.' },
         ]);
-        setShowFeedback(true);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: 'برای ثبت نظر و دریافت ۵۰ الماس، لطفاً اول وارد حساب کاربری‌تون بشید.',
-          },
-        ]);
+        return true;
       }
+      // Not a clear confirmation - continue to AI
+      return false;
     }
 
-    return true;
+    // Direct short end message
+    if (isDirectEndMessage(userMessage)) {
+      clearFollowUpTimer();
+      setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+      offerFeedback();
+      return true;
+    }
+
+    // Ambiguous end message - ask for confirmation
+    if (isAmbiguousEndMessage(userMessage)) {
+      clearFollowUpTimer();
+      setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'خوشحالم که تونستم کمک کنم! کار دیگه‌ای هست؟' },
+      ]);
+      setAwaitingEndConfirmation(true);
+      return true;
+    }
+
+    return false;
   };
 
   const startFollowUpTimer = () => {
     clearFollowUpTimer();
 
+    // Get last assistant message length
+    const lastAssistantMsg = messagesRef.current
+      .slice()
+      .reverse()
+      .find((m) => m.role === 'assistant');
+    const lastMsgLength = lastAssistantMsg?.content.length || 0;
+
+    // Determine delay based on message length
+    // Long messages (>200 chars) = 10 seconds, short = 5 seconds
+    const baseDelay = lastMsgLength > 200 ? 10000 : 5000;
+
     followUpTimerRef.current = setTimeout(() => {
       const currentMessages = messagesRef.current;
       const currentIsTyping = isTypingRef.current;
+      const timeSinceActivity = Date.now() - lastUserActivityRef.current;
 
-      if (currentIsTyping || currentMessages.length === 0) return;
+      // Don't send if:
+      // 1. User is currently typing
+      // 2. User was active in the last 3 seconds
+      // 3. No messages yet
+      if (currentIsTyping || timeSinceActivity < 3000 || currentMessages.length === 0) {
+        // Reschedule for later
+        startFollowUpTimer();
+        return;
+      }
 
       const lastMessage = currentMessages[currentMessages.length - 1];
 
@@ -164,7 +249,7 @@ const SupportChatWidget = () => {
       if (lastMessage?.role === 'assistant' && !isFollowUpMessage(lastMessage.content)) {
         setMessages((prev) => [...prev, { role: 'assistant', content: 'کار دیگه‌ای هست بتونم براتون انجام بدم؟' }]);
       }
-    }, 5000);
+    }, baseDelay);
   };
 
   const streamChat = async (userMessage: string) => {
@@ -260,10 +345,11 @@ const SupportChatWidget = () => {
     }
   };
 
-  // Clear timer when user starts typing
+  // Clear timer when user starts typing and track activity
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
     setIsTyping(true);
+    lastUserActivityRef.current = Date.now();
     clearFollowUpTimer();
   };
 
