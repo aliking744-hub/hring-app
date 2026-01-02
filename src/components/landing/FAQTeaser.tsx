@@ -58,7 +58,7 @@ const FAQTeaser = () => {
 
         <ScrollReveal delay={0.3}>
           <div className="text-center">
-            <Link to="/faq">
+            <Link to="/faq?tab=faq">
               <Button variant="outline" size="lg" className="gap-2">
                 مشاهده همه سوالات
                 <ChevronLeft className="w-4 h-4" />

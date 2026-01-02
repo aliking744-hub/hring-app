@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Accordion,
   AccordionContent,
@@ -33,7 +33,9 @@ import { useSiteName } from "@/hooks/useSiteSettings";
 
 const FAQ = () => {
   const siteName = useSiteName();
-  const [activeTab, setActiveTab] = useState("plans");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "plans";
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const individualPlans = [
     {
