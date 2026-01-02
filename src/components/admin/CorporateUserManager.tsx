@@ -247,6 +247,39 @@ const CorporateUserManager = () => {
     }
   };
 
+  const handleUpdateRole = async (userId: string, companyId: string, newRole: CompanyRole) => {
+    try {
+      const { error } = await supabase
+        .from('company_members')
+        .update({ role: newRole })
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      setUsers(prev =>
+        prev.map(u => {
+          if (u.id === userId && u.company_membership) {
+            return {
+              ...u,
+              company_membership: { ...u.company_membership, role: newRole },
+            };
+          }
+          return u;
+        })
+      );
+      toast({ title: 'نقش بروزرسانی شد' });
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast({
+        title: 'خطا',
+        description: 'خطا در بروزرسانی نقش',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -299,9 +332,24 @@ const CorporateUserManager = () => {
                         {user.company_membership?.company_name || '-'}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {user.company_membership?.role ? ROLE_NAMES[user.company_membership.role] : '-'}
-                        </Badge>
+                        {user.company_membership ? (
+                          <Select
+                            value={user.company_membership.role}
+                            onValueChange={(v) => handleUpdateRole(user.id, user.company_membership!.company_id, v as CompanyRole)}
+                          >
+                            <SelectTrigger className="w-28">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ceo">مدیرعامل</SelectItem>
+                              <SelectItem value="deputy">معاون</SelectItem>
+                              <SelectItem value="manager">مدیر</SelectItem>
+                              <SelectItem value="employee">کارشناس</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant="outline">-</Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
