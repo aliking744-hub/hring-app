@@ -38,6 +38,8 @@ import PaymentHistory from "./pages/PaymentHistory";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import SupportChatWidget from "./components/SupportChatWidget";
+import FAQ from "./pages/FAQ";
+import Admin from "./pages/Admin";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -240,6 +242,15 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <LegalAdvisor />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="/faq" element={<FAQ />} />
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute>
+                    <Admin />
                   </ProtectedRoute>
                 } 
               />
