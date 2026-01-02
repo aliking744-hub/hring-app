@@ -7,6 +7,7 @@ import BentoGrid from "@/components/landing/BentoGrid";
 import DashboardPreview from "@/components/landing/DashboardPreview";
 import LegalAdvisorSection from "@/components/landing/LegalAdvisorSection";
 import ShopTeaser from "@/components/landing/ShopTeaser";
+import FAQTeaser from "@/components/landing/FAQTeaser";
 import BlogTeaser from "@/components/landing/BlogTeaser";
 import Footer from "@/components/landing/Footer";
 import { useSiteName } from "@/hooks/useSiteSettings";
@@ -34,6 +35,7 @@ const Index = () => {
           <BentoGrid />
           <LegalAdvisorSection />
           <ShopTeaser />
+          <FAQTeaser />
           <TestimonialsSection />
           <BlogTeaser />
         </main>

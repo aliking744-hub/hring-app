@@ -37,7 +37,7 @@ const Footer = () => {
 
           {/* Links */}
           <div 
-            className="flex items-center gap-8 text-sm text-muted-foreground"
+            className="flex items-center gap-6 md:gap-8 text-sm text-muted-foreground flex-wrap justify-center"
             style={{ fontFamily: fonts.nav }}
           >
             <Link to="/" className="hover:text-foreground transition-colors">
@@ -45,6 +45,9 @@ const Footer = () => {
             </Link>
             <Link to="/shop" className="hover:text-foreground transition-colors">
               فروشگاه
+            </Link>
+            <Link to="/faq" className="hover:text-foreground transition-colors">
+              سوالات متداول
             </Link>
             <Link to="/dashboard" className="hover:text-foreground transition-colors">
               داشبورد
