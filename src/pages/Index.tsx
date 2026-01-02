@@ -32,12 +32,12 @@ const Index = () => {
         <main className="max-w-[1920px] mx-auto">
           <HeroSection />
           <DashboardPreview />
+          <BlogTeaser />
+          <FAQTeaser />
           <BentoGrid />
           <LegalAdvisorSection />
           <ShopTeaser />
-          <FAQTeaser />
           <TestimonialsSection />
-          <BlogTeaser />
         </main>
         <Footer />
       </div>
