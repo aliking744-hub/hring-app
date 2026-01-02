@@ -1,9 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, getClientIdentifier, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Rate limit: 5 requests per minute per user
+const RATE_LIMIT_CONFIG = { windowMs: 60000, maxRequests: 5 };
 
 interface CandidateInput {
   name?: string;
@@ -86,6 +90,14 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Rate limiting
+  const clientId = getClientIdentifier(req);
+  const rateLimit = checkRateLimit(clientId, RATE_LIMIT_CONFIG);
+  if (!rateLimit.allowed) {
+    console.log(`Rate limit exceeded for ${clientId}`);
+    return rateLimitResponse(rateLimit.resetIn, corsHeaders);
+  }
+
   try {
     const { candidates, jobRequirements, enableWebSearch = true } = await req.json();
 
@@ -96,9 +108,11 @@ serve(async (req) => {
       );
     }
 
-    if (candidates.length > 100) {
+    // Limit batch size to prevent API abuse
+    const MAX_CANDIDATES = 20;
+    if (candidates.length > MAX_CANDIDATES) {
       return new Response(
-        JSON.stringify({ error: "حداکثر ۱۰۰ کاندیدا قابل پردازش است" }),
+        JSON.stringify({ error: `حداکثر ${MAX_CANDIDATES} کاندیدا در هر درخواست قابل پردازش است` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

@@ -83,12 +83,24 @@ const LegalSearch = () => {
     return 'bg-orange-500';
   };
 
+  // Escape HTML to prevent XSS attacks
+  const escapeHtml = (text: string) => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
   const highlightQuery = (text: string, query: string) => {
-    if (!query.trim()) return text;
+    // First escape the content to prevent XSS
+    const escapedText = escapeHtml(text);
+    if (!query.trim()) return escapedText;
+    
     const words = query.split(/\s+/).filter(w => w.length > 2);
-    let highlighted = text;
+    let highlighted = escapedText;
     words.forEach(word => {
-      const regex = new RegExp(`(${word})`, 'gi');
+      // Escape regex special characters in the search word
+      const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${escapedWord})`, 'gi');
       highlighted = highlighted.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 px-0.5 rounded">$1</mark>');
     });
     return highlighted;

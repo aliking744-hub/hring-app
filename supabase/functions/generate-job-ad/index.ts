@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, getClientIdentifier, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 // FIX: CORS Security - Restrict to specific origins
 // TODO: Before production, set ALLOWED_ORIGIN environment variable to your frontend domain
@@ -9,6 +10,9 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Rate limit: 10 requests per minute per user
+const RATE_LIMIT_CONFIG = { windowMs: 60000, maxRequests: 10 };
 
 const getSystemPrompt = (platform: string, tone: string) => {
   let platformInstructions = "";
@@ -81,6 +85,14 @@ Important:
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting
+  const clientId = getClientIdentifier(req);
+  const rateLimit = checkRateLimit(clientId, RATE_LIMIT_CONFIG);
+  if (!rateLimit.allowed) {
+    console.log(`Rate limit exceeded for ${clientId}`);
+    return rateLimitResponse(rateLimit.resetIn, corsHeaders);
   }
 
   try {
