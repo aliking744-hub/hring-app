@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { 
   GitBranch, 
@@ -9,10 +9,11 @@ import {
   Cpu, 
   TrendingUp,
   DollarSign,
-  ExternalLink,
   Sparkles,
   Building2,
-  Zap
+  Zap,
+  RefreshCw,
+  Loader2
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,10 +27,7 @@ interface ValueChainMapProps {
 }
 
 interface ValueChainSegment {
-  id: string;
-  name: string;
-  icon: React.ElementType;
-  color: string;
+  segment: string;
   companies: CompanyNode[];
 }
 
@@ -38,8 +36,8 @@ interface CompanyNode {
   type: "subsidiary" | "affiliate" | "partner" | "opportunity";
   ownership?: string;
   growthPotential?: "high" | "medium" | "low";
+  description?: string;
   recommendation?: string;
-  investmentReason?: string;
 }
 
 interface InvestmentRecommendation {
@@ -49,77 +47,121 @@ interface InvestmentRecommendation {
   expectedReturn: string;
   riskLevel: "low" | "medium" | "high";
   synergy: string;
+  investmentType?: string;
 }
+
+interface EcosystemInsights {
+  totalSubsidiaries: number;
+  totalAffiliates: number;
+  keyPartners: string[];
+  gaps: string[];
+  recommendations: string[];
+}
+
+const SEGMENT_ICONS: Record<string, React.ElementType> = {
+  "تأمین": Factory,
+  "تولید": Cpu,
+  "توزیع": Truck,
+  "فروش": Store,
+  "خدمات": Users,
+  "فناوری": Cpu,
+  "لجستیک": Truck,
+};
+
+const SEGMENT_COLORS: Record<string, string> = {
+  "تأمین": "from-orange-500/30 to-orange-600/30",
+  "تولید": "from-purple-500/30 to-purple-600/30",
+  "توزیع": "from-blue-500/30 to-blue-600/30",
+  "فروش": "from-emerald-500/30 to-emerald-600/30",
+  "خدمات": "from-cyan-500/30 to-cyan-600/30",
+  "فناوری": "from-pink-500/30 to-pink-600/30",
+  "لجستیک": "from-indigo-500/30 to-indigo-600/30",
+};
 
 const ValueChainMap = ({ profile }: ValueChainMapProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<InvestmentRecommendation[]>([]);
   const [valueChain, setValueChain] = useState<ValueChainSegment[]>([]);
+  const [insights, setInsights] = useState<EcosystemInsights | null>(null);
+  const hasAutoLoaded = useRef(false);
 
-  // Generate value chain based on industry
+  // Auto-load on mount
   useEffect(() => {
-    generateValueChain();
-  }, [profile]);
+    if (!hasAutoLoaded.current && profile.name) {
+      hasAutoLoaded.current = true;
+      fetchValueChain();
+    }
+  }, [profile.name]);
 
-  const generateValueChain = () => {
-    // Sample value chain - in production this would come from API
-    const chain: ValueChainSegment[] = [
+  const fetchValueChain = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-value-chain', {
+        body: {
+          companyName: profile.name,
+          industry: profile.industry,
+          sector: profile.sector
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data.data) {
+        setValueChain(data.data.valueChain || []);
+        setRecommendations(data.data.investmentOpportunities || []);
+        setInsights(data.data.ecosystemInsights || null);
+        toast.success("زنجیره ارزش تحلیل شد");
+      } else {
+        setSampleData();
+      }
+    } catch (error) {
+      console.error("Error fetching value chain:", error);
+      setSampleData();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const setSampleData = () => {
+    setValueChain([
       {
-        id: "suppliers",
-        name: "تأمین‌کنندگان و مواد اولیه",
-        icon: Factory,
-        color: "from-orange-500/30 to-orange-600/30",
+        segment: "تأمین",
         companies: [
           { name: "شرکت تأمین اول", type: "partner", growthPotential: "medium" },
           { name: "فناوری‌های نوین تأمین", type: "opportunity", growthPotential: "high", recommendation: "پیشنهاد خرید" },
         ]
       },
       {
-        id: "technology",
-        name: "زیرساخت فناوری",
-        icon: Cpu,
-        color: "from-purple-500/30 to-purple-600/30",
+        segment: "فناوری",
         companies: [
           { name: "دیتاسنتر ابری", type: "subsidiary", ownership: "۶۰٪" },
           { name: "استارتاپ AI", type: "opportunity", growthPotential: "high", recommendation: "سرمایه‌گذاری" },
         ]
       },
       {
-        id: "logistics",
-        name: "لجستیک و توزیع",
-        icon: Truck,
-        color: "from-blue-500/30 to-blue-600/30",
+        segment: "لجستیک",
         companies: [
           { name: "شرکت حمل و نقل", type: "affiliate", ownership: "۳۵٪" },
           { name: "پلتفرم درخواست لجستیک", type: "opportunity", growthPotential: "high", recommendation: "شراکت استراتژیک" },
         ]
       },
       {
-        id: "sales",
-        name: "فروش و بازاریابی",
-        icon: Store,
-        color: "from-emerald-500/30 to-emerald-600/30",
+        segment: "فروش",
         companies: [
           { name: "آژانس دیجیتال مارکتینگ", type: "partner" },
           { name: "پلتفرم فروش B2B", type: "opportunity", growthPotential: "medium", recommendation: "ارزیابی بیشتر" },
         ]
       },
       {
-        id: "customers",
-        name: "خدمات مشتریان",
-        icon: Users,
-        color: "from-cyan-500/30 to-cyan-600/30",
+        segment: "خدمات",
         companies: [
           { name: "مرکز تماس هوشمند", type: "subsidiary", ownership: "۱۰۰٪" },
           { name: "چت‌بات AI", type: "opportunity", growthPotential: "high", recommendation: "خرید و ادغام" },
         ]
       },
-    ];
+    ]);
 
-    setValueChain(chain);
-
-    // Generate investment recommendations
-    const recs: InvestmentRecommendation[] = [
+    setRecommendations([
       {
         company: "استارتاپ AI در حوزه پردازش تصویر",
         segment: "زیرساخت فناوری",
@@ -144,9 +186,29 @@ const ValueChainMap = ({ profile }: ValueChainMapProps) => {
         riskLevel: "medium",
         synergy: "اکوسیستم پرداخت یکپارچه"
       }
-    ];
+    ]);
 
-    setRecommendations(recs);
+    setInsights({
+      totalSubsidiaries: 2,
+      totalAffiliates: 1,
+      keyPartners: ["شریک استراتژیک ۱", "شریک استراتژیک ۲"],
+      gaps: ["نبود قابلیت AI داخلی", "وابستگی به لجستیک خارجی"],
+      recommendations: ["خرید استارتاپ AI", "سرمایه‌گذاری در لجستیک"]
+    });
+  };
+
+  const getSegmentIcon = (segment: string) => {
+    for (const key of Object.keys(SEGMENT_ICONS)) {
+      if (segment.includes(key)) return SEGMENT_ICONS[key];
+    }
+    return Building2;
+  };
+
+  const getSegmentColor = (segment: string) => {
+    for (const key of Object.keys(SEGMENT_COLORS)) {
+      if (segment.includes(key)) return SEGMENT_COLORS[key];
+    }
+    return "from-slate-500/30 to-slate-600/30";
   };
 
   const getTypeColor = (type: string) => {
@@ -191,115 +253,168 @@ const ValueChainMap = ({ profile }: ValueChainMapProps) => {
             <p className="text-xs text-slate-400">شرکت‌های زیرمجموعه، وابسته و فرصت‌های سرمایه‌گذاری</p>
           </div>
         </div>
-        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-          <Building2 className="w-3 h-3 ml-1" />
-          {profile.name}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+            <Building2 className="w-3 h-3 ml-1" />
+            {profile.name}
+          </Badge>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={fetchValueChain}
+            disabled={isLoading}
+            className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
       </div>
 
-      {/* Value Chain Visualization */}
-      <div className="relative mb-6">
-        {/* Central Company Node */}
-        <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center border-2 border-purple-400 shadow-lg shadow-purple-500/30">
-            <span className="text-white font-bold text-center text-xs px-2">{profile.name}</span>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 text-purple-400 animate-spin mx-auto mb-3" />
+            <p className="text-slate-400 text-sm">در حال تحلیل زنجیره ارزش...</p>
           </div>
         </div>
-
-        {/* Value Chain Segments */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          {valueChain.map((segment, idx) => (
-            <motion.div
-              key={segment.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              className={`p-3 rounded-xl bg-gradient-to-br ${segment.color} border border-slate-700/50`}
-            >
-              {/* Segment Header */}
-              <div className="flex items-center gap-2 mb-3">
-                <segment.icon className="w-4 h-4 text-white" />
-                <span className="text-white text-xs font-medium">{segment.name}</span>
+      ) : (
+        <>
+          {/* Value Chain Visualization */}
+          <div className="relative mb-6">
+            {/* Central Company Node */}
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center border-2 border-purple-400 shadow-lg shadow-purple-500/30">
+                <span className="text-white font-bold text-center text-xs px-2">{profile.name}</span>
               </div>
+            </div>
 
-              {/* Companies in Segment */}
-              <div className="space-y-2">
-                {segment.companies.map((company, cIdx) => (
-                  <div
-                    key={cIdx}
-                    className={`p-2 rounded-lg bg-slate-900/50 border ${getTypeColor(company.type)} cursor-pointer hover:scale-[1.02] transition-transform`}
+            {/* Value Chain Segments */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              {valueChain.map((segment, idx) => {
+                const Icon = getSegmentIcon(segment.segment);
+                const color = getSegmentColor(segment.segment);
+                
+                return (
+                  <motion.div
+                    key={segment.segment}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className={`p-3 rounded-xl bg-gradient-to-br ${color} border border-slate-700/50`}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-white text-xs font-medium">{company.name}</span>
-                      {company.ownership && (
-                        <span className="text-xs text-slate-400">{company.ownership}</span>
-                      )}
+                    {/* Segment Header */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <Icon className="w-4 h-4 text-white" />
+                      <span className="text-white text-xs font-medium">{segment.segment}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className={`text-[10px] px-1 py-0 ${getTypeColor(company.type)}`}>
-                        {getTypeLabel(company.type)}
-                      </Badge>
-                      {company.growthPotential === "high" && (
-                        <TrendingUp className="w-3 h-3 text-emerald-400" />
-                      )}
+
+                    {/* Companies in Segment */}
+                    <div className="space-y-2">
+                      {segment.companies.map((company, cIdx) => (
+                        <div
+                          key={cIdx}
+                          className={`p-2 rounded-lg bg-slate-900/50 border ${getTypeColor(company.type)} cursor-pointer hover:scale-[1.02] transition-transform`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-white text-xs font-medium">{company.name}</span>
+                            {company.ownership && (
+                              <span className="text-xs text-slate-400">{company.ownership}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className={`text-[10px] px-1 py-0 ${getTypeColor(company.type)}`}>
+                              {getTypeLabel(company.type)}
+                            </Badge>
+                            {company.growthPotential === "high" && (
+                              <TrendingUp className="w-3 h-3 text-emerald-400" />
+                            )}
+                          </div>
+                          {company.recommendation && (
+                            <div className="mt-1 text-[10px] text-amber-400 flex items-center gap-1">
+                              <Sparkles className="w-2 h-2" />
+                              {company.recommendation}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    {company.recommendation && (
-                      <div className="mt-1 text-[10px] text-amber-400 flex items-center gap-1">
-                        <Sparkles className="w-2 h-2" />
-                        {company.recommendation}
-                      </div>
-                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Ecosystem Insights */}
+          {insights && (
+            <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+                <div className="text-2xl font-bold text-emerald-400">{insights.totalSubsidiaries}</div>
+                <div className="text-xs text-slate-400">زیرمجموعه</div>
+              </div>
+              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
+                <div className="text-2xl font-bold text-blue-400">{insights.totalAffiliates}</div>
+                <div className="text-xs text-slate-400">شرکت وابسته</div>
+              </div>
+              <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 text-center">
+                <div className="text-2xl font-bold text-purple-400">{insights.keyPartners.length}</div>
+                <div className="text-xs text-slate-400">شریک کلیدی</div>
+              </div>
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-center">
+                <div className="text-2xl font-bold text-amber-400">{insights.gaps.length}</div>
+                <div className="text-xs text-slate-400">شکاف زنجیره</div>
+              </div>
+            </div>
+          )}
+
+          {/* Investment Recommendations */}
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <DollarSign className="w-5 h-5 text-amber-400" />
+              <h4 className="text-white font-semibold">پیشنهادات سرمایه‌گذاری و خرید</h4>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {recommendations.map((rec, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 + idx * 0.1 }}
+                  className="p-4 rounded-xl bg-gradient-to-br from-amber-950/30 to-transparent border border-amber-800/30"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h5 className="text-amber-400 font-medium text-sm">{rec.company}</h5>
+                    <Badge className="bg-slate-800 text-slate-300 text-[10px]">{rec.segment}</Badge>
                   </div>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Investment Recommendations */}
-      <div className="mt-6">
-        <div className="flex items-center gap-2 mb-4">
-          <DollarSign className="w-5 h-5 text-amber-400" />
-          <h4 className="text-white font-semibold">پیشنهادات سرمایه‌گذاری و خرید</h4>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {recommendations.map((rec, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 + idx * 0.1 }}
-              className="p-4 rounded-xl bg-gradient-to-br from-amber-950/30 to-transparent border border-amber-800/30"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <h5 className="text-amber-400 font-medium text-sm">{rec.company}</h5>
-                <Badge className="bg-slate-800 text-slate-300 text-[10px]">{rec.segment}</Badge>
-              </div>
-              
-              <p className="text-slate-300 text-xs mb-3">{rec.reason}</p>
-              
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">بازده مورد انتظار:</span>
-                  <span className="text-emerald-400 font-medium">{rec.expectedReturn}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">سطح ریسک:</span>
-                  <span className={`font-medium ${getRiskColor(rec.riskLevel)}`}>
-                    {rec.riskLevel === "low" ? "کم" : rec.riskLevel === "medium" ? "متوسط" : "بالا"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">هم‌افزایی:</span>
-                  <span className="text-purple-400">{rec.synergy}</span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
+                  
+                  <p className="text-slate-300 text-xs mb-3">{rec.reason}</p>
+                  
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">بازده مورد انتظار:</span>
+                      <span className="text-emerald-400 font-medium">{rec.expectedReturn}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">سطح ریسک:</span>
+                      <span className={`font-medium ${getRiskColor(rec.riskLevel)}`}>
+                        {rec.riskLevel === "low" ? "کم" : rec.riskLevel === "medium" ? "متوسط" : "بالا"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">هم‌افزایی:</span>
+                      <span className="text-purple-400">{rec.synergy}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* AI Badge */}
       <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-500">

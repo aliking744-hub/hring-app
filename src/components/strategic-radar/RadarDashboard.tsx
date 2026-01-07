@@ -10,6 +10,7 @@ import CompetitorComparison from "./sections/CompetitorComparison";
 import StrategicRecommendations from "./sections/StrategicRecommendations";
 import DailyMonitor from "./sections/DailyMonitor";
 import ValueChainMap from "./sections/ValueChainMap";
+import FundingTracker from "./sections/FundingTracker";
 import { Link } from "react-router-dom";
 
 interface RadarDashboardProps {
@@ -125,11 +126,21 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           <CompetitorComparison profile={profile} />
         </motion.div>
 
-        {/* Section F: Value Chain Map */}
+        {/* Section F: Funding Tracker */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
+          className="lg:col-span-2 xl:col-span-3"
+        >
+          <FundingTracker profile={profile} />
+        </motion.div>
+
+        {/* Section G: Value Chain Map */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
           className="lg:col-span-2 xl:col-span-3"
         >
           <ValueChainMap profile={profile} />
