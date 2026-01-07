@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.submit-feedback]
 verify_jwt = false
+
+[functions.fetch-company-intel]
+verify_jwt = false

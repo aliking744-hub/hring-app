@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Radar, ArrowLeft, History, Trash2, Clock } from "lucide-react";
+import { Search, Radar, ArrowLeft, History, Trash2, Clock, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CompanyProfile } from "@/pages/StrategicRadar";
 import { Link } from "react-router-dom";
 import { format } from "date-fns-jalali";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface StoredAnalysis {
   id: string;
@@ -34,58 +36,6 @@ interface RadarInputPhaseProps {
   setShowHistory: (show: boolean) => void;
 }
 
-// Simulated company database
-const mockCompanyData: Record<string, Partial<CompanyProfile>> = {
-  retop: {
-    name: "ریتاپ",
-    ticker: "RETOP",
-    logo: "🏢",
-    industry: "پرداخت الکترونیک",
-    sector: "فین‌تک",
-    competitors: [
-      { name: "سپ", marketShare: 35, innovation: 78 },
-      { name: "به‌پرداخت", marketShare: 28, innovation: 72 },
-      { name: "آسان‌پرداخت", marketShare: 15, innovation: 65 },
-    ],
-    revenue: "۱۲,۵۰۰ میلیارد ریال",
-    revenueValue: 12500,
-    technologyLag: 3,
-    maturityScore: 65,
-  },
-  sep: {
-    name: "سپ (سامان الکترونیک پارسیان)",
-    ticker: "SEP",
-    logo: "💳",
-    industry: "پرداخت الکترونیک",
-    sector: "فین‌تک",
-    competitors: [
-      { name: "ریتاپ", marketShare: 22, innovation: 70 },
-      { name: "به‌پرداخت", marketShare: 28, innovation: 72 },
-      { name: "فن‌آوا", marketShare: 10, innovation: 60 },
-    ],
-    revenue: "۱۸,۲۰۰ میلیارد ریال",
-    revenueValue: 18200,
-    technologyLag: 2,
-    maturityScore: 78,
-  },
-  digikala: {
-    name: "دیجی‌کالا",
-    ticker: "DIGI",
-    logo: "🛒",
-    industry: "تجارت الکترونیک",
-    sector: "خرده‌فروشی آنلاین",
-    competitors: [
-      { name: "باسلام", marketShare: 8, innovation: 55 },
-      { name: "اسنپ‌مارکت", marketShare: 12, innovation: 68 },
-      { name: "ترب", marketShare: 5, innovation: 45 },
-    ],
-    revenue: "۸۵,۰۰۰ میلیارد ریال",
-    revenueValue: 85000,
-    technologyLag: 1,
-    maturityScore: 85,
-  },
-};
-
 const RadarInputPhase = ({ 
   onScanComplete, 
   savedAnalyses, 
@@ -97,37 +47,67 @@ const RadarInputPhase = ({
 }: RadarInputPhaseProps) => {
   const [query, setQuery] = useState("");
   const [isScanning, setIsScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState("");
 
   const handleScan = async () => {
     if (!query.trim()) return;
 
     setIsScanning(true);
+    setScanStatus("در حال جستجو در کدال و منابع مالی...");
 
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    try {
+      // Call the edge function to fetch real company data
+      const { data, error } = await supabase.functions.invoke('fetch-company-intel', {
+        body: { companyName: query.trim() }
+      });
 
-    const normalizedQuery = query.toLowerCase().trim();
-    const matchedData = mockCompanyData[normalizedQuery];
+      if (error) {
+        console.error('Edge function error:', error);
+        toast.error('خطا در دریافت اطلاعات. لطفاً دوباره تلاش کنید.');
+        setIsScanning(false);
+        return;
+      }
 
-    const profile: CompanyProfile = {
-      name: matchedData?.name || query,
-      ticker: matchedData?.ticker || query.toUpperCase().slice(0, 4),
-      logo: matchedData?.logo || "🏢",
-      industry: matchedData?.industry || "نامشخص",
-      sector: matchedData?.sector || "نامشخص",
-      competitors: matchedData?.competitors || [
-        { name: "رقیب ۱", marketShare: 30, innovation: 60 },
-        { name: "رقیب ۲", marketShare: 25, innovation: 55 },
-        { name: "رقیب ۳", marketShare: 20, innovation: 50 },
-      ],
-      revenue: matchedData?.revenue || "نامشخص",
-      revenueValue: matchedData?.revenueValue || 0,
-      technologyLag: matchedData?.technologyLag || 4,
-      maturityScore: matchedData?.maturityScore || 50,
-    };
+      if (!data.success) {
+        console.error('API error:', data.error);
+        toast.error(data.error || 'خطا در دریافت اطلاعات');
+        setIsScanning(false);
+        return;
+      }
 
-    setIsScanning(false);
-    onScanComplete(profile);
+      setScanStatus("در حال تحلیل رقبا و بازار...");
+      
+      const intel = data.data;
+      
+      const profile: CompanyProfile = {
+        name: intel.name,
+        ticker: intel.ticker || query.toUpperCase().slice(0, 4),
+        logo: intel.logo || "🏢",
+        industry: intel.industry,
+        sector: intel.sector,
+        competitors: intel.competitors,
+        revenue: intel.revenue,
+        revenueValue: intel.revenueValue,
+        cashLiquidity: intel.cashLiquidity,
+        technologyLag: intel.technologyLag,
+        maturityScore: intel.maturityScore,
+      };
+
+      // Show citations if available
+      if (data.citations && data.citations.length > 0) {
+        console.log('Data sources:', data.citations);
+      }
+
+      setIsScanning(false);
+      setScanStatus("");
+      onScanComplete(profile);
+      
+    } catch (err) {
+      console.error('Error during scan:', err);
+      toast.error('خطای غیرمنتظره. لطفاً دوباره تلاش کنید.');
+      setIsScanning(false);
+      setScanStatus("");
+    }
   };
 
   return (
@@ -282,7 +262,7 @@ const RadarInputPhase = ({
           className="mt-6 flex flex-wrap justify-center gap-2"
         >
           <span className="text-slate-500 text-sm">پیشنهادات:</span>
-          {["retop", "sep", "digikala"].map((suggestion) => (
+          {["ایران خودرو", "فولاد مبارکه", "بانک ملت", "دیجی‌کالا", "همراه اول"].map((suggestion) => (
             <button
               key={suggestion}
               onClick={() => setQuery(suggestion)}
@@ -350,18 +330,23 @@ const ScanningOverlay = () => (
         در حال تحلیل بازار...
       </motion.p>
       
-      <div className="mt-4 flex justify-center gap-2">
-        {["جستجوی رقبا", "تحلیل سهم بازار", "بررسی فناوری"].map((step, i) => (
-          <motion.span
-            key={step}
-            className="text-slate-500 text-sm font-mono"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: i * 1 }}
-          >
-            ✓ {step}
-          </motion.span>
-        ))}
+      <div className="mt-4 flex flex-col items-center gap-3">
+        <div className="flex justify-center gap-2">
+          {["جستجو در کدال", "بررسی سایت بورس", "تحلیل رقبا"].map((step, i) => (
+            <motion.span
+              key={step}
+              className="text-slate-500 text-sm font-mono"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: i * 1.5 }}
+            >
+              ✓ {step}
+            </motion.span>
+          ))}
+        </div>
+        <p className="text-slate-600 text-xs">
+          منابع: کدال، بورس تهران، خبرگزاری‌ها
+        </p>
       </div>
     </div>
   </motion.div>
