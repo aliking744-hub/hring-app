@@ -11,6 +11,9 @@ interface CompetitorAnalysis {
   weaknesses: string[];
   marketPosition: string;
   recentNews: string[];
+  codalInfo?: string;
+  contracts?: string[];
+  activities?: string[];
 }
 
 Deno.serve(async (req) => {
@@ -37,36 +40,53 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Analyzing competitor:', competitorName, 'in industry:', industry);
+    console.log('Analyzing competitor with Codal data:', competitorName, 'in industry:', industry);
 
-    const systemPrompt = `تو یک تحلیلگر رقابتی هستی که اطلاعات شرکت‌های ایرانی را تحلیل می‌کنی.
+    const systemPrompt = `تو یک تحلیلگر رقابتی حرفه‌ای هستی که اطلاعات دقیق شرکت‌های ایرانی را از منابع رسمی استخراج و تحلیل می‌کنی.
 
-خروجی را فقط به صورت JSON بده، بدون هیچ توضیح اضافه. ساختار JSON باید دقیقاً به این شکل باشد:
+**منابع اصلی برای جمع‌آوری اطلاعات:**
+1. **سایت کدال (codal.ir)**: گزارش‌های مالی، صورت‌های مالی، اساسنامه شرکت، آگهی‌های افزایش سرمایه
+2. **سایت بورس تهران (tsetmc.com)**: قیمت سهام، حجم معاملات، ارزش بازار
+3. **سایت فیپیران (fipiran.ir)**: اطلاعات صندوق‌ها و شرکت‌های سرمایه‌گذاری
+4. **خبرگزاری‌های اقتصادی**: دنیای اقتصاد، اقتصادآنلاین، ایسنا اقتصادی
+5. **سایت رسمی شرکت**: خدمات، محصولات، قراردادها
+
+**اطلاعاتی که باید استخراج کنی:**
+- اساسنامه و موضوع فعالیت شرکت
+- آخرین قراردادهای مهم منعقد شده
+- وضعیت مالی (سود/زیان، درآمد، EPS)
+- تغییرات سرمایه و ساختار سهامداری
+- اخبار مهم ۳ ماه اخیر
+
+خروجی را فقط به صورت JSON بده، بدون هیچ توضیح اضافه. ساختار JSON:
 {
   "name": "نام شرکت",
   "status": "winning" یا "losing" یا "stable",
-  "reason": "دلیل وضعیت فعلی شرکت در یک جمله",
-  "strengths": ["نقطه قوت ۱", "نقطه قوت ۲", "نقطه قوت ۳"],
-  "weaknesses": ["نقطه ضعف ۱", "نقطه ضعف ۲", "نقطه ضعف ۳"],
-  "marketPosition": "توضیح مختصر جایگاه در بازار",
-  "recentNews": ["خبر اخیر ۱", "خبر اخیر ۲"]
-}
+  "reason": "دلیل دقیق وضعیت فعلی بر اساس داده‌های کدال",
+  "strengths": ["نقطه قوت مستند ۱", "نقطه قوت ۲", "نقطه قوت ۳"],
+  "weaknesses": ["نقطه ضعف مستند ۱", "نقطه ضعف ۲", "نقطه ضعف ۳"],
+  "marketPosition": "جایگاه دقیق در بازار با ذکر رتبه و سهم بازار",
+  "recentNews": ["خبر مهم ۱ با منبع", "خبر مهم ۲"],
+  "codalInfo": "خلاصه مهمترین اطلاعات از کدال",
+  "contracts": ["قرارداد مهم ۱", "قرارداد ۲"],
+  "activities": ["فعالیت اصلی ۱ از اساسنامه", "فعالیت ۲"]
+}`;
 
-معیار تعیین status:
-- winning: اگر شرکت در حال رشد سهم بازار یا سودآوری است
-- losing: اگر شرکت در حال از دست دادن سهم بازار یا زیان‌ده است
-- stable: اگر وضعیت شرکت نسبتاً ثابت است`;
+    const userPrompt = `شرکت "${competitorName}" که رقیب "${userCompanyName || 'شرکت مورد نظر'}" در صنعت "${industry || 'نامشخص'}" است را به طور کامل تحلیل کن.
 
-    const userPrompt = `شرکت "${competitorName}" که رقیب "${userCompanyName || 'شرکت مورد نظر'}" در صنعت "${industry || 'نامشخص'}" است را تحلیل کن.
+**مراحل تحلیل:**
+1. ابتدا نماد بورسی شرکت را شناسایی کن
+2. اطلاعات را از سایت کدال جستجو کن (codal.ir)
+3. اساسنامه و موضوع فعالیت شرکت را استخراج کن
+4. آخرین گزارش‌های مالی و قراردادهای منتشر شده را بررسی کن
+5. اخبار اخیر شرکت را از خبرگزاری‌های معتبر جمع‌آوری کن
 
-اطلاعات را از منابع زیر استخراج کن:
-1. سایت کدال (codal.ir) برای گزارش‌های مالی
-2. سایت بورس تهران (tsetmc.com)
-3. خبرگزاری‌های اقتصادی ایران
-4. سایت رسمی شرکت
-5. شبکه‌های اجتماعی و رسانه‌ها
+**معیار تعیین status:**
+- winning: اگر EPS رشد داشته، قراردادهای جدید بسته، سهم بازار افزایش یافته
+- losing: اگر زیان‌ده شده، سهم بازار کاهش یافته، مشکلات حقوقی دارد
+- stable: اگر وضعیت نسبتاً ثابت است
 
-لطفاً تحلیل واقعی و به‌روز ارائه بده با نقاط قوت و ضعف مشخص.`;
+لطفاً اطلاعات واقعی و مستند ارائه بده.`;
 
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
@@ -75,13 +95,13 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar',
+        model: 'sonar-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.2,
-        max_tokens: 1500,
+        temperature: 0.1,
+        max_tokens: 2000,
       }),
     });
 
@@ -111,21 +131,26 @@ Deno.serve(async (req) => {
         name: parsed.name || competitorName,
         status: ["winning", "losing", "stable"].includes(parsed.status) ? parsed.status : "stable",
         reason: parsed.reason || "تحلیل در حال بررسی است",
-        strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : ["نقطه قوت نامشخص"],
-        weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.slice(0, 5) : ["نقطه ضعف نامشخص"],
+        strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : ["نیاز به بررسی بیشتر"],
+        weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.slice(0, 5) : ["نیاز به بررسی بیشتر"],
         marketPosition: parsed.marketPosition || "جایگاه در حال بررسی",
-        recentNews: Array.isArray(parsed.recentNews) ? parsed.recentNews.slice(0, 3) : [],
+        recentNews: Array.isArray(parsed.recentNews) ? parsed.recentNews.slice(0, 4) : [],
+        codalInfo: parsed.codalInfo || undefined,
+        contracts: Array.isArray(parsed.contracts) ? parsed.contracts.slice(0, 3) : [],
+        activities: Array.isArray(parsed.activities) ? parsed.activities.slice(0, 4) : [],
       };
     } catch (parseError) {
       console.error('Error parsing Perplexity response:', parseError);
       analysis = {
         name: competitorName,
         status: "stable",
-        reason: "اطلاعات در حال جمع‌آوری است",
-        strengths: ["نیاز به بررسی بیشتر"],
+        reason: "اطلاعات در حال جمع‌آوری از کدال و منابع رسمی است",
+        strengths: ["نیاز به بررسی گزارش‌های مالی"],
         weaknesses: ["نیاز به بررسی بیشتر"],
-        marketPosition: "نامشخص",
+        marketPosition: "در حال استخراج از منابع رسمی",
         recentNews: [],
+        contracts: [],
+        activities: [],
       };
     }
 

@@ -28,6 +28,9 @@ interface CompetitorDetail {
   weaknesses: string[];
   marketPosition?: string;
   recentNews?: string[];
+  codalInfo?: string;
+  contracts?: string[];
+  activities?: string[];
 }
 
 const COLORS = ["#22d3ee", "#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b"];
@@ -300,7 +303,7 @@ const CompetitorAnatomy = ({ profile }: CompetitorAnatomyProps) => {
                   </div>
 
                   {selectedCompetitor.recentNews && selectedCompetitor.recentNews.length > 0 && (
-                    <div className="p-3 bg-slate-800/50 rounded-lg">
+                    <div className="p-3 bg-slate-800/50 rounded-lg mb-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Newspaper className="w-4 h-4 text-cyan-400" />
                         <p className="text-cyan-400 text-xs font-medium">اخبار اخیر</p>
@@ -308,6 +311,24 @@ const CompetitorAnatomy = ({ profile }: CompetitorAnatomyProps) => {
                       <ul className="space-y-1">
                         {selectedCompetitor.recentNews.map((news, i) => (
                           <li key={i} className="text-slate-400 text-sm">• {news}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {selectedCompetitor.codalInfo && (
+                    <div className="p-3 bg-purple-950/30 border border-purple-800/30 rounded-lg mb-3">
+                      <p className="text-purple-400 text-xs font-medium mb-1">اطلاعات کدال</p>
+                      <p className="text-slate-300 text-sm">{selectedCompetitor.codalInfo}</p>
+                    </div>
+                  )}
+
+                  {selectedCompetitor.activities && selectedCompetitor.activities.length > 0 && (
+                    <div className="p-3 bg-cyan-950/30 border border-cyan-800/30 rounded-lg">
+                      <p className="text-cyan-400 text-xs font-medium mb-2">فعالیت‌های اساسنامه</p>
+                      <ul className="space-y-1">
+                        {selectedCompetitor.activities.map((act, i) => (
+                          <li key={i} className="text-slate-300 text-sm">• {act}</li>
                         ))}
                       </ul>
                     </div>
