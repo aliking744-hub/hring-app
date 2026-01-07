@@ -89,3 +89,9 @@ verify_jwt = false
 
 [functions.daily-competitor-monitor]
 verify_jwt = false
+
+[functions.analyze-value-chain]
+verify_jwt = false
+
+[functions.track-funding]
+verify_jwt = false
