@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, X, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Users, X, TrendingUp, TrendingDown, Minus, Loader2, Newspaper } from "lucide-react";
 import { CompanyProfile } from "@/pages/StrategicRadar";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   ScatterChart,
   Scatter,
@@ -24,52 +26,9 @@ interface CompetitorDetail {
   reason: string;
   strengths: string[];
   weaknesses: string[];
+  marketPosition?: string;
+  recentNews?: string[];
 }
-
-const competitorDetails: Record<string, CompetitorDetail> = {
-  سپ: {
-    name: "سپ",
-    status: "winning",
-    reason: "شبکه گسترده پذیرندگان و زیرساخت قوی",
-    strengths: ["سهم بازار بالا", "برند قوی", "تنوع خدمات"],
-    weaknesses: ["سرعت نوآوری پایین", "هزینه‌های بالا"],
-  },
-  "به‌پرداخت": {
-    name: "به‌پرداخت",
-    status: "stable",
-    reason: "تمرکز بر بازار خرده‌فروشی",
-    strengths: ["قیمت رقابتی", "خدمات مشتری خوب"],
-    weaknesses: ["محدودیت در فناوری", "وابستگی به بانک‌ها"],
-  },
-  "آسان‌پرداخت": {
-    name: "آسان‌پرداخت",
-    status: "losing",
-    reason: "عدم تطابق با تغییرات بازار",
-    strengths: ["تجربه طولانی"],
-    weaknesses: ["فناوری قدیمی", "کاهش سهم بازار"],
-  },
-  ریتاپ: {
-    name: "ریتاپ",
-    status: "stable",
-    reason: "تمرکز بر نوآوری و فناوری",
-    strengths: ["فناوری مدرن", "تیم جوان"],
-    weaknesses: ["سهم بازار محدود", "شناخت برند کم"],
-  },
-  باسلام: {
-    name: "باسلام",
-    status: "stable",
-    reason: "تمرکز بر بازار روستایی",
-    strengths: ["بازار منحصربه‌فرد"],
-    weaknesses: ["مقیاس‌پذیری محدود"],
-  },
-  "اسنپ‌مارکت": {
-    name: "اسنپ‌مارکت",
-    status: "winning",
-    reason: "اکوسیستم اسنپ و لجستیک قوی",
-    strengths: ["زیرساخت لجستیک", "برند قوی"],
-    weaknesses: ["هزینه‌های عملیاتی بالا"],
-  },
-};
 
 const COLORS = ["#22d3ee", "#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b"];
 
@@ -84,6 +43,7 @@ interface ChartDataItem {
 
 const CompetitorAnatomy = ({ profile }: CompetitorAnatomyProps) => {
   const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorDetail | null>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
 
   // Prepare chart data
   const chartData: ChartDataItem[] = [
@@ -106,16 +66,55 @@ const CompetitorAnatomy = ({ profile }: CompetitorAnatomyProps) => {
     })),
   ];
 
+  const fetchCompetitorAnalysis = async (competitorName: string) => {
+    setIsLoadingAnalysis(true);
+    
+    // Show loading state
+    setSelectedCompetitor({
+      name: competitorName,
+      status: "stable",
+      reason: "در حال دریافت اطلاعات...",
+      strengths: [],
+      weaknesses: [],
+    });
+
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-competitor', {
+        body: { 
+          competitorName,
+          industry: profile.industry,
+          userCompanyName: profile.name
+        }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        toast.error('خطا در دریافت تحلیل رقیب');
+        setSelectedCompetitor(null);
+        return;
+      }
+
+      if (!data.success) {
+        console.error('API error:', data.error);
+        toast.error(data.error || 'خطا در تحلیل');
+        setSelectedCompetitor(null);
+        return;
+      }
+
+      setSelectedCompetitor(data.data);
+      
+    } catch (err) {
+      console.error('Error fetching competitor analysis:', err);
+      toast.error('خطای غیرمنتظره');
+      setSelectedCompetitor(null);
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  };
+
   const handleBubbleClick = (data: ChartDataItem) => {
     if (!data.isUser) {
-      const detail = competitorDetails[data.name] || {
-        name: data.name,
-        status: "stable" as const,
-        reason: "اطلاعات تحلیلی این رقیب بر اساس داده‌های جمع‌آوری شده",
-        strengths: [`سهم بازار ${data.marketShare}%`, `امتیاز نوآوری ${data.innovation}`],
-        weaknesses: ["نیاز به تحلیل بیشتر"],
-      };
-      setSelectedCompetitor(detail);
+      fetchCompetitorAnalysis(data.name);
     }
   };
 
@@ -231,59 +230,90 @@ const CompetitorAnatomy = ({ profile }: CompetitorAnatomyProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4 z-10"
-            onClick={() => setSelectedCompetitor(null)}
+            onClick={() => !isLoadingAnalysis && setSelectedCompetitor(null)}
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-slate-900 border border-slate-700 rounded-2xl p-5 max-w-sm w-full"
+              className="bg-slate-900 border border-slate-700 rounded-2xl p-5 max-w-md w-full max-h-[90%] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <StatusIcon status={selectedCompetitor.status} />
-                  <div>
-                    <h4 className="text-white font-bold">{selectedCompetitor.name}</h4>
-                    <p className={`text-sm ${
-                      selectedCompetitor.status === "winning" ? "text-emerald-400" :
-                      selectedCompetitor.status === "losing" ? "text-red-400" : "text-yellow-400"
-                    }`}>
-                      {selectedCompetitor.status === "winning" ? "در حال پیشرفت" :
-                       selectedCompetitor.status === "losing" ? "در حال عقب‌گرد" : "ثابت"}
-                    </p>
+              {isLoadingAnalysis ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="w-10 h-10 text-cyan-400 animate-spin mb-4" />
+                  <p className="text-slate-400">در حال تحلیل {selectedCompetitor.name}...</p>
+                  <p className="text-slate-500 text-sm mt-2">جستجو در کدال و خبرگزاری‌ها</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <StatusIcon status={selectedCompetitor.status} />
+                      <div>
+                        <h4 className="text-white font-bold">{selectedCompetitor.name}</h4>
+                        <p className={`text-sm ${
+                          selectedCompetitor.status === "winning" ? "text-emerald-400" :
+                          selectedCompetitor.status === "losing" ? "text-red-400" : "text-yellow-400"
+                        }`}>
+                          {selectedCompetitor.status === "winning" ? "در حال پیشرفت" :
+                           selectedCompetitor.status === "losing" ? "در حال عقب‌گرد" : "ثابت"}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedCompetitor(null)}
+                      className="text-slate-400 hover:text-white"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                </div>
-                <button
-                  onClick={() => setSelectedCompetitor(null)}
-                  className="text-slate-400 hover:text-white"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
 
-              <p className="text-slate-300 text-sm mb-4 p-3 bg-slate-800/50 rounded-lg">
-                {selectedCompetitor.reason}
-              </p>
+                  <p className="text-slate-300 text-sm mb-4 p-3 bg-slate-800/50 rounded-lg">
+                    {selectedCompetitor.reason}
+                  </p>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-emerald-950/30 border border-emerald-800/30 rounded-lg">
-                  <p className="text-emerald-400 text-xs font-medium mb-2">نقاط قوت</p>
-                  <ul className="space-y-1">
-                    {selectedCompetitor.strengths.map((s, i) => (
-                      <li key={i} className="text-slate-300 text-sm">• {s}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="p-3 bg-red-950/30 border border-red-800/30 rounded-lg">
-                  <p className="text-red-400 text-xs font-medium mb-2">نقاط ضعف</p>
-                  <ul className="space-y-1">
-                    {selectedCompetitor.weaknesses.map((w, i) => (
-                      <li key={i} className="text-slate-300 text-sm">• {w}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+                  {selectedCompetitor.marketPosition && (
+                    <div className="mb-4 p-3 bg-blue-950/30 border border-blue-800/30 rounded-lg">
+                      <p className="text-blue-400 text-xs font-medium mb-1">جایگاه بازار</p>
+                      <p className="text-slate-300 text-sm">{selectedCompetitor.marketPosition}</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="p-3 bg-emerald-950/30 border border-emerald-800/30 rounded-lg">
+                      <p className="text-emerald-400 text-xs font-medium mb-2">نقاط قوت</p>
+                      <ul className="space-y-1">
+                        {selectedCompetitor.strengths.map((s, i) => (
+                          <li key={i} className="text-slate-300 text-sm">• {s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="p-3 bg-red-950/30 border border-red-800/30 rounded-lg">
+                      <p className="text-red-400 text-xs font-medium mb-2">نقاط ضعف</p>
+                      <ul className="space-y-1">
+                        {selectedCompetitor.weaknesses.map((w, i) => (
+                          <li key={i} className="text-slate-300 text-sm">• {w}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {selectedCompetitor.recentNews && selectedCompetitor.recentNews.length > 0 && (
+                    <div className="p-3 bg-slate-800/50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Newspaper className="w-4 h-4 text-cyan-400" />
+                        <p className="text-cyan-400 text-xs font-medium">اخبار اخیر</p>
+                      </div>
+                      <ul className="space-y-1">
+                        {selectedCompetitor.recentNews.map((news, i) => (
+                          <li key={i} className="text-slate-400 text-sm">• {news}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}
