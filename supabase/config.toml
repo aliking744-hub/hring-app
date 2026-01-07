@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.generate-strategic-recommendations]
 verify_jwt = false
+
+[functions.daily-competitor-monitor]
+verify_jwt = false
