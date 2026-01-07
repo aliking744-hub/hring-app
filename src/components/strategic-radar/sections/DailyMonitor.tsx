@@ -11,7 +11,8 @@ import {
   Clock,
   Building2,
   Zap,
-  Target
+  Target,
+  ExternalLink
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ interface NewsItem {
   competitor: string;
   category: string;
   summary: string;
+  url?: string;
 }
 
 interface CompetitorAlert {
@@ -93,7 +95,8 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
         sentiment: "positive",
         competitor: competitors[0] || "رقیب ۱",
         category: "استراتژی",
-        summary: "این قرارداد می‌تواند موقعیت رقابتی آن‌ها را تقویت کند"
+        summary: "این قرارداد می‌تواند موقعیت رقابتی آن‌ها را تقویت کند",
+        url: "https://www.eghtesadonline.com"
       },
       {
         title: `کاهش سهم بازار ${competitors[1]} در سه‌ماهه اخیر`,
@@ -102,7 +105,8 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
         sentiment: "negative",
         competitor: competitors[1] || "رقیب ۲",
         category: "بازار",
-        summary: "فرصت مناسب برای جذب مشتریان ناراضی"
+        summary: "فرصت مناسب برای جذب مشتریان ناراضی",
+        url: "https://www.tsetmc.com"
       },
       {
         title: `راه‌اندازی محصول جدید توسط ${competitors[0]}`,
@@ -111,7 +115,8 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
         sentiment: "neutral",
         competitor: competitors[0] || "رقیب ۱",
         category: "محصول",
-        summary: "نیاز به ارزیابی تأثیر بر پرتفوی محصولات ما"
+        summary: "نیاز به ارزیابی تأثیر بر پرتفوی محصولات ما",
+        url: "https://www.zoomit.ir"
       }
     ]);
 
@@ -227,9 +232,12 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
           </h4>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {news.map((item, idx) => (
-              <div
+              <a
                 key={idx}
-                className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-indigo-500/30 transition-colors"
+                href={item.url || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-indigo-500/30 hover:bg-slate-800/70 transition-all cursor-pointer group"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
@@ -240,8 +248,9 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
                         {item.competitor}
                       </Badge>
                       <span className="text-xs text-slate-500">{item.category}</span>
+                      <ExternalLink className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    <p className="text-sm text-white font-medium">{item.title}</p>
+                    <p className="text-sm text-white font-medium group-hover:text-indigo-300 transition-colors">{item.title}</p>
                     <p className="text-xs text-slate-400 mt-1">{item.summary}</p>
                   </div>
                   <div className="text-xs text-slate-500 whitespace-nowrap">
@@ -249,7 +258,7 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
                     <div>{item.date}</div>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         </div>
