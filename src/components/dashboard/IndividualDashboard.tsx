@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import { 
   Briefcase, Users, Calendar, TrendingUp, Megaphone,
-  FileDown, Gem, Target
+  FileDown, Gem, Target, Radar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -198,6 +198,14 @@ const IndividualDashboard = () => {
             >
               <FileDown className="w-4 h-4 ml-2" />
               گزارش PDF
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-cyan-500/50 bg-cyan-950/30 h-12 col-span-2 hover:bg-cyan-900/50 text-cyan-300"
+              onClick={() => navigate('/strategic-radar')}
+            >
+              <Radar className="w-4 h-4 ml-2" />
+              رادار اطلاعات استراتژیک
             </Button>
           </div>
         </motion.div>
