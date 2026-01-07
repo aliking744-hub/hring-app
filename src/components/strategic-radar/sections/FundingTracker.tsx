@@ -22,7 +22,24 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CompanyProfile } from "@/pages/StrategicRadar";
-
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  Legend,
+  Cell,
+  PieChart,
+  Pie
+} from "recharts";
 interface FundingTrackerProps {
   profile: CompanyProfile;
 }
@@ -259,158 +276,373 @@ const FundingTracker = ({ profile }: FundingTrackerProps) => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Valuations Table */}
-          <div className="lg:col-span-2">
-            <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-emerald-400" />
-              ارزش‌گذاری شرکت‌ها
-            </h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="text-right py-2 px-2 text-slate-400 font-medium">شرکت</th>
-                    <th className="text-center py-2 px-2 text-slate-400 font-medium">ارزش بازار</th>
-                    <th className="text-center py-2 px-2 text-slate-400 font-medium">P/E</th>
-                    <th className="text-center py-2 px-2 text-slate-400 font-medium">روند</th>
-                    <th className="text-center py-2 px-2 text-slate-400 font-medium">تغییر</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {valuations.map((v, i) => (
-                    <motion.tr
-                      key={v.name}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="border-b border-slate-800 hover:bg-slate-800/50"
-                    >
-                      <td className="py-2 px-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-medium">{v.name}</span>
-                          {v.stockSymbol && (
-                            <Badge className="bg-slate-700 text-slate-300 text-[10px]">{v.stockSymbol}</Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-2 px-2 text-center">
-                        <div className="text-white text-xs">{v.marketCap}</div>
-                        {v.marketCapUSD && (
-                          <div className="text-slate-500 text-[10px]">{v.marketCapUSD}</div>
-                        )}
-                      </td>
-                      <td className="py-2 px-2 text-center text-slate-300">{v.peRatio}</td>
-                      <td className="py-2 px-2 text-center">{getTrendIcon(v.valuationTrend)}</td>
-                      <td className={`py-2 px-2 text-center font-medium ${getTrendColor(v.valuationTrend)}`}>
-                        {v.changePercent > 0 ? '+' : ''}{v.changePercent}%
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <div className="space-y-6">
+          {/* Interactive Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Bar Chart - Market Cap Comparison */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50"
+            >
+              <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-cyan-400" />
+                مقایسه ارزش بازار (میلیارد تومان)
+              </h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={valuations.map(v => ({
+                  name: v.name.substring(0, 12),
+                  value: parseFloat(v.marketCap.replace(/[^\d.]/g, '')) / 10 || 50,
+                  change: v.changePercent
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fill: '#94a3b8', fontSize: 10 }} 
+                    axisLine={{ stroke: '#475569' }}
+                  />
+                  <YAxis 
+                    tick={{ fill: '#94a3b8', fontSize: 10 }} 
+                    axisLine={{ stroke: '#475569' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      direction: 'rtl'
+                    }}
+                    formatter={(value: number) => [`${value} میلیارد تومان`, 'ارزش بازار']}
+                  />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {valuations.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`}
+                        fill={entry.valuationTrend === 'up' ? '#10b981' : entry.valuationTrend === 'down' ? '#ef4444' : '#6366f1'}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </motion.div>
 
-            {/* Industry Metrics */}
-            {metrics && (
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-center">
-                  <div className="text-xs text-slate-400">کل ارزش صنعت</div>
-                  <div className="text-sm font-bold text-white">{metrics.totalMarketCap}</div>
-                </div>
-                <div className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-center">
-                  <div className="text-xs text-slate-400">میانگین P/E</div>
-                  <div className="text-sm font-bold text-cyan-400">{metrics.averagePE}</div>
-                </div>
-                <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
-                  <div className="text-xs text-slate-400">بهترین عملکرد</div>
-                  <div className="text-sm font-bold text-emerald-400">{metrics.topPerformer}</div>
-                </div>
-                <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-center">
-                  <div className="text-xs text-slate-400">ضعیف‌ترین</div>
-                  <div className="text-sm font-bold text-red-400">{metrics.worstPerformer}</div>
-                </div>
-              </div>
-            )}
+            {/* Radar Chart - P/E & P/B Comparison */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50"
+            >
+              <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                <Target className="w-4 h-4 text-purple-400" />
+                مقایسه نسبت‌های ارزش‌گذاری
+              </h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <RadarChart data={valuations.map(v => ({
+                  company: v.name.substring(0, 8),
+                  PE: v.peRatio,
+                  PB: v.pbRatio || v.peRatio * 0.2,
+                  growth: Math.abs(v.changePercent)
+                }))}>
+                  <PolarGrid stroke="#334155" />
+                  <PolarAngleAxis 
+                    dataKey="company" 
+                    tick={{ fill: '#94a3b8', fontSize: 9 }}
+                  />
+                  <PolarRadiusAxis 
+                    angle={30} 
+                    domain={[0, 'auto']} 
+                    tick={{ fill: '#64748b', fontSize: 8 }}
+                  />
+                  <Radar 
+                    name="P/E" 
+                    dataKey="PE" 
+                    stroke="#8b5cf6" 
+                    fill="#8b5cf6" 
+                    fillOpacity={0.3}
+                  />
+                  <Radar 
+                    name="P/B" 
+                    dataKey="PB" 
+                    stroke="#06b6d4" 
+                    fill="#06b6d4" 
+                    fillOpacity={0.3}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '10px', color: '#94a3b8' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                      color: '#fff'
+                    }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </motion.div>
+
+            {/* Pie Chart - Market Share */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50"
+            >
+              <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-emerald-400" />
+                سهم از کل ارزش بازار صنعت
+              </h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={valuations.map((v, i) => ({
+                      name: v.name,
+                      value: parseFloat(v.marketCap.replace(/[^\d.]/g, '')) / 10 || (50 - i * 10)
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name.substring(0, 6)} (${(percent * 100).toFixed(0)}%)`}
+                    labelLine={{ stroke: '#64748b', strokeWidth: 1 }}
+                  >
+                    {valuations.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`}
+                        fill={['#10b981', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444'][index % 5]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      direction: 'rtl'
+                    }}
+                    formatter={(value: number) => [`${value} میلیارد تومان`, 'ارزش']}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </motion.div>
+
+            {/* Change Percent Bar Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50"
+            >
+              <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-amber-400" />
+                تغییرات ارزش‌گذاری (درصد)
+              </h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart 
+                  data={valuations.map(v => ({
+                    name: v.name.substring(0, 10),
+                    change: v.changePercent
+                  }))}
+                  layout="vertical"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis 
+                    type="number" 
+                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                    axisLine={{ stroke: '#475569' }}
+                    domain={['dataMin - 5', 'dataMax + 5']}
+                  />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                    axisLine={{ stroke: '#475569' }}
+                    width={80}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      direction: 'rtl'
+                    }}
+                    formatter={(value: number) => [`${value > 0 ? '+' : ''}${value}%`, 'تغییر']}
+                  />
+                  <Bar dataKey="change" radius={[0, 4, 4, 0]}>
+                    {valuations.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`}
+                        fill={entry.changePercent > 0 ? '#10b981' : entry.changePercent < 0 ? '#ef4444' : '#6366f1'}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </motion.div>
           </div>
 
-          {/* Recent Deals & Upcoming IPOs */}
-          <div className="space-y-4">
-            {/* Recent Deals */}
-            <div>
+          {/* Valuations Table & Metrics */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
               <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-purple-400" />
-                معاملات اخیر
+                <DollarSign className="w-4 h-4 text-emerald-400" />
+                جدول ارزش‌گذاری شرکت‌ها
               </h4>
-              <div className="space-y-2">
-                {deals.map((deal, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
-                    className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      {getDealTypeIcon(deal.type)}
-                      <span className="text-white text-sm font-medium">{deal.company}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <Badge variant="outline" className="bg-slate-700/50 text-slate-300">
-                        {getDealTypeLabel(deal.type)}
-                      </Badge>
-                      <span className="text-emerald-400 font-medium">{deal.amount}</span>
-                    </div>
-                    <p className="text-slate-400 text-xs mt-1">{deal.description}</p>
-                    <div className="text-slate-500 text-[10px] mt-1">{deal.date} • {deal.investor}</div>
-                  </motion.div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700">
+                      <th className="text-right py-2 px-2 text-slate-400 font-medium">شرکت</th>
+                      <th className="text-center py-2 px-2 text-slate-400 font-medium">ارزش بازار</th>
+                      <th className="text-center py-2 px-2 text-slate-400 font-medium">P/E</th>
+                      <th className="text-center py-2 px-2 text-slate-400 font-medium">P/B</th>
+                      <th className="text-center py-2 px-2 text-slate-400 font-medium">روند</th>
+                      <th className="text-center py-2 px-2 text-slate-400 font-medium">تغییر</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {valuations.map((v, i) => (
+                      <motion.tr
+                        key={v.name}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="border-b border-slate-800 hover:bg-slate-800/50"
+                      >
+                        <td className="py-2 px-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-medium">{v.name}</span>
+                            {v.stockSymbol && (
+                              <Badge className="bg-slate-700 text-slate-300 text-[10px]">{v.stockSymbol}</Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2 px-2 text-center">
+                          <div className="text-white text-xs">{v.marketCap}</div>
+                          {v.marketCapUSD && (
+                            <div className="text-slate-500 text-[10px]">{v.marketCapUSD}</div>
+                          )}
+                        </td>
+                        <td className="py-2 px-2 text-center text-slate-300">{v.peRatio}</td>
+                        <td className="py-2 px-2 text-center text-cyan-400">{v.pbRatio || '-'}</td>
+                        <td className="py-2 px-2 text-center">{getTrendIcon(v.valuationTrend)}</td>
+                        <td className={`py-2 px-2 text-center font-medium ${getTrendColor(v.valuationTrend)}`}>
+                          {v.changePercent > 0 ? '+' : ''}{v.changePercent}%
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+
+              {/* Industry Metrics */}
+              {metrics && (
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-center">
+                    <div className="text-xs text-slate-400">کل ارزش صنعت</div>
+                    <div className="text-sm font-bold text-white">{metrics.totalMarketCap}</div>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-center">
+                    <div className="text-xs text-slate-400">میانگین P/E</div>
+                    <div className="text-sm font-bold text-cyan-400">{metrics.averagePE}</div>
+                  </div>
+                  <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+                    <div className="text-xs text-slate-400">بهترین عملکرد</div>
+                    <div className="text-sm font-bold text-emerald-400">{metrics.topPerformer}</div>
+                  </div>
+                  <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-center">
+                    <div className="text-xs text-slate-400">ضعیف‌ترین</div>
+                    <div className="text-sm font-bold text-red-400">{metrics.worstPerformer}</div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Upcoming IPOs */}
-            {upcomingIPOs.length > 0 && (
+            {/* Recent Deals & Upcoming IPOs */}
+            <div className="space-y-4">
+              {/* Recent Deals */}
               <div>
                 <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-                  <Landmark className="w-4 h-4 text-blue-400" />
-                  عرضه‌های اولیه پیش‌رو
+                  <TrendingUp className="w-4 h-4 text-purple-400" />
+                  معاملات اخیر
                 </h4>
                 <div className="space-y-2">
-                  {upcomingIPOs.map((ipo, i) => (
-                    <div
+                  {deals.map((deal, i) => (
+                    <motion.div
                       key={i}
-                      className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + i * 0.1 }}
+                      className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50"
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-white text-sm font-medium">{ipo.company}</span>
-                        <Badge className="bg-blue-500/20 text-blue-400 text-[10px]">IPO</Badge>
+                      <div className="flex items-center gap-2 mb-1">
+                        {getDealTypeIcon(deal.type)}
+                        <span className="text-white text-sm font-medium">{deal.company}</span>
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400">{ipo.expectedDate}</span>
-                        <span className="text-blue-400 font-medium">{ipo.estimatedValue}</span>
+                        <Badge variant="outline" className="bg-slate-700/50 text-slate-300">
+                          {getDealTypeLabel(deal.type)}
+                        </Badge>
+                        <span className="text-emerald-400 font-medium">{deal.amount}</span>
                       </div>
-                    </div>
+                      <p className="text-slate-400 text-xs mt-1">{deal.description}</p>
+                      <div className="text-slate-500 text-[10px] mt-1">{deal.date} • {deal.investor}</div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
-            )}
 
-            {/* Hot Sectors */}
-            {metrics?.hotSectors && metrics.hotSectors.length > 0 && (
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <h5 className="text-xs font-semibold text-amber-400 mb-2 flex items-center gap-1">
-                  <Zap className="w-3 h-3" />
-                  بخش‌های داغ سرمایه‌گذاری
-                </h5>
-                <div className="flex flex-wrap gap-1">
-                  {metrics.hotSectors.map((sector, i) => (
-                    <Badge key={i} className="bg-amber-500/20 text-amber-300 text-[10px]">
-                      {sector}
-                    </Badge>
-                  ))}
+              {/* Upcoming IPOs */}
+              {upcomingIPOs.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <Landmark className="w-4 h-4 text-blue-400" />
+                    عرضه‌های اولیه پیش‌رو
+                  </h4>
+                  <div className="space-y-2">
+                    {upcomingIPOs.map((ipo, i) => (
+                      <div
+                        key={i}
+                        className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-white text-sm font-medium">{ipo.company}</span>
+                          <Badge className="bg-blue-500/20 text-blue-400 text-[10px]">IPO</Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400">{ipo.expectedDate}</span>
+                          <span className="text-blue-400 font-medium">{ipo.estimatedValue}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* Hot Sectors */}
+              {metrics?.hotSectors && metrics.hotSectors.length > 0 && (
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <h5 className="text-xs font-semibold text-amber-400 mb-2 flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    بخش‌های داغ سرمایه‌گذاری
+                  </h5>
+                  <div className="flex flex-wrap gap-1">
+                    {metrics.hotSectors.map((sector, i) => (
+                      <Badge key={i} className="bg-amber-500/20 text-amber-300 text-[10px]">
+                        {sector}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
