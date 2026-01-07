@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Table2, Loader2, CheckCircle2, XCircle, MinusCircle, 
@@ -33,6 +33,15 @@ const CompetitorComparison = ({ profile }: CompetitorComparisonProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("table");
+  const hasAutoLoaded = useRef(false);
+
+  // Auto-load SWOT data on mount
+  useEffect(() => {
+    if (!hasAutoLoaded.current && profile.competitors?.length > 0) {
+      hasAutoLoaded.current = true;
+      fetchAllCompetitorData();
+    }
+  }, [profile.competitors]);
 
   const fetchAllCompetitorData = async () => {
     setIsLoading(true);
