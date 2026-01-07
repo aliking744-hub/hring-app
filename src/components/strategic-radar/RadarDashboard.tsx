@@ -174,26 +174,26 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.55 }}
-          className="lg:col-span-2 xl:col-span-2"
+          className="lg:col-span-2 xl:col-span-3"
         >
           <MarketAlerts profile={profile} />
         </motion.div>
 
-        {/* Section J: Daily Monitor */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.55 }}
-          className="xl:col-span-1"
-        >
-          <DailyMonitor profile={profile} />
-        </motion.div>
-
-        {/* Section K: Strategic Recommendations */}
+        {/* Section K: Daily Monitor */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
+          className="lg:col-span-2 xl:col-span-3"
+        >
+          <DailyMonitor profile={profile} />
+        </motion.div>
+
+        {/* Section L: Strategic Recommendations */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65 }}
           className="lg:col-span-2 xl:col-span-3"
         >
           <StrategicRecommendations profile={profile} />
