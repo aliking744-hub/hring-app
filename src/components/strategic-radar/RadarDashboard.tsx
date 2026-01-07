@@ -11,6 +11,8 @@ import StrategicRecommendations from "./sections/StrategicRecommendations";
 import DailyMonitor from "./sections/DailyMonitor";
 import ValueChainMap from "./sections/ValueChainMap";
 import FundingTracker from "./sections/FundingTracker";
+import TechStackComparison from "./sections/TechStackComparison";
+import MarketAlerts from "./sections/MarketAlerts";
 import { Link } from "react-router-dom";
 
 interface RadarDashboardProps {
@@ -146,21 +148,41 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           <ValueChainMap profile={profile} />
         </motion.div>
 
-        {/* Section G: Daily Monitor */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="lg:col-span-2 xl:col-span-3"
-        >
-          <DailyMonitor profile={profile} />
-        </motion.div>
-
-        {/* Section H: Strategic Recommendations */}
+        {/* Section H: Tech Stack Comparison */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
+          className="lg:col-span-2 xl:col-span-3"
+        >
+          <TechStackComparison profile={profile} />
+        </motion.div>
+
+        {/* Section I: Market Alerts */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="lg:col-span-2 xl:col-span-2"
+        >
+          <MarketAlerts profile={profile} />
+        </motion.div>
+
+        {/* Section J: Daily Monitor */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          className="xl:col-span-1"
+        >
+          <DailyMonitor profile={profile} />
+        </motion.div>
+
+        {/* Section K: Strategic Recommendations */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
           className="lg:col-span-2 xl:col-span-3"
         >
           <StrategicRecommendations profile={profile} />
