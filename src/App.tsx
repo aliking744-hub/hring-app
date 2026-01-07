@@ -31,6 +31,7 @@ import King744 from "./pages/King744";
 import LegalSearchPage from "./pages/LegalSearchPage";
 import LegalAdvisor from "./pages/LegalAdvisor";
 import StrategicCompass from "./pages/StrategicCompass";
+import StrategicRadar from "./pages/StrategicRadar";
 import CompanyMembers from "./pages/CompanyMembers";
 import CompanySettings from "./pages/CompanySettings";
 import Upgrade from "./pages/Upgrade";
@@ -251,6 +252,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Admin />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/strategic-radar" 
+                element={
+                  <ProtectedRoute>
+                    <StrategicRadar />
                   </ProtectedRoute>
                 } 
               />
