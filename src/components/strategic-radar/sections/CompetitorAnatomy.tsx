@@ -106,21 +106,27 @@ const CompetitorAnatomy = ({ profile }: CompetitorAnatomyProps) => {
     })),
   ];
 
-  const handleBubbleClick = (data: any) => {
+  const handleBubbleClick = (data: ChartDataItem) => {
     if (!data.isUser) {
       const detail = competitorDetails[data.name] || {
         name: data.name,
         status: "stable" as const,
-        reason: "اطلاعات کافی در دسترس نیست",
-        strengths: ["نامشخص"],
-        weaknesses: ["نامشخص"],
+        reason: "اطلاعات تحلیلی این رقیب بر اساس داده‌های جمع‌آوری شده",
+        strengths: [`سهم بازار ${data.marketShare}%`, `امتیاز نوآوری ${data.innovation}`],
+        weaknesses: ["نیاز به تحلیل بیشتر"],
       };
       setSelectedCompetitor(detail);
     }
   };
 
+  const handleScatterClick = (data: any) => {
+    if (data && data.payload) {
+      handleBubbleClick(data.payload);
+    }
+  };
+
   return (
-    <div className="h-full bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
+    <div className="h-full bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden relative">
       {/* Header */}
       <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-purple-950/50 to-transparent">
         <div className="flex items-center gap-3">
@@ -178,7 +184,10 @@ const CompetitorAnatomy = ({ profile }: CompetitorAnatomyProps) => {
                   return null;
                 }}
               />
-              <Scatter data={chartData} onClick={handleBubbleClick}>
+              <Scatter 
+                data={chartData} 
+                onClick={handleScatterClick}
+              >
                 {chartData.map((entry, index) => (
                   <Cell
                     key={index}
@@ -187,6 +196,7 @@ const CompetitorAnatomy = ({ profile }: CompetitorAnatomyProps) => {
                     stroke={entry.isUser ? "#10b981" : (entry.color || COLORS[index % COLORS.length])}
                     strokeWidth={2}
                     cursor={entry.isUser ? "default" : "pointer"}
+                    onClick={() => handleBubbleClick(entry)}
                   />
                 ))}
               </Scatter>
