@@ -1,13 +1,37 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Radar, ArrowLeft } from "lucide-react";
+import { Search, Radar, ArrowLeft, History, Trash2, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CompanyProfile } from "@/pages/StrategicRadar";
 import { Link } from "react-router-dom";
+import { format } from "date-fns-jalali";
+
+interface StoredAnalysis {
+  id: string;
+  company_name: string;
+  company_ticker: string | null;
+  company_logo: string | null;
+  industry: string | null;
+  sector: string | null;
+  competitors: { name: string; marketShare: number; innovation: number }[];
+  revenue: string | null;
+  revenue_value: number | null;
+  cash_liquidity: string | null;
+  strategic_goal: string | null;
+  technology_lag: number;
+  maturity_score: number;
+  created_at: string;
+}
 
 interface RadarInputPhaseProps {
   onScanComplete: (profile: CompanyProfile) => void;
+  savedAnalyses: StoredAnalysis[];
+  isLoadingHistory: boolean;
+  onLoadAnalysis: (analysis: StoredAnalysis) => void;
+  onDeleteAnalysis: (id: string) => void;
+  showHistory: boolean;
+  setShowHistory: (show: boolean) => void;
 }
 
 // Simulated company database
@@ -62,7 +86,15 @@ const mockCompanyData: Record<string, Partial<CompanyProfile>> = {
   },
 };
 
-const RadarInputPhase = ({ onScanComplete }: RadarInputPhaseProps) => {
+const RadarInputPhase = ({ 
+  onScanComplete, 
+  savedAnalyses, 
+  isLoadingHistory,
+  onLoadAnalysis,
+  onDeleteAnalysis,
+  showHistory,
+  setShowHistory 
+}: RadarInputPhaseProps) => {
   const [query, setQuery] = useState("");
   const [isScanning, setIsScanning] = useState(false);
 
@@ -100,13 +132,84 @@ const RadarInputPhase = ({ onScanComplete }: RadarInputPhaseProps) => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4" dir="rtl">
-      {/* Back Button */}
-      <Link to="/dashboard" className="absolute top-6 right-6">
-        <Button variant="ghost" className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30">
-          <ArrowLeft className="w-4 h-4 ml-2" />
-          بازگشت به داشبورد
-        </Button>
-      </Link>
+      {/* Back Button & History Toggle */}
+      <div className="absolute top-6 right-6 flex items-center gap-2">
+        {savedAnalyses.length > 0 && (
+          <Button 
+            variant="ghost" 
+            onClick={() => setShowHistory(!showHistory)}
+            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30"
+          >
+            <History className="w-4 h-4 ml-2" />
+            تاریخچه ({savedAnalyses.length})
+          </Button>
+        )}
+        <Link to="/dashboard">
+          <Button variant="ghost" className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30">
+            <ArrowLeft className="w-4 h-4 ml-2" />
+            بازگشت
+          </Button>
+        </Link>
+      </div>
+
+      {/* History Panel */}
+      {showHistory && (
+        <motion.div
+          initial={{ opacity: 0, x: 300 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 300 }}
+          className="fixed top-0 left-0 h-full w-80 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-50 overflow-y-auto"
+        >
+          <div className="p-4 border-b border-slate-700/50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-white font-semibold">تحلیل‌های قبلی</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowHistory(false)}>
+                ✕
+              </Button>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            {isLoadingHistory ? (
+              <div className="text-slate-400 text-center py-8">در حال بارگذاری...</div>
+            ) : savedAnalyses.length === 0 ? (
+              <div className="text-slate-400 text-center py-8">تحلیلی یافت نشد</div>
+            ) : (
+              savedAnalyses.map((analysis) => (
+                <div
+                  key={analysis.id}
+                  className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-cyan-500/30 transition-colors cursor-pointer group"
+                  onClick={() => onLoadAnalysis(analysis)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{analysis.company_logo || "🏢"}</span>
+                      <div>
+                        <p className="text-white font-medium text-sm">{analysis.company_name}</p>
+                        <p className="text-slate-500 text-xs">{analysis.industry}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteAnalysis(analysis.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 hover:bg-red-950/30 h-8 w-8 p-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-500 text-xs">
+                    <Clock className="w-3 h-3" />
+                    {format(new Date(analysis.created_at), "yyyy/MM/dd - HH:mm")}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Logo & Title */}
       <motion.div

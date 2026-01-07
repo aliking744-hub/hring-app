@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Settings2, Radar } from "lucide-react";
+import { Settings2, Radar, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CompanyProfile } from "@/pages/StrategicRadar";
 import GlobalBenchmarkEngine from "./sections/GlobalBenchmarkEngine";
@@ -11,9 +11,11 @@ import { Link } from "react-router-dom";
 interface RadarDashboardProps {
   profile: CompanyProfile;
   onEditProfile: () => void;
+  onSave?: () => void;
+  isSaving?: boolean;
 }
 
-const RadarDashboard = ({ profile, onEditProfile }: RadarDashboardProps) => {
+const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashboardProps) => {
   return (
     <div className="min-h-screen p-4 md:p-6" dir="rtl">
       {/* Header */}
@@ -43,6 +45,22 @@ const RadarDashboard = ({ profile, onEditProfile }: RadarDashboardProps) => {
         </div>
 
         <div className="flex items-center gap-2">
+          {onSave && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSave}
+              disabled={isSaving}
+              className="border-emerald-700 text-emerald-300 hover:text-white hover:bg-emerald-800"
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 ml-2" />
+              )}
+              ذخیره
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"

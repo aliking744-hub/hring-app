@@ -1133,6 +1133,63 @@ export type Database = {
         }
         Relationships: []
       }
+      strategic_radar_analyses: {
+        Row: {
+          cash_liquidity: string | null
+          company_logo: string | null
+          company_name: string
+          company_ticker: string | null
+          competitors: Json | null
+          created_at: string
+          id: string
+          industry: string | null
+          maturity_score: number | null
+          revenue: string | null
+          revenue_value: number | null
+          sector: string | null
+          strategic_goal: string | null
+          technology_lag: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cash_liquidity?: string | null
+          company_logo?: string | null
+          company_name: string
+          company_ticker?: string | null
+          competitors?: Json | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          maturity_score?: number | null
+          revenue?: string | null
+          revenue_value?: number | null
+          sector?: string | null
+          strategic_goal?: string | null
+          technology_lag?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cash_liquidity?: string | null
+          company_logo?: string | null
+          company_name?: string
+          company_ticker?: string | null
+          competitors?: Json | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          maturity_score?: number | null
+          revenue?: string | null
+          revenue_value?: number | null
+          sector?: string | null
+          strategic_goal?: string | null
+          technology_lag?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       support_chat_logs: {
         Row: {
           created_at: string
