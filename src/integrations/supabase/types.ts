@@ -1359,6 +1359,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_ip_address: { Args: { ip: string }; Returns: string }
       is_ceo: { Args: { _user_id: string }; Returns: boolean }
       is_company_ceo: { Args: { _user_id: string }; Returns: boolean }
       is_company_member: {
