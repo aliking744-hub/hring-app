@@ -61,17 +61,19 @@ const CompetitorComparison = ({ profile }: CompetitorComparisonProps) => {
             innovation: competitor.innovation,
           });
         } else {
+          console.error('SWOT API returned error or no success:', error, data);
           // Fallback data
           results.push({
             name: competitor.name,
             status: "stable",
-            strengths: ["در حال بررسی"],
-            weaknesses: ["در حال بررسی"],
-            opportunities: ["در حال بررسی"],
-            threats: ["در حال بررسی"],
+            strengths: ["API در حال بارگذاری - لطفاً مجدداً تلاش کنید"],
+            weaknesses: ["API در حال بارگذاری - لطفاً مجدداً تلاش کنید"],
+            opportunities: ["API در حال بارگذاری - لطفاً مجدداً تلاش کنید"],
+            threats: ["API در حال بارگذاری - لطفاً مجدداً تلاش کنید"],
             marketShare: competitor.marketShare,
             innovation: competitor.innovation,
           });
+          toast.error(`خطا در تحلیل ${competitor.name}`);
         }
       } catch (err) {
         console.error('Error fetching competitor:', err);
