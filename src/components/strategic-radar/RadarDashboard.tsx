@@ -2,11 +2,12 @@ import { motion } from "framer-motion";
 import { Settings2, Radar, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CompanyProfile } from "@/pages/StrategicRadar";
-import GlobalBenchmarkEngine from "./sections/GlobalBenchmarkEngine";
+import MarketPosition from "./sections/MarketPosition";
+import GlobalTrends from "./sections/GlobalTrends";
+import TechnologyEdge from "./sections/TechnologyEdge";
 import CompetitorAnatomy from "./sections/CompetitorAnatomy";
 import CompetitorComparison from "./sections/CompetitorComparison";
-import GapFitAnalysis from "./sections/GapFitAnalysis";
-import StrategyPrescription from "./sections/StrategyPrescription";
+import StrategicRecommendations from "./sections/StrategicRecommendations";
 import { Link } from "react-router-dom";
 
 interface RadarDashboardProps {
@@ -75,51 +76,61 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
       </motion.header>
 
       {/* Bento Grid Dashboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        {/* Section A: Global Benchmark Engine */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+        {/* Section A: Market Position */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <GlobalBenchmarkEngine profile={profile} />
+          <MarketPosition profile={profile} />
         </motion.div>
 
-        {/* Section B: Competitor Anatomy */}
+        {/* Section B: Global Trends */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <GlobalTrends profile={profile} />
+        </motion.div>
+
+        {/* Section C: Technology Edge */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <CompetitorAnatomy profile={profile} />
+          <TechnologyEdge profile={profile} />
         </motion.div>
 
-        {/* Section C: Competitor Comparison & SWOT */}
+        {/* Section D: Competitor Anatomy */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.25 }}
+        >
+          <CompetitorAnatomy profile={profile} />
+        </motion.div>
+
+        {/* Section E: Competitor Comparison & SWOT */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
           className="lg:col-span-2"
         >
           <CompetitorComparison profile={profile} />
         </motion.div>
 
-        {/* Section D: Gap & Fit Analysis */}
+        {/* Section F: Strategic Recommendations */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="lg:col-span-2 xl:col-span-3"
         >
-          <GapFitAnalysis profile={profile} />
-        </motion.div>
-
-        {/* Section E: Strategy Prescription */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <StrategyPrescription profile={profile} />
+          <StrategicRecommendations profile={profile} />
         </motion.div>
       </div>
     </div>

@@ -74,3 +74,15 @@ verify_jwt = false
 
 [functions.analyze-competitor-swot]
 verify_jwt = false
+
+[functions.analyze-market-position]
+verify_jwt = false
+
+[functions.analyze-global-trends]
+verify_jwt = false
+
+[functions.analyze-tech-edge]
+verify_jwt = false
+
+[functions.generate-strategic-recommendations]
+verify_jwt = false
