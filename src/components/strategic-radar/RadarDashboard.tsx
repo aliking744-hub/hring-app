@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CompanyProfile } from "@/pages/StrategicRadar";
 import GlobalBenchmarkEngine from "./sections/GlobalBenchmarkEngine";
 import CompetitorAnatomy from "./sections/CompetitorAnatomy";
+import CompetitorComparison from "./sections/CompetitorComparison";
 import GapFitAnalysis from "./sections/GapFitAnalysis";
 import StrategyPrescription from "./sections/StrategyPrescription";
 import { Link } from "react-router-dom";
@@ -93,7 +94,17 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           <CompetitorAnatomy profile={profile} />
         </motion.div>
 
-        {/* Section C: Gap & Fit Analysis */}
+        {/* Section C: Competitor Comparison & SWOT */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.25 }}
+          className="lg:col-span-2"
+        >
+          <CompetitorComparison profile={profile} />
+        </motion.div>
+
+        {/* Section D: Gap & Fit Analysis */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -102,7 +113,7 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           <GapFitAnalysis profile={profile} />
         </motion.div>
 
-        {/* Section D: Strategy Prescription */}
+        {/* Section E: Strategy Prescription */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
