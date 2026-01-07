@@ -8,6 +8,7 @@ import TechnologyEdge from "./sections/TechnologyEdge";
 import CompetitorAnatomy from "./sections/CompetitorAnatomy";
 import CompetitorComparison from "./sections/CompetitorComparison";
 import StrategicRecommendations from "./sections/StrategicRecommendations";
+import DailyMonitor from "./sections/DailyMonitor";
 import { Link } from "react-router-dom";
 
 interface RadarDashboardProps {
@@ -123,11 +124,21 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           <CompetitorComparison profile={profile} />
         </motion.div>
 
-        {/* Section F: Strategic Recommendations */}
+        {/* Section F: Daily Monitor */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
+          className="lg:col-span-2 xl:col-span-3"
+        >
+          <DailyMonitor profile={profile} />
+        </motion.div>
+
+        {/* Section G: Strategic Recommendations */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
           className="lg:col-span-2 xl:col-span-3"
         >
           <StrategicRecommendations profile={profile} />
