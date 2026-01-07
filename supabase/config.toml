@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.analyze-competitor]
 verify_jwt = false
+
+[functions.analyze-competitor-swot]
+verify_jwt = false
