@@ -124,7 +124,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
         >
-          <GlobalTrends profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <GlobalTrends profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section C: Technology Edge */}
@@ -133,7 +135,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <TechnologyEdge profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <TechnologyEdge profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section D: Competitor Anatomy */}
@@ -142,7 +146,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.25 }}
         >
-          <CompetitorAnatomy profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <CompetitorAnatomy profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section D2: Data Sources */}
@@ -151,7 +157,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.27 }}
         >
-          <DataSources profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <DataSources profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section E: Competitor Comparison & SWOT */}
@@ -161,7 +169,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           transition={{ delay: 0.3 }}
           className="lg:col-span-2"
         >
-          <CompetitorComparison profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <CompetitorComparison profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section F: Funding Tracker */}
@@ -171,7 +181,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           transition={{ delay: 0.35 }}
           className="lg:col-span-2 xl:col-span-3"
         >
-          <FundingTracker profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <FundingTracker profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section G: Value Chain Map */}
@@ -181,7 +193,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           transition={{ delay: 0.4 }}
           className="lg:col-span-2 xl:col-span-3"
         >
-          <ValueChainMap profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <ValueChainMap profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section H: Tech Stack Comparison */}
@@ -191,7 +205,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           transition={{ delay: 0.45 }}
           className="lg:col-span-2 xl:col-span-3"
         >
-          <TechStackComparison profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <TechStackComparison profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section I: Patent Analysis */}
@@ -201,7 +217,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           transition={{ delay: 0.5 }}
           className="lg:col-span-2 xl:col-span-3"
         >
-          <PatentAnalysis profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <PatentAnalysis profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section J: Market Alerts */}
@@ -211,7 +229,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           transition={{ delay: 0.55 }}
           className="lg:col-span-2 xl:col-span-3"
         >
-          <MarketAlerts profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <MarketAlerts profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section K: Daily Monitor */}
@@ -221,7 +241,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           transition={{ delay: 0.6 }}
           className="lg:col-span-2 xl:col-span-3"
         >
-          <DailyMonitor profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <DailyMonitor profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section L: Strategic Recommendations */}
@@ -231,7 +253,9 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           transition={{ delay: 0.65 }}
           className="lg:col-span-2 xl:col-span-3"
         >
-          <StrategicRecommendations profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <StrategicRecommendations profile={profile} />
+          </Suspense>
         </motion.div>
       </div>
     </div>
