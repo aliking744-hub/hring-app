@@ -168,44 +168,60 @@ const FundingTracker = ({ profile }: FundingTrackerProps) => {
   const setSampleData = () => {
     const competitors = profile.competitors?.map(c => c.name) || [];
     
-    const sampleValuations = [
+    // Use REAL revenue data from profile
+    const userRevenue = profile.revenueValue || 50000;
+    const userRevenueDisplay = profile.revenue || `${userRevenue.toLocaleString('fa-IR')} میلیارد ریال`;
+    
+    // Calculate valuation trend based on maturity score
+    const userTrend = profile.maturityScore >= 60 ? "up" : profile.maturityScore >= 40 ? "stable" : "down";
+    const userChange = profile.maturityScore >= 60 ? 15 : profile.maturityScore >= 40 ? 2 : -5;
+    
+    const sampleValuations: CompanyValuation[] = [
       {
         name: profile.name,
-        marketCap: "۵۰,۰۰۰ میلیارد ریال",
-        marketCapUSD: "$1.2B",
+        marketCap: userRevenueDisplay,
+        marketCapUSD: `$${(userRevenue / 42000).toFixed(1)}M`, // Approximate conversion
         peRatio: 12.5,
         pbRatio: 2.3,
-        valuationTrend: "up" as const,
-        changePercent: 15,
-        stockSymbol: "نماد۱"
+        valuationTrend: userTrend as "up" | "down" | "stable",
+        changePercent: userChange,
+        stockSymbol: profile.ticker || "نماد"
       },
-      ...(competitors.slice(0, 3).map((name, i) => ({
-        name,
-        marketCap: `${30 - i * 5},۰۰۰ میلیارد ریال`,
-        marketCapUSD: `$${0.8 - i * 0.2}B`,
-        peRatio: 10 + i * 2,
-        pbRatio: 1.8 + i * 0.3,
-        valuationTrend: (["up", "down", "stable"] as const)[i % 3],
-        changePercent: [12, -5, 2][i % 3],
-        stockSymbol: `نماد${i + 2}`
-      })))
+      // Competitors with their real market share data
+      ...(profile.competitors.slice(0, 3).map((comp, i) => {
+        // Estimate competitor revenue based on market share ratio
+        const competitorRevenue = Math.round(userRevenue * (comp.marketShare / 100) * (1 + Math.random() * 0.5));
+        const competitorTrend = comp.innovation >= 60 ? "up" : comp.innovation >= 40 ? "stable" : "down";
+        
+        return {
+          name: comp.name,
+          marketCap: `${competitorRevenue.toLocaleString('fa-IR')} میلیارد ریال`,
+          marketCapUSD: `$${(competitorRevenue / 42000).toFixed(1)}M`,
+          peRatio: 10 + i * 2,
+          pbRatio: 1.8 + i * 0.3,
+          valuationTrend: competitorTrend as "up" | "down" | "stable",
+          changePercent: comp.innovation >= 60 ? 12 : comp.innovation >= 40 ? 2 : -5,
+          stockSymbol: `نماد${i + 2}`
+        };
+      }))
     ];
 
     setValuations(sampleValuations);
     generateHistoricalData(sampleValuations);
 
+    // Deals based on industry
     setDeals([
       {
         type: "investment",
-        company: "استارتاپ فین‌تک",
+        company: `استارتاپ ${profile.industry}`,
         amount: "۵۰۰ میلیارد ریال",
         date: "دی ۱۴۰۴",
         investor: "صندوق سرمایه‌گذاری نوآوری",
-        description: "سرمایه‌گذاری سری B برای گسترش خدمات پرداخت"
+        description: `سرمایه‌گذاری سری B در حوزه ${profile.sector}`
       },
       {
         type: "acquisition",
-        company: "شرکت لجستیک سریع",
+        company: "شرکت زیرمجموعه",
         amount: "۱,۲۰۰ میلیارد ریال",
         date: "آذر ۱۴۰۴",
         investor: competitors[0] || "رقیب اصلی",
@@ -213,7 +229,7 @@ const FundingTracker = ({ profile }: FundingTrackerProps) => {
       },
       {
         type: "ipo",
-        company: "پلتفرم آموزش آنلاین",
+        company: `پلتفرم ${profile.sector}`,
         amount: "۲,۰۰۰ میلیارد ریال",
         date: "بهمن ۱۴۰۴",
         investor: "عرضه اولیه بورس",
@@ -222,22 +238,22 @@ const FundingTracker = ({ profile }: FundingTrackerProps) => {
     ]);
 
     setMetrics({
-      totalMarketCap: "۲۵۰,۰۰۰ میلیارد ریال",
+      totalMarketCap: `${(userRevenue * 5).toLocaleString('fa-IR')} میلیارد ریال`,
       averagePE: 14.2,
-      topPerformer: profile.name,
-      worstPerformer: competitors[2] || "شرکت ج",
-      hotSectors: ["فین‌تک", "هوش مصنوعی", "لجستیک"],
-      fundingTrend: "increasing"
+      topPerformer: profile.maturityScore >= 60 ? profile.name : (competitors[0] || profile.name),
+      worstPerformer: profile.maturityScore < 40 ? profile.name : (competitors[2] || "رقیب"),
+      hotSectors: [profile.industry, profile.sector, "فناوری"].filter(Boolean),
+      fundingTrend: profile.maturityScore >= 50 ? "increasing" : "stable"
     });
 
     setUpcomingIPOs([
       {
-        company: "استارتاپ تحلیل داده",
+        company: `استارتاپ تحلیل ${profile.sector}`,
         expectedDate: "اردیبهشت ۱۴۰۵",
         estimatedValue: "۳,۰۰۰ میلیارد ریال"
       },
       {
-        company: "پلتفرم سلامت دیجیتال",
+        company: `پلتفرم ${profile.industry}`,
         expectedDate: "خرداد ۱۴۰۵",
         estimatedValue: "۱,۵۰۰ میلیارد ریال"
       }
