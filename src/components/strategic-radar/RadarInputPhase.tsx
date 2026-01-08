@@ -93,12 +93,8 @@ const RadarInputPhase = ({
         cashLiquidity: intel.cashLiquidity,
         technologyLag: intel.technologyLag,
         maturityScore: intel.maturityScore,
+        citations: data.citations || [], // Store API sources
       };
-
-      // Show citations if available
-      if (data.citations && data.citations.length > 0) {
-        console.log('Data sources:', data.citations);
-      }
 
       setIsScanning(false);
       setScanStatus("");
