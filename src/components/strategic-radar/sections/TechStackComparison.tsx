@@ -113,29 +113,52 @@ const TechStackComparison = ({ profile }: TechStackComparisonProps) => {
     setIsLoading(true);
     
     try {
-      // Generate tech scores for radar chart
+      // Generate tech scores based on REAL profile data
       const companies = [profile.name, ...profile.competitors.slice(0, 3).map(c => c.name)];
-      const scores: CompanyTechScore[] = companies.map((company, i) => ({
-        company,
-        ai: i === 0 ? 75 + Math.random() * 20 : 40 + Math.random() * 50,
-        cloud: i === 0 ? 80 + Math.random() * 15 : 45 + Math.random() * 45,
-        security: i === 0 ? 85 + Math.random() * 10 : 50 + Math.random() * 40,
-        mobile: i === 0 ? 70 + Math.random() * 25 : 35 + Math.random() * 55,
-        data: i === 0 ? 78 + Math.random() * 18 : 40 + Math.random() * 50,
-        devops: i === 0 ? 82 + Math.random() * 15 : 45 + Math.random() * 45,
-      }));
+      
+      // User company scores based on actual maturityScore
+      const userBaseScore = profile.maturityScore || 70;
+      const userTechLag = profile.technologyLag || 5;
+      
+      const scores: CompanyTechScore[] = companies.map((company, i) => {
+        if (i === 0) {
+          // User company - based on real maturityScore
+          return {
+            company,
+            ai: Math.min(100, userBaseScore + (10 - userTechLag) * 2),
+            cloud: Math.min(100, userBaseScore + 5),
+            security: Math.min(100, userBaseScore + 10),
+            mobile: Math.min(100, userBaseScore - 5),
+            data: Math.min(100, userBaseScore + 3),
+            devops: Math.min(100, userBaseScore + 7),
+          };
+        } else {
+          // Competitors - based on their innovation score from API
+          const competitor = profile.competitors[i - 1];
+          const baseScore = competitor?.innovation || 50;
+          return {
+            company,
+            ai: Math.min(100, baseScore + Math.random() * 15),
+            cloud: Math.min(100, baseScore + Math.random() * 10),
+            security: Math.min(100, baseScore + Math.random() * 20),
+            mobile: Math.min(100, baseScore - 10 + Math.random() * 20),
+            data: Math.min(100, baseScore + Math.random() * 10),
+            devops: Math.min(100, baseScore + Math.random() * 15),
+          };
+        }
+      });
       setTechScores(scores);
 
-      // Generate adoption matrix
+      // Generate adoption matrix based on scores
       const updatedCategories = TECH_CATEGORIES.map(cat => ({
         ...cat,
         items: cat.items.map(item => ({
           ...item,
           adoption: companies.reduce((acc, company, i) => {
+            const score = i === 0 ? userBaseScore : (profile.competitors[i - 1]?.innovation || 50);
+            const threshold = score / 100;
             const rand = Math.random();
-            acc[company] = i === 0 
-              ? (rand > 0.2 ? "full" : "partial")
-              : (rand > 0.6 ? "full" : rand > 0.3 ? "partial" : "none");
+            acc[company] = rand < threshold * 0.8 ? "full" : rand < threshold * 1.2 ? "partial" : "none";
             return acc;
           }, {} as Record<string, "full" | "partial" | "none">)
         }))
