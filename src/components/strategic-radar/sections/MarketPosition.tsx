@@ -112,40 +112,52 @@ const MarketPosition = ({ profile }: MarketPositionProps) => {
   };
 
   const generateQuadrantData = () => {
-    // Generate quadrant data based on profile and competitors
+    // Generate quadrant data based on REAL profile data and competitors from API
+    const categoryMapping = getCategoryFromIndustry(profile.industry);
+    
+    // Calculate user position based on maturity score and market data
+    const userMarketStrength = Math.min(95, Math.max(20, profile.maturityScore + (Math.random() * 10 - 5)));
+    const userIndustryAdoption = Math.min(95, Math.max(25, 100 - profile.technologyLag * 5));
+    
     const players: QuadrantPlayer[] = [
-      // User company
+      // User company - positioned based on real data
       {
         name: profile.name,
-        marketStrength: 65 + Math.random() * 20,
-        industryAdoption: 70 + Math.random() * 20,
-        category: "fintech",
+        marketStrength: userMarketStrength,
+        industryAdoption: userIndustryAdoption,
+        category: categoryMapping,
         isUser: true,
         size: 800
       },
-      // Competitors in different categories
-      ...profile.competitors.slice(0, 3).map((c, i) => ({
-        name: c.name,
-        marketStrength: 40 + Math.random() * 40,
-        industryAdoption: 35 + Math.random() * 50,
-        category: (["payment", "ai", "ecommerce"] as const)[i % 3],
-        isUser: false,
-        size: 400 + c.marketShare * 15
-      })),
-      // Additional market players for context
-      { name: "آسان پرداخت", marketStrength: 75, industryAdoption: 85, category: "payment", isUser: false, size: 500 },
-      { name: "زرین‌پال", marketStrength: 65, industryAdoption: 80, category: "payment", isUser: false, size: 450 },
-      { name: "اسنپ پی", marketStrength: 80, industryAdoption: 75, category: "fintech", isUser: false, size: 600 },
-      { name: "دیجی‌کالا", marketStrength: 85, industryAdoption: 90, category: "ecommerce", isUser: false, size: 700 },
-      { name: "ترب", marketStrength: 55, industryAdoption: 60, category: "ecommerce", isUser: false, size: 350 },
-      { name: "پارسیان AI", marketStrength: 35, industryAdoption: 45, category: "ai", isUser: false, size: 300 },
-      { name: "هوشمند ایران", marketStrength: 25, industryAdoption: 55, category: "ai", isUser: false, size: 280 },
-      { name: "تیپاکس", marketStrength: 70, industryAdoption: 65, category: "logistics", isUser: false, size: 450 },
-      { name: "الوپیک", marketStrength: 45, industryAdoption: 50, category: "logistics", isUser: false, size: 320 },
-      { name: "ماهکس", marketStrength: 30, industryAdoption: 35, category: "logistics", isUser: false, size: 250 },
-      { name: "رباتیک نوین", marketStrength: 20, industryAdoption: 25, category: "ai", isUser: false, size: 200 },
+      // Real competitors from API with their market share data
+      ...profile.competitors.map((c, i) => {
+        // Position competitors based on their market share and innovation scores
+        const competitorStrength = Math.min(95, Math.max(10, c.marketShare * 1.2 + (Math.random() * 15)));
+        const competitorAdoption = Math.min(95, Math.max(15, c.innovation + (Math.random() * 10 - 5)));
+        
+        return {
+          name: c.name,
+          marketStrength: competitorStrength,
+          industryAdoption: competitorAdoption,
+          category: categoryMapping, // Same industry as user
+          isUser: false,
+          size: 300 + c.marketShare * 12
+        };
+      }),
     ];
+    
     setQuadrantData(players);
+  };
+  
+  // Determine category based on industry
+  const getCategoryFromIndustry = (industry: string): QuadrantPlayer["category"] => {
+    const lower = industry.toLowerCase();
+    if (lower.includes("بانک") || lower.includes("مالی") || lower.includes("پرداخت")) return "payment";
+    if (lower.includes("فین‌تک") || lower.includes("fintech") || lower.includes("سرمایه")) return "fintech";
+    if (lower.includes("هوش") || lower.includes("ai") || lower.includes("فناوری")) return "ai";
+    if (lower.includes("تجارت") || lower.includes("فروشگاه") || lower.includes("خرده")) return "ecommerce";
+    if (lower.includes("لجستیک") || lower.includes("حمل") || lower.includes("ترابری")) return "logistics";
+    return "other";
   };
 
   const setDefaultQuadrantData = () => {
