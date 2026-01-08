@@ -2,20 +2,32 @@ import { motion } from "framer-motion";
 import { Settings2, Radar, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CompanyProfile } from "@/pages/StrategicRadar";
-import MarketPosition from "./sections/MarketPosition";
-import GlobalTrends from "./sections/GlobalTrends";
-import TechnologyEdge from "./sections/TechnologyEdge";
-import CompetitorAnatomy from "./sections/CompetitorAnatomy";
-import CompetitorComparison from "./sections/CompetitorComparison";
-import StrategicRecommendations from "./sections/StrategicRecommendations";
-import DailyMonitor from "./sections/DailyMonitor";
-import ValueChainMap from "./sections/ValueChainMap";
-import FundingTracker from "./sections/FundingTracker";
-import TechStackComparison from "./sections/TechStackComparison";
-import MarketAlerts from "./sections/MarketAlerts";
-import PatentAnalysis from "./sections/PatentAnalysis";
-import DataSources from "./sections/DataSources";
+import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load heavy components for better performance
+const OverallScore = lazy(() => import("./sections/OverallScore"));
+const MarketPosition = lazy(() => import("./sections/MarketPosition"));
+const GlobalTrends = lazy(() => import("./sections/GlobalTrends"));
+const TechnologyEdge = lazy(() => import("./sections/TechnologyEdge"));
+const CompetitorAnatomy = lazy(() => import("./sections/CompetitorAnatomy"));
+const CompetitorComparison = lazy(() => import("./sections/CompetitorComparison"));
+const StrategicRecommendations = lazy(() => import("./sections/StrategicRecommendations"));
+const DailyMonitor = lazy(() => import("./sections/DailyMonitor"));
+const ValueChainMap = lazy(() => import("./sections/ValueChainMap"));
+const FundingTracker = lazy(() => import("./sections/FundingTracker"));
+const TechStackComparison = lazy(() => import("./sections/TechStackComparison"));
+const MarketAlerts = lazy(() => import("./sections/MarketAlerts"));
+const PatentAnalysis = lazy(() => import("./sections/PatentAnalysis"));
+const DataSources = lazy(() => import("./sections/DataSources"));
+
+const SectionLoader = () => (
+  <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800/50">
+    <Skeleton className="h-6 w-32 mb-4 bg-slate-700" />
+    <Skeleton className="h-48 w-full bg-slate-800" />
+  </div>
+);
 
 interface RadarDashboardProps {
   profile: CompanyProfile;
@@ -84,13 +96,26 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
 
       {/* Bento Grid Dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+        {/* Section 0: Overall Score */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.05 }}
+        >
+          <Suspense fallback={<SectionLoader />}>
+            <OverallScore profile={profile} />
+          </Suspense>
+        </motion.div>
+
         {/* Section A: Market Position */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <MarketPosition profile={profile} />
+          <Suspense fallback={<SectionLoader />}>
+            <MarketPosition profile={profile} />
+          </Suspense>
         </motion.div>
 
         {/* Section B: Global Trends */}
