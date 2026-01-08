@@ -19,7 +19,7 @@ const ValueChainMap = lazy(() => import("./sections/ValueChainMap"));
 const FundingTracker = lazy(() => import("./sections/FundingTracker"));
 const TechStackComparison = lazy(() => import("./sections/TechStackComparison"));
 const MarketAlerts = lazy(() => import("./sections/MarketAlerts"));
-const PatentAnalysis = lazy(() => import("./sections/PatentAnalysis"));
+
 const DataSources = lazy(() => import("./sections/DataSources"));
 
 const SectionLoader = () => (
@@ -210,17 +210,6 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           </Suspense>
         </motion.div>
 
-        {/* Section I: Patent Analysis */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="lg:col-span-2 xl:col-span-3"
-        >
-          <Suspense fallback={<SectionLoader />}>
-            <PatentAnalysis profile={profile} />
-          </Suspense>
-        </motion.div>
 
         {/* Section J: Market Alerts */}
         <motion.div
