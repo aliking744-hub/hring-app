@@ -12,7 +12,8 @@ import {
   Building2,
   Zap,
   Target,
-  ExternalLink
+  ExternalLink,
+  Flame
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -58,26 +59,66 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
   const fetchDailyIntelligence = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('daily-competitor-monitor', {
+      const competitorNames = profile.competitors?.map(c => c.name) || [];
+      
+      const { data, error } = await supabase.functions.invoke('search-competitor-news', {
         body: {
           companyName: profile.name,
-          industry: profile.industry,
-          sector: profile.sector,
-          competitors: profile.competitors || []
+          competitors: competitorNames,
+          industry: profile.industry
         }
       });
 
       if (error) throw error;
 
-      if (data?.success) {
-        setNews(data.data.news || []);
-        setAlerts(data.data.alerts || []);
-        setInsights(data.data.insights || null);
+      if (data?.success && data.news) {
+        // Map the news from search-competitor-news format
+        const mappedNews: NewsItem[] = data.news.map((item: any) => ({
+          title: item.title,
+          source: item.source || "وب",
+          date: item.date || new Date().toLocaleDateString('fa-IR'),
+          sentiment: item.sentiment || "neutral",
+          competitor: item.competitor || profile.name,
+          category: item.category || "اخبار",
+          summary: item.summary || "",
+          url: item.url
+        }));
+
+        setNews(mappedNews);
+        
+        // Generate alerts from news with negative sentiment
+        const generatedAlerts: CompetitorAlert[] = mappedNews
+          .filter((n: NewsItem) => n.sentiment !== "neutral")
+          .slice(0, 3)
+          .map((n: NewsItem) => ({
+            competitor: n.competitor,
+            type: n.sentiment === "positive" ? "growth" as const : "decline" as const,
+            description: n.summary || n.title,
+            impact: n.sentiment === "positive" ? "medium" as const : "high" as const,
+            timestamp: new Date().toISOString()
+          }));
+        
+        setAlerts(generatedAlerts);
+        
+        // Generate insights based on news
+        const positiveNews = mappedNews.filter((n: NewsItem) => n.sentiment === "positive");
+        const negativeNews = mappedNews.filter((n: NewsItem) => n.sentiment === "negative");
+        
+        setInsights({
+          marketMoves: mappedNews.slice(0, 2).map((n: NewsItem) => n.title.slice(0, 50) + "..."),
+          competitorShifts: competitorNames.slice(0, 2).map((name: string) => `فعالیت جدید از ${name}`),
+          opportunities: positiveNews.slice(0, 2).map((n: NewsItem) => n.summary || "فرصت جدید شناسایی شد"),
+          warnings: negativeNews.slice(0, 2).map((n: NewsItem) => n.summary || "هشدار رقابتی")
+        });
+        
         setLastUpdate(new Date());
-        toast.success("اطلاعات روزانه به‌روزرسانی شد");
+        toast.success("اخبار واقعی از وب دریافت شد");
+      } else {
+        throw new Error("No news data received");
       }
     } catch (error) {
-      console.error("Error fetching daily intelligence:", error);
+      console.error("Error fetching news:", error);
+      toast.error("خطا در دریافت اخبار - نمایش داده نمونه");
       setSampleData();
     } finally {
       setIsLoading(false);
@@ -134,13 +175,6 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
         description: "خروج مدیر ارشد فناوری",
         impact: "medium",
         timestamp: new Date().toISOString()
-      },
-      {
-        competitor: competitors[0] || "رقیب ۱",
-        type: "product",
-        description: "اضافه کردن قابلیت هوش مصنوعی",
-        impact: "high",
-        timestamp: new Date().toISOString()
       }
     ]);
 
@@ -196,6 +230,12 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
     }
   };
 
+  const handleNewsClick = (url: string | undefined) => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <Card className="bg-gradient-to-br from-slate-900/80 to-indigo-900/40 border-indigo-500/20 p-4 md:p-6 h-full backdrop-blur-sm">
       {/* Header */}
@@ -219,7 +259,7 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
           className="border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10"
         >
           <RefreshCw className={`w-4 h-4 ml-2 ${isLoading ? 'animate-spin' : ''}`} />
-          به‌روزرسانی
+          {isLoading ? "در حال جستجو..." : "جستجوی اخبار واقعی"}
         </Button>
       </div>
 
@@ -229,15 +269,19 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
           <h4 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
             <Clock className="w-4 h-4" />
             اخبار تازه رقبا
+            {news.length > 0 && news[0].url && (
+              <Badge variant="outline" className="text-xs border-orange-500/30 text-orange-400">
+                <Flame className="w-3 h-3 ml-1" />
+                زنده از وب
+              </Badge>
+            )}
           </h4>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {news.map((item, idx) => (
-              <a
+              <div
                 key={idx}
-                href={item.url || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-indigo-500/30 hover:bg-slate-800/70 transition-all cursor-pointer group"
+                onClick={() => handleNewsClick(item.url)}
+                className={`block p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-indigo-500/30 hover:bg-slate-800/70 transition-all group ${item.url ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
@@ -248,7 +292,9 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
                         {item.competitor}
                       </Badge>
                       <span className="text-xs text-slate-500">{item.category}</span>
-                      <ExternalLink className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {item.url && (
+                        <ExternalLink className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
                     </div>
                     <p className="text-sm text-white font-medium group-hover:text-indigo-300 transition-colors">{item.title}</p>
                     <p className="text-xs text-slate-400 mt-1">{item.summary}</p>
@@ -258,7 +304,7 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
                     <div>{item.date}</div>
                   </div>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
         </div>
@@ -344,8 +390,8 @@ const DailyMonitor = ({ profile }: DailyMonitorProps) => {
 
       {/* AI Badge */}
       <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-500">
-        <Zap className="w-3 h-3 text-indigo-400" />
-        تحلیل با Perplexity AI - رصد ۲۴ ساعته منابع خبری
+        <Flame className="w-3 h-3 text-orange-400" />
+        جستجوی واقعی با Firecrawl - کلیک روی هر خبر برای مشاهده منبع
       </div>
     </Card>
   );
