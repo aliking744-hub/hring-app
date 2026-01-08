@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Radar, ArrowLeft, History, Trash2, Clock, AlertCircle } from "lucide-react";
+import { Search, Radar, ArrowLeft, History, Trash2, Clock, AlertCircle, Sparkles, Settings2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CompanyProfile } from "@/pages/StrategicRadar";
@@ -28,6 +28,7 @@ interface StoredAnalysis {
 
 interface RadarInputPhaseProps {
   onScanComplete: (profile: CompanyProfile) => void;
+  onStartConfigWizard?: () => void;
   savedAnalyses: StoredAnalysis[];
   isLoadingHistory: boolean;
   onLoadAnalysis: (analysis: StoredAnalysis) => void;
@@ -38,6 +39,7 @@ interface RadarInputPhaseProps {
 
 const RadarInputPhase = ({ 
   onScanComplete, 
+  onStartConfigWizard,
   savedAnalyses, 
   isLoadingHistory,
   onLoadAnalysis,
@@ -272,6 +274,37 @@ const RadarInputPhase = ({
             </button>
           ))}
         </motion.div>
+
+        {/* Config Wizard Option */}
+        {onStartConfigWizard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-8 text-center"
+          >
+            <div className="relative inline-block">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-2xl blur-lg" />
+              <div className="relative bg-slate-900/60 backdrop-blur-xl border border-emerald-500/30 rounded-2xl p-6">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <Settings2 className="w-5 h-5 text-emerald-400" />
+                  <span className="text-white font-medium">شرکت خصوصی هستید؟</span>
+                </div>
+                <p className="text-slate-400 text-sm mb-4 max-w-md">
+                  برای شرکت‌های خصوصی یا استارتاپ‌ها که اطلاعات عمومی ندارند، از ویزارد پیکربندی استفاده کنید تا داده‌های واقعی خود را وارد کنید.
+                </p>
+                <Button
+                  onClick={onStartConfigWizard}
+                  variant="outline"
+                  className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+                >
+                  <Sparkles className="w-4 h-4 ml-2" />
+                  ورود دستی اطلاعات (پیشنهادی)
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Scanning Overlay */}

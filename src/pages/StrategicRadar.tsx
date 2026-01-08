@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSiteName } from "@/hooks/useSiteSettings";
@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import RadarInputPhase from "@/components/strategic-radar/RadarInputPhase";
 import VerificationPhase from "@/components/strategic-radar/VerificationPhase";
 import RadarDashboard from "@/components/strategic-radar/RadarDashboard";
-
+import StrategicConfigWizard, { StrategicConfig } from "@/components/strategic-radar/StrategicConfigWizard";
 
 export interface CompanyProfile {
   id?: string;
@@ -27,9 +27,11 @@ export interface CompanyProfile {
   // Derived metrics
   technologyLag: number;
   maturityScore: number;
+  // New: User Config (for accurate data)
+  userConfig?: StrategicConfig;
 }
 
-export type RadarPhase = "input" | "verification" | "dashboard";
+export type RadarPhase = "input" | "config-wizard" | "verification" | "dashboard";
 
 interface StoredAnalysis {
   id: string;
@@ -148,9 +150,49 @@ const StrategicRadar = () => {
     },
   });
 
+  // Old flow: AI scan -> verification
   const handleScanComplete = (profile: CompanyProfile) => {
     setCompanyProfile(profile);
     setPhase("verification");
+  };
+
+  // New flow: Start config wizard for accurate data
+  const handleStartConfigWizard = () => {
+    setPhase("config-wizard");
+  };
+
+  // Config wizard complete -> go to dashboard with user-provided data
+  const handleConfigComplete = (config: StrategicConfig) => {
+    // Convert config to CompanyProfile format
+    const formatRevenue = (value: number, currency: string) => {
+      const formatted = value.toLocaleString("fa-IR");
+      const unit = currency === "USD" ? "دلار" : currency === "TOMAN" ? "تومان" : "ریال";
+      return `${formatted} ${unit}`;
+    };
+
+    const profile: CompanyProfile = {
+      name: config.companyName,
+      ticker: config.tickerSymbol || "",
+      logo: "🏢",
+      industry: config.industry,
+      sector: config.sector,
+      competitors: config.competitors.map(c => ({
+        name: c.name,
+        marketShare: c.estimatedMarketShare || 20,
+        innovation: 50,
+      })),
+      revenue: formatRevenue(config.annualRevenue, config.currency),
+      revenueValue: config.annualRevenue,
+      strategicGoal: config.strategicGoal,
+      technologyLag: 10 - Math.round(config.techMaturityScore / 10),
+      maturityScore: config.techMaturityScore,
+      userConfig: config, // Store full config for dashboard components
+    };
+
+    setCompanyProfile(profile);
+    setPhase("dashboard");
+    // Auto-save
+    saveAnalysisMutation.mutate(profile);
   };
 
   const handleVerificationComplete = (updatedProfile: CompanyProfile) => {
@@ -219,12 +261,30 @@ const StrategicRadar = () => {
             >
               <RadarInputPhase 
                 onScanComplete={handleScanComplete}
+                onStartConfigWizard={handleStartConfigWizard}
                 savedAnalyses={savedAnalyses || []}
                 isLoadingHistory={isLoadingHistory}
                 onLoadAnalysis={handleLoadAnalysis}
                 onDeleteAnalysis={(id) => deleteAnalysisMutation.mutate(id)}
                 showHistory={showHistory}
                 setShowHistory={setShowHistory}
+              />
+            </motion.div>
+          )}
+
+          {phase === "config-wizard" && (
+            <motion.div
+              key="config-wizard"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.5 }}
+              className="relative z-10"
+            >
+              <StrategicConfigWizard
+                initialProfile={companyProfile || undefined}
+                onComplete={handleConfigComplete}
+                onBack={() => setPhase("input")}
               />
             </motion.div>
           )}
