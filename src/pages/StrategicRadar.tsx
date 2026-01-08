@@ -29,6 +29,8 @@ export interface CompanyProfile {
   maturityScore: number;
   // New: User Config (for accurate data)
   userConfig?: StrategicConfig;
+  // Data sources/citations from API
+  citations?: string[];
 }
 
 export type RadarPhase = "input" | "config-wizard" | "verification" | "dashboard";

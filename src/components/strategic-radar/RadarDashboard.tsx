@@ -14,6 +14,7 @@ import FundingTracker from "./sections/FundingTracker";
 import TechStackComparison from "./sections/TechStackComparison";
 import MarketAlerts from "./sections/MarketAlerts";
 import PatentAnalysis from "./sections/PatentAnalysis";
+import DataSources from "./sections/DataSources";
 import { Link } from "react-router-dom";
 
 interface RadarDashboardProps {
@@ -117,6 +118,15 @@ const RadarDashboard = ({ profile, onEditProfile, onSave, isSaving }: RadarDashb
           transition={{ delay: 0.25 }}
         >
           <CompetitorAnatomy profile={profile} />
+        </motion.div>
+
+        {/* Section D2: Data Sources */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.27 }}
+        >
+          <DataSources profile={profile} />
         </motion.div>
 
         {/* Section E: Competitor Comparison & SWOT */}
