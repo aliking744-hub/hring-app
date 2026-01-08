@@ -88,22 +88,34 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const data = await response.json();
-
+    // Check response status BEFORE parsing JSON
     if (!response.ok) {
-      console.error('Perplexity API error:', data);
+      const errorText = await response.text();
+      console.error('Perplexity API error:', response.status, errorText.substring(0, 200));
       return new Response(
-        JSON.stringify({ success: false, error: data.error?.message || 'Perplexity API error' }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          error: `Perplexity API error: ${response.status}`,
+          data: {
+            name: competitorName,
+            status: "stable",
+            strengths: ["خطا در دریافت اطلاعات"],
+            weaknesses: ["خطا در دریافت اطلاعات"],
+            opportunities: ["خطا در دریافت اطلاعات"],
+            threats: ["خطا در دریافت اطلاعات"],
+          }
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
     console.log('Perplexity SWOT response:', content);
 
     let swot: CompetitorSWOT;
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonMatch = content?.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No JSON found in response');
       }
