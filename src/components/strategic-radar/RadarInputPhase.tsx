@@ -55,10 +55,10 @@ const RadarInputPhase = ({
     if (!query.trim()) return;
 
     setIsScanning(true);
-    setScanStatus("در حال جستجو در کدال و منابع مالی...");
+    setScanStatus("🕵️ شروع تحقیق هوشمند...");
 
     try {
-      // Call the edge function to fetch real company data
+      // Call the agentic research function
       const { data, error } = await supabase.functions.invoke('fetch-company-intel', {
         body: { companyName: query.trim() }
       });
@@ -77,8 +77,6 @@ const RadarInputPhase = ({
         return;
       }
 
-      setScanStatus("در حال تحلیل رقبا و بازار...");
-      
       const intel = data.data;
       
       const profile: CompanyProfile = {
@@ -90,14 +88,33 @@ const RadarInputPhase = ({
         competitors: intel.competitors,
         revenue: intel.revenue,
         revenueValue: intel.revenueValue,
+        revenueSource: intel.revenueSource,
         cashLiquidity: intel.cashLiquidity,
         technologyLag: intel.technologyLag,
         maturityScore: intel.maturityScore,
-        citations: data.citations || [], // Store API sources
+        maturitySource: intel.maturitySource,
+        subscriberCount: intel.subscriberCount,
+        subscriberSource: intel.subscriberSource,
+        marketShare: intel.marketShare,
+        marketShareSource: intel.marketShareSource,
+        recentNews: intel.recentNews,
+        dataQuality: intel.dataQuality,
+        isEstimate: intel.isEstimate,
+        citations: data.citations || [],
+        researchMeta: data.researchMeta,
       };
 
       setIsScanning(false);
       setScanStatus("");
+      
+      // Show research summary
+      if (data.researchMeta) {
+        toast.success(
+          `تحقیق کامل شد: ${data.researchMeta.sourcesFound} منبع در ${Math.round(data.researchMeta.processingTimeMs / 1000)} ثانیه`,
+          { duration: 5000 }
+        );
+      }
+      
       onScanComplete(profile);
       
     } catch (err) {
@@ -316,69 +333,91 @@ const RadarScanAnimation = () => (
   </div>
 );
 
-const ScanningOverlay = () => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm"
-  >
-    <div className="text-center">
-      {/* Radar Animation */}
-      <div className="relative w-48 h-48 mx-auto mb-8">
-        {/* Outer rings */}
-        {[1, 2, 3].map((ring) => (
-          <motion.div
-            key={ring}
-            className="absolute inset-0 border border-cyan-500/20 rounded-full"
-            style={{ transform: `scale(${0.4 + ring * 0.2})` }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 0] }}
-            transition={{ duration: 2, repeat: Infinity, delay: ring * 0.3 }}
-          />
-        ))}
-        
-        {/* Center dot */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-cyan-400 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.5)]" />
-        
-        {/* Scanning line */}
-        <motion.div
-          className="absolute top-1/2 left-1/2 w-1/2 h-0.5 origin-left"
-          style={{
-            background: "linear-gradient(90deg, rgba(34,211,238,0.8), transparent)",
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        />
-      </div>
+const ScanningOverlay = () => {
+  const researchSteps = [
+    { id: 1, label: "جستجوی درآمد و صورت مالی", delay: 0 },
+    { id: 2, label: "جستجوی تعداد مشترکین/کاربران", delay: 2 },
+    { id: 3, label: "تحلیل سهم بازار", delay: 4 },
+    { id: 4, label: "جستجوی اخبار و رویدادها", delay: 6 },
+    { id: 5, label: "شناسایی رقبای واقعی", delay: 8 },
+    { id: 6, label: "ترکیب و تحلیل نهایی", delay: 10 },
+  ];
 
-      <motion.p
-        className="text-cyan-400 font-mono text-lg"
-        animate={{ opacity: [1, 0.5, 1] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-      >
-        در حال تحلیل بازار...
-      </motion.p>
-      
-      <div className="mt-4 flex flex-col items-center gap-3">
-        <div className="flex justify-center gap-2">
-          {["جستجو در کدال", "بررسی سایت بورس", "تحلیل رقبا"].map((step, i) => (
-            <motion.span
-              key={step}
-              className="text-slate-500 text-sm font-mono"
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md"
+    >
+      <div className="text-center max-w-md px-4">
+        {/* Radar Animation */}
+        <div className="relative w-40 h-40 mx-auto mb-8">
+          {[1, 2, 3].map((ring) => (
+            <motion.div
+              key={ring}
+              className="absolute inset-0 border border-cyan-500/30 rounded-full"
+              style={{ transform: `scale(${0.4 + ring * 0.2})` }}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: i * 1.5 }}
+              animate={{ opacity: [0, 1, 0] }}
+              transition={{ duration: 2, repeat: Infinity, delay: ring * 0.3 }}
+            />
+          ))}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-cyan-400 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.5)]" />
+          <motion.div
+            className="absolute top-1/2 left-1/2 w-1/2 h-0.5 origin-left"
+            style={{ background: "linear-gradient(90deg, rgba(34,211,238,0.8), transparent)" }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          />
+        </div>
+
+        <h3 className="text-xl font-bold text-white mb-2">🔬 تحقیق هوشمند در جریان است</h3>
+        <p className="text-slate-400 text-sm mb-6">AI در حال جستجو و تحلیل منابع آنلاین...</p>
+
+        {/* Research Steps */}
+        <div className="space-y-3 text-right" dir="rtl">
+          {researchSteps.map((step) => (
+            <motion.div
+              key={step.id}
+              className="flex items-center gap-3 px-4 py-2 bg-slate-800/50 rounded-lg"
+              initial={{ opacity: 0.3, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: step.delay, duration: 0.5 }}
             >
-              ✓ {step}
-            </motion.span>
+              <motion.div
+                className="w-5 h-5 rounded-full border-2 border-cyan-500 flex items-center justify-center"
+                initial={{ borderColor: "rgb(100 116 139)" }}
+                animate={{ 
+                  borderColor: ["rgb(100 116 139)", "rgb(6 182 212)", "rgb(34 197 94)"],
+                  backgroundColor: ["transparent", "transparent", "rgb(34 197 94)"]
+                }}
+                transition={{ delay: step.delay + 1.5, duration: 0.5 }}
+              >
+                <motion.span
+                  className="text-white text-xs"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: step.delay + 2 }}
+                >
+                  ✓
+                </motion.span>
+              </motion.div>
+              <span className="text-slate-300 text-sm">{step.label}</span>
+            </motion.div>
           ))}
         </div>
-        <p className="text-slate-600 text-xs">
-          منابع: کدال، بورس تهران، خبرگزاری‌ها
-        </p>
+
+        <motion.p
+          className="mt-6 text-slate-500 text-xs"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2 }}
+        >
+          منابع: خبرگزاری‌ها، گزارش‌های مالی، رسانه‌های تخصصی
+        </motion.p>
       </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 export default RadarInputPhase;

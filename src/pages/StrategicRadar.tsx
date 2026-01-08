@@ -18,19 +18,35 @@ export interface CompanyProfile {
   logo: string;
   industry: string;
   sector: string;
-  competitors: { name: string; marketShare: number; innovation: number }[];
+  competitors: { name: string; marketShare: number; innovation: number; source?: string }[];
   revenue: string;
   revenueValue: number;
+  revenueSource?: string;
   // User-provided data
   cashLiquidity?: string;
   strategicGoal?: string;
   // Derived metrics
   technologyLag: number;
   maturityScore: number;
+  maturitySource?: string;
+  // New fields for real-time intelligence
+  subscriberCount?: string;
+  subscriberSource?: string;
+  marketShare?: number;
+  marketShareSource?: string;
+  recentNews?: { title: string; source: string }[];
+  dataQuality?: 'high' | 'medium' | 'low';
+  isEstimate?: boolean;
   // New: User Config (for accurate data)
   userConfig?: StrategicConfig;
   // Data sources/citations from API
   citations?: string[];
+  // Research metadata
+  researchMeta?: {
+    queriesRun: number;
+    sourcesFound: number;
+    processingTimeMs: number;
+  };
 }
 
 export type RadarPhase = "input" | "config-wizard" | "verification" | "dashboard";

@@ -3,18 +3,211 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface ResearchResult {
+  query: string;
+  findings: string;
+  citations: string[];
+}
+
 interface CompanyIntel {
   name: string;
   ticker: string | null;
   logo: string;
   industry: string;
   sector: string;
-  competitors: { name: string; marketShare: number; innovation: number }[];
+  competitors: { name: string; marketShare: number; innovation: number; source: string }[];
   revenue: string;
   revenueValue: number;
+  revenueSource: string;
   cashLiquidity: string;
   technologyLag: number;
   maturityScore: number;
+  maturitySource: string;
+  subscriberCount: string;
+  subscriberSource: string;
+  marketShare: number;
+  marketShareSource: string;
+  recentNews: { title: string; source: string }[];
+  dataQuality: 'high' | 'medium' | 'low';
+  isEstimate: boolean;
+}
+
+// Helper function to perform a single research query
+async function performSearch(apiKey: string, query: string): Promise<ResearchResult> {
+  try {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'sonar',
+        messages: [
+          { 
+            role: 'system', 
+            content: `تو یک محقق هستی که فقط اطلاعات واقعی و قابل استناد را گزارش می‌دهی.
+اگر اطلاعات دقیق پیدا نکردی، صراحتاً بگو "اطلاعات دقیق پیدا نشد".
+هرگز اطلاعات جعلی نده. هر عدد یا ادعایی باید منبع داشته باشد.
+پاسخ را کوتاه و مختصر بده (حداکثر ۳ جمله).` 
+          },
+          { role: 'user', content: query }
+        ],
+        temperature: 0.1,
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`Search failed for query: ${query}`);
+      return { query, findings: 'خطا در جستجو', citations: [] };
+    }
+
+    const data = await response.json();
+    return {
+      query,
+      findings: data.choices?.[0]?.message?.content || 'نتیجه‌ای یافت نشد',
+      citations: data.citations || [],
+    };
+  } catch (error) {
+    console.error(`Error in search: ${query}`, error);
+    return { query, findings: 'خطا در اتصال', citations: [] };
+  }
+}
+
+// The Analyst Agent: Synthesize all research into structured data
+async function synthesizeIntel(
+  apiKey: string, 
+  companyName: string, 
+  researchResults: ResearchResult[]
+): Promise<CompanyIntel> {
+  
+  const researchSummary = researchResults.map(r => 
+    `### جستجو: ${r.query}\n${r.findings}\nمنابع: ${r.citations.slice(0, 2).join(', ') || 'بدون منبع'}`
+  ).join('\n\n');
+
+  const systemPrompt = `تو یک تحلیلگر ارشد هستی که بر اساس نتایج جستجو، اطلاعات را استخراج و تحلیل می‌کنی.
+
+قوانین مهم:
+1. فقط از اطلاعاتی استفاده کن که در نتایج جستجو موجود است
+2. اگر اطلاعاتی موجود نیست، مقدار "نامشخص" یا عدد 0 بده
+3. اگر تخمین می‌زنی، حتماً در فیلد source بنویس "تخمین AI"
+4. برای هر عدد مهم، منبع را ذکر کن
+
+خروجی را فقط به صورت JSON بده:
+{
+  "name": "نام رسمی شرکت",
+  "ticker": "نماد بورسی یا null",
+  "industry": "صنعت",
+  "sector": "بخش",
+  "competitors": [
+    {"name": "رقیب واقعی در همان صنعت", "marketShare": عدد یا 0, "innovation": عدد یا 50, "source": "منبع"}
+  ],
+  "revenue": "درآمد به فارسی",
+  "revenueValue": عدد میلیارد ریال یا 0,
+  "revenueSource": "منبع اطلاعات درآمد",
+  "cashLiquidity": "وضعیت مالی",
+  "subscriberCount": "تعداد مشترک/مشتری",
+  "subscriberSource": "منبع",
+  "marketShare": عدد درصد سهم بازار یا 0,
+  "marketShareSource": "منبع",
+  "technologyLag": عدد 0-10,
+  "maturityScore": عدد 0-100,
+  "maturitySource": "توضیح چرا این امتیاز",
+  "recentNews": [{"title": "عنوان خبر", "source": "منبع"}],
+  "dataQuality": "high/medium/low",
+  "isEstimate": true/false
+}`;
+
+  const userPrompt = `بر اساس نتایج جستجوی زیر، اطلاعات شرکت "${companyName}" را استخراج کن:
+
+${researchSummary}
+
+نکات مهم:
+- رقبا باید شرکت‌های همان صنعت باشند (نه بانک برای اپراتور!)
+- اگر درآمد دقیق نیست و تعداد مشترک داری، می‌توانی تخمین بزنی: مشترکین × ARPU متوسط صنعت
+- اگر سهم بازار مستقیم نیست، از مقایسه‌ها استخراج کن
+- dataQuality بر اساس تعداد منابع معتبر پیدا شده`;
+
+  try {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'sonar-pro',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Synthesis API failed');
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    
+    const jsonMatch = content?.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No JSON in synthesis response');
+    }
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    
+    return {
+      name: parsed.name || companyName,
+      ticker: parsed.ticker || null,
+      logo: "🏢",
+      industry: parsed.industry || "نامشخص",
+      sector: parsed.sector || "نامشخص",
+      competitors: Array.isArray(parsed.competitors) ? parsed.competitors.slice(0, 5) : [],
+      revenue: parsed.revenue || "نامشخص",
+      revenueValue: parsed.revenueValue || 0,
+      revenueSource: parsed.revenueSource || "نامشخص",
+      cashLiquidity: parsed.cashLiquidity || "نامشخص",
+      technologyLag: parsed.technologyLag || 5,
+      maturityScore: parsed.maturityScore || 50,
+      maturitySource: parsed.maturitySource || "نامشخص",
+      subscriberCount: parsed.subscriberCount || "نامشخص",
+      subscriberSource: parsed.subscriberSource || "نامشخص",
+      marketShare: parsed.marketShare || 0,
+      marketShareSource: parsed.marketShareSource || "نامشخص",
+      recentNews: Array.isArray(parsed.recentNews) ? parsed.recentNews.slice(0, 5) : [],
+      dataQuality: parsed.dataQuality || 'low',
+      isEstimate: parsed.isEstimate ?? true,
+    };
+  } catch (error) {
+    console.error('Synthesis error:', error);
+    return {
+      name: companyName,
+      ticker: null,
+      logo: "🏢",
+      industry: "نامشخص",
+      sector: "نامشخص",
+      competitors: [],
+      revenue: "نامشخص",
+      revenueValue: 0,
+      revenueSource: "خطا در تحلیل",
+      cashLiquidity: "نامشخص",
+      technologyLag: 5,
+      maturityScore: 50,
+      maturitySource: "خطا در تحلیل",
+      subscriberCount: "نامشخص",
+      subscriberSource: "خطا در تحلیل",
+      marketShare: 0,
+      marketShareSource: "خطا در تحلیل",
+      recentNews: [],
+      dataQuality: 'low',
+      isEstimate: true,
+    };
+  }
 }
 
 Deno.serve(async (req) => {
@@ -34,162 +227,65 @@ Deno.serve(async (req) => {
 
     const apiKey = Deno.env.get('PERPLEXITY_API_KEY');
     if (!apiKey) {
-      console.error('PERPLEXITY_API_KEY not configured');
       return new Response(
         JSON.stringify({ success: false, error: 'Perplexity connector not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Fetching intel for company:', companyName);
+    console.log('🔍 Starting Agentic Research for:', companyName);
+    const startTime = Date.now();
 
-    // Create a comprehensive prompt in Farsi to get company information
-    const systemPrompt = `تو یک تحلیلگر ارشد مالی و بورسی هستی که به صورت تخصصی اطلاعات شرکت‌های بورسی ایران را از سایت کدال (codal.ir) و سایت بورس تهران (tsetmc.com) استخراج می‌کنی.
+    // PHASE 1: The "Hunter" Agent - Perform targeted searches
+    const searchQueries = [
+      `"${companyName}" درآمد فروش صورت مالی کدال ۱۴۰۳ ۱۴۰۲`,
+      `"${companyName}" تعداد مشترکین کاربران فعال ۱۴۰۳`,
+      `"${companyName}" سهم بازار رتبه در صنعت رقابت`,
+      `"${companyName}" اخبار جدید سرمایه گذاری توسعه ۱۴۰۳`,
+      `رقبای "${companyName}" مقایسه شرکت‌های مشابه در ایران`,
+    ];
 
-مهم‌ترین وظیفه تو استخراج اطلاعات مالی دقیق از گزارش‌های ۶ ماهه و سالانه در کدال است:
-- درآمد عملیاتی / فروش خالص
-- سود ناخالص
-- سود خالص
-- جمع دارایی‌ها
-- نقدینگی
+    console.log('🕵️ Hunter Agent: Running', searchQueries.length, 'searches...');
+    
+    // Run all searches in parallel
+    const searchResults = await Promise.all(
+      searchQueries.map(query => performSearch(apiKey, query))
+    );
 
-خروجی را فقط به صورت JSON بده، بدون هیچ توضیح اضافه. ساختار JSON باید دقیقاً به این شکل باشد:
-{
-  "name": "نام رسمی شرکت به فارسی",
-  "ticker": "نماد بورسی (حتماً پیدا کن)",
-  "industry": "صنعت شرکت",
-  "sector": "بخش فعالیت",
-  "competitors": [
-    {"name": "نام رقیب اول در همان صنعت", "marketShare": عدد از 0 تا 100, "innovation": عدد از 0 تا 100},
-    {"name": "نام رقیب دوم", "marketShare": عدد از 0 تا 100, "innovation": عدد از 0 تا 100},
-    {"name": "نام رقیب سوم", "marketShare": عدد از 0 تا 100, "innovation": عدد از 0 تا 100}
-  ],
-  "revenue": "درآمد یا فروش خالص از آخرین گزارش مالی به فارسی مثل: ۱۲,۵۰۰ میلیارد ریال (حتماً از کدال استخراج کن)",
-  "revenueValue": عدد درآمد به میلیارد ریال (عدد صحیح),
-  "cashLiquidity": "وضعیت نقدینگی: healthy/medium/critical با توضیح مختصر",
-  "netProfit": "سود خالص از آخرین گزارش",
-  "technologyLag": عدد از 0 تا 10,
-  "maturityScore": عدد از 0 تا 100
-}`;
+    console.log('📊 Search results received:', searchResults.map(r => ({
+      query: r.query.substring(0, 30) + '...',
+      hasFindings: r.findings !== 'خطا در جستجو',
+      citationCount: r.citations.length
+    })));
 
-    const userPrompt = `اطلاعات مالی شرکت "${companyName}" را از منابع زیر استخراج کن:
+    // PHASE 2: The "Analyst" Agent - Synthesize all findings
+    console.log('🧠 Analyst Agent: Synthesizing data...');
+    const companyIntel = await synthesizeIntel(apiKey, companyName, searchResults);
 
-۱. **کدال (codal.ir)**: حتماً آخرین گزارش صورت‌های مالی ۶ ماهه یا سالانه را بخوان و درآمد عملیاتی/فروش خالص را استخراج کن
-۲. **بورس تهران (tsetmc.com)**: نماد بورسی و اطلاعات معاملاتی
-۳. **گزارش فعالیت هیئت مدیره**: اطلاعات تکمیلی
+    const duration = Date.now() - startTime;
+    console.log(`✅ Research complete in ${duration}ms. Data quality: ${companyIntel.dataQuality}`);
 
-نکات مهم:
-- درآمد را حتماً از صورت سود و زیان استخراج کن (ردیف درآمدهای عملیاتی یا فروش خالص)
-- اگر شرکت بورسی است، اطلاعات مالی حتماً در کدال موجود است
-- revenueValue باید عدد باشد (میلیارد ریال)
-- اگر اطلاعات دقیق پیدا نشد، بر اساس اندازه شرکت و صنعت تخمین معقول بزن
-
-مثال: اگر فروش خالص ۵۰,۰۰۰,۰۰۰ میلیون ریال باشد، revenueValue برابر با 50000 میلیارد ریال خواهد بود.`;
-
-
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'sonar',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.2,
-        max_tokens: 2000,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('Perplexity API error:', data);
-      return new Response(
-        JSON.stringify({ success: false, error: data.error?.message || 'Perplexity API error' }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const content = data.choices?.[0]?.message?.content;
-    console.log('Perplexity response:', content);
-
-    // Parse JSON from response
-    let companyIntel: CompanyIntel;
-    try {
-      // Extract JSON from the response (it might be wrapped in markdown code blocks)
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in response');
-      }
-      
-      const parsed = JSON.parse(jsonMatch[0]);
-      
-      // Validate and normalize the response
-      companyIntel = {
-        name: parsed.name || companyName,
-        ticker: parsed.ticker || null,
-        logo: "🏢", // Default logo, can be enhanced later
-        industry: parsed.industry || "نامشخص",
-        sector: parsed.sector || "نامشخص",
-        competitors: Array.isArray(parsed.competitors) && parsed.competitors.length > 0
-          ? parsed.competitors.slice(0, 5).map((c: any) => ({
-              name: c.name || "رقیب",
-              marketShare: typeof c.marketShare === 'number' ? c.marketShare : 20,
-              innovation: typeof c.innovation === 'number' ? c.innovation : 50,
-            }))
-          : [
-              { name: "رقیب ۱", marketShare: 25, innovation: 60 },
-              { name: "رقیب ۲", marketShare: 20, innovation: 55 },
-              { name: "رقیب ۳", marketShare: 15, innovation: 50 },
-            ],
-        revenue: parsed.revenue || "نامشخص",
-        revenueValue: typeof parsed.revenueValue === 'number' ? parsed.revenueValue : 0,
-        cashLiquidity: parsed.cashLiquidity || "نامشخص",
-        technologyLag: typeof parsed.technologyLag === 'number' ? Math.min(10, Math.max(0, parsed.technologyLag)) : 5,
-        maturityScore: typeof parsed.maturityScore === 'number' ? Math.min(100, Math.max(0, parsed.maturityScore)) : 50,
-      };
-    } catch (parseError) {
-      console.error('Error parsing Perplexity response:', parseError);
-      // Return basic info if parsing fails
-      companyIntel = {
-        name: companyName,
-        ticker: null,
-        logo: "🏢",
-        industry: "نامشخص",
-        sector: "نامشخص",
-        competitors: [
-          { name: "رقیب ۱", marketShare: 25, innovation: 60 },
-          { name: "رقیب ۲", marketShare: 20, innovation: 55 },
-          { name: "رقیب ۳", marketShare: 15, innovation: 50 },
-        ],
-        revenue: "نامشخص",
-        revenueValue: 0,
-        cashLiquidity: "نامشخص",
-        technologyLag: 5,
-        maturityScore: 50,
-      };
-    }
-
-    console.log('Processed company intel:', companyIntel);
+    // Collect all citations
+    const allCitations = [...new Set(searchResults.flatMap(r => r.citations))];
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         data: companyIntel,
-        citations: data.citations || []
+        citations: allCitations,
+        researchMeta: {
+          queriesRun: searchQueries.length,
+          sourcesFound: allCitations.length,
+          processingTimeMs: duration,
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: unknown) {
-    console.error('Error fetching company intel:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    console.error('Error in agentic research:', error);
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Research failed' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
