@@ -123,77 +123,101 @@ const ValueChainMap = ({ profile }: ValueChainMapProps) => {
   };
 
   const setSampleData = () => {
-    setValueChain([
+    const competitors = profile.competitors || [];
+    const industry = profile.industry || 'صنعت';
+    
+    // Generate value chain segments based on real competitors
+    const segments: ValueChainSegment[] = [
       {
         segment: "تأمین",
         companies: [
-          { name: "شرکت تأمین اول", type: "partner", growthPotential: "medium" },
-          { name: "فناوری‌های نوین تأمین", type: "opportunity", growthPotential: "high", recommendation: "پیشنهاد خرید" },
+          { name: `تأمین‌کننده ${industry}`, type: "partner", growthPotential: "medium" },
+          ...(competitors.length > 0 ? [{
+            name: `${competitors[0].name} - بخش تأمین`,
+            type: "opportunity" as const,
+            growthPotential: competitors[0].innovation > 50 ? "high" as const : "medium" as const,
+            recommendation: "ارزیابی برای شراکت"
+          }] : [])
         ]
       },
       {
         segment: "فناوری",
         companies: [
-          { name: "دیتاسنتر ابری", type: "subsidiary", ownership: "۶۰٪" },
-          { name: "استارتاپ AI", type: "opportunity", growthPotential: "high", recommendation: "سرمایه‌گذاری" },
+          { name: "زیرساخت فناوری داخلی", type: "subsidiary", ownership: "۱۰۰٪" },
+          ...(competitors.length > 1 ? [{
+            name: `استارتاپ مشابه ${competitors[1].name}`,
+            type: "opportunity" as const,
+            growthPotential: "high" as const,
+            recommendation: "پتانسیل خرید"
+          }] : [])
         ]
       },
       {
-        segment: "لجستیک",
+        segment: "توزیع",
         companies: [
-          { name: "شرکت حمل و نقل", type: "affiliate", ownership: "۳۵٪" },
-          { name: "پلتفرم درخواست لجستیک", type: "opportunity", growthPotential: "high", recommendation: "شراکت استراتژیک" },
+          { name: "شبکه توزیع فعلی", type: "affiliate", ownership: "۳۵٪" },
+          ...(competitors.length > 2 ? [{
+            name: `شبکه ${competitors[2].name}`,
+            type: "partner" as const,
+            growthPotential: "medium" as const
+          }] : [])
         ]
       },
       {
         segment: "فروش",
-        companies: [
-          { name: "آژانس دیجیتال مارکتینگ", type: "partner" },
-          { name: "پلتفرم فروش B2B", type: "opportunity", growthPotential: "medium", recommendation: "ارزیابی بیشتر" },
-        ]
+        companies: competitors.slice(0, 2).map((comp, idx) => ({
+          name: comp.name,
+          type: idx === 0 ? "opportunity" as const : "partner" as const,
+          growthPotential: comp.marketShare > 15 ? "high" as const : "medium" as const,
+          recommendation: comp.marketShare > 15 ? "رقیب کلیدی" : undefined
+        }))
       },
       {
         segment: "خدمات",
         companies: [
-          { name: "مرکز تماس هوشمند", type: "subsidiary", ownership: "۱۰۰٪" },
-          { name: "چت‌بات AI", type: "opportunity", growthPotential: "high", recommendation: "خرید و ادغام" },
+          { name: "خدمات مشتریان داخلی", type: "subsidiary", ownership: "۱۰۰٪" },
+          { name: "پلتفرم پشتیبانی AI", type: "opportunity", growthPotential: "high", recommendation: "سرمایه‌گذاری" }
         ]
       },
-    ]);
+    ];
+    
+    setValueChain(segments.filter(s => s.companies.length > 0));
 
-    setRecommendations([
+    // Generate recommendations based on real competitors
+    const recs: InvestmentRecommendation[] = competitors.slice(0, 3).map((comp, idx) => ({
+      company: `فرصت مرتبط با ${comp.name}`,
+      segment: ["فناوری", "توزیع", "خدمات"][idx] || "فناوری",
+      reason: comp.innovation > 50 
+        ? "نوآوری بالا و پتانسیل رشد قوی"
+        : "سهم بازار مناسب برای ادغام",
+      expectedReturn: comp.innovation > 50 ? "۳۰-۵۰٪ در ۳ سال" : "۱۵-۲۵٪ در ۲ سال",
+      riskLevel: (comp.marketShare > 20 ? "high" : comp.marketShare > 10 ? "medium" : "low") as "low" | "medium" | "high",
+      synergy: `تکمیل زنجیره ارزش در حوزه ${industry}`
+    }));
+    
+    setRecommendations(recs.length > 0 ? recs : [
       {
-        company: "استارتاپ AI در حوزه پردازش تصویر",
-        segment: "زیرساخت فناوری",
-        reason: "تکمیل زنجیره ارزش با قابلیت‌های هوش مصنوعی",
-        expectedReturn: "۳۵-۵۰٪ در ۳ سال",
-        riskLevel: "medium",
-        synergy: "بهبود تجربه مشتری و اتوماسیون"
-      },
-      {
-        company: "پلتفرم لجستیک سریع",
-        segment: "لجستیک و توزیع",
-        reason: "کاهش هزینه‌های تحویل و افزایش سرعت",
-        expectedReturn: "۲۰-۳۰٪ در ۲ سال",
-        riskLevel: "low",
-        synergy: "یکپارچه‌سازی با سیستم‌های فعلی"
-      },
-      {
-        company: "شرکت فین‌تک پرداخت",
-        segment: "خدمات مالی",
-        reason: "کاهش کارمزد تراکنش‌ها و جذب مشتری جدید",
+        company: `استارتاپ نوآور ${industry}`,
+        segment: "فناوری",
+        reason: "تکمیل زنجیره ارزش",
         expectedReturn: "۲۵-۴۰٪ در ۳ سال",
         riskLevel: "medium",
-        synergy: "اکوسیستم پرداخت یکپارچه"
+        synergy: "بهبود توانمندی‌های فنی"
       }
     ]);
 
     setInsights({
       totalSubsidiaries: 2,
       totalAffiliates: 1,
-      keyPartners: ["شریک استراتژیک ۱", "شریک استراتژیک ۲"],
-      gaps: ["نبود قابلیت AI داخلی", "وابستگی به لجستیک خارجی"],
-      recommendations: ["خرید استارتاپ AI", "سرمایه‌گذاری در لجستیک"]
+      keyPartners: competitors.slice(0, 2).map(c => c.name),
+      gaps: [
+        `رقابت با ${competitors[0]?.name || 'رقبا'}`,
+        "نیاز به توسعه فناوری"
+      ],
+      recommendations: [
+        `تحلیل استراتژی ${competitors[0]?.name || 'رقیب اصلی'}`,
+        "سرمایه‌گذاری در نوآوری"
+      ]
     });
   };
 
